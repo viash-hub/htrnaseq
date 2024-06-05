@@ -1,0 +1,54 @@
+name: process_sample_sheet
+namespace: io
+version: 0.0.1
+description: |
+  Process the sample sheet of the run
+argument_groups:
+  - name: "Input arguments"
+    arguments:
+      - name: "--id"
+        type: string
+        required: true
+        default: 'MyRun'
+      - name: "--sample_sheet"
+        type: file
+        required: true
+      - name: "--project_name"
+        type: string
+        required: true
+        default: projectCode_CSnumber
+  - name: "Optional arguments"
+    arguments:
+      - name: "--instrument"
+        type: string
+        default: 'NextSeq2000'
+      - name: "--instrument_type"
+        type: string
+        default: 'P3'
+  - name: "Output arguments"
+    arguments:
+      - type: file
+        name: "--run_info"
+        direction: output
+        default: runInfo.txt
+      - type: file
+        name: "--plate_info"
+        direction: output
+        default: plateInfo.txt
+resources:
+  - type: r_script
+    path: script.R
+# test_resources:
+#   - type: r_script
+#     path: test/test_process_sampleSheet.R
+#   - path: /testData/sampleSheets
+
+engines:
+  - type: docker
+    image: rocker/r-ver:4.4
+    setup:
+    - type: r
+      cran: [ data.table ]
+
+runners:
+  - type: nextflow
