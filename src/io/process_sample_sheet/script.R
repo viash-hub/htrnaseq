@@ -2,12 +2,12 @@ library(data.table)
 
 ## VIASH START
 par <- list(
-  "id" = "id",
+  "id" = "run_id",
   # "sample_sheet" = "sample_sheet1.csv",
   "sample_sheet" = "sample_sheet2.csv",
   "project_name" = "project_name",
-  "instrument" = "Foo",
-  "instrument_type" = "Bar",
+  # "instrument" = "Foo",
+  # "instrument_type" = "Bar",
   "run_info" = "run_info.tsv",
   "plate_info" = "plate_info.tsv"
 )
@@ -26,7 +26,7 @@ cat(">> Parsing sample sheet file: ", sample_sheet_file, "\n")
 sample_sheet_lines <- readLines(sample_sheet_file)
 
 # Where does the sample section start?
-start_data_line <- which(grepl("^\\[dD]ata\\]|^\\[Cloud_Data\\]", sample_sheet_lines))
+start_data_line <- which(grepl("^\\[[dD]ata\\]|^\\[Cloud_Data\\]", sample_sheet_lines))
 if (length(start_data_line) == 0) {
   stop("No data section found in the sampleSheet")
 }
@@ -47,12 +47,13 @@ print(plate_data)
 # plate_data <- plate_data[which(project_name == project)]
 
 cat(">> Check if instrument and type are provided in the sample sheet", "\n")
-cat(">> If not, the user can specify them as parameters as well", "\n")
+cat("   If not, the user can specify them as parameters", "\n")
 instrument_info <- plate_data$Instrument
-type_info <- plate_data$type
+type_info <- plate_data$Type
+cat(paste(">>> Instrument info from samplesheet: ", instrument_info), "\n")
+cat(paste(">>> Instrument type info from samplesheet: ", type_info), "\n")
 
 if (length(unique(instrument_info)) > 1 || length(unique(type_info)) > 1) {
-  cat(">>> Instrument info: ", instrument_info)
   stop("Instrument and/or type are not unique in the sampleSheet")
 } else {
   instrument_info <- unique(instrument_info)
@@ -61,8 +62,9 @@ if (length(unique(instrument_info)) > 1 || length(unique(type_info)) > 1) {
 
 if (length(instrument_info) != 1 || length(type_info) != 1) {
   if (is.null(instrument) || is.null(type)) {
-    stop("Instrument and/or type are not specified in the sampleSheet nor as input parameters")
+    stop("Instrument and/or type are not specified in sampleSheet nor parameters")
   } else {
+    cat(">>> Setting instrument and type from input parameters", "\n")
     instrument_info <- instrument
     type_info <- type
   }
