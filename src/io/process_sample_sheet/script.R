@@ -19,13 +19,13 @@ type <- par$instrument_type
 # run_info_file <- par$run_info
 # plate_info_file <- par$plate_info
 
-cat(">> Parsing sample sheet file: ", sample_sheet_file)
+cat(">> Parsing sample sheet file: ", sample_sheet_file, "\n")
 
 sample_sheet_lines <- readLines(sample_sheet_file)
 
 # Where does the sample section start?
 start_data_line <- which(grepl("^\\[Data\\]", sample_sheet_lines))
-cat(paste(">>> Sample information starts at: ", start_data_line))
+cat(paste(">>> Sample information starts at: ", start_data_line), "\n")
 
 # Read the sample sheet csv section
 plate_data <- data.table::fread(
@@ -35,19 +35,20 @@ plate_data <- data.table::fread(
   header = TRUE
 )
 
-print(">>> Sample sheet data:")
+cat(">>> Sample sheet data:", "\n")
 print(plate_data)
 
 # TODO: Should this check be here?!
 # plate_data <- plate_data[which(project_name == project)]
 
-print(">> Check if instrument and type are provided in the sample sheet")
-print(">> If not, the user can specify them as parameters as well")
+cat(">> Check if instrument and type are provided in the sample sheet", "\n")
+cat(">> If not, the user can specify them as parameters as well", "\n")
 instrument_info <- plate_data$Instrument
 type_info <- plate_data$type
 
 if (length(instrument_info) > 1 || length(type_info) > 1) {
-  stop("Instrument and/or type are not uniquely specified in the sampleSheet")
+  cat(">>> Instrument info: ", instrument_info)
+  stop("Instrument and/or type are not unique in the sampleSheet")
 } else {
   instrument_info <- unique(instrument_info)
   type_info <- unique(type_info)
@@ -62,10 +63,10 @@ if (length(instrument_info) != 1 || length(type_info) != 1) {
   }
 }
 
-cat(paste(">>> Instrument info: ", instrument_info))
-cat(paste(">>> Instrument type info: ", type_info))
+cat(paste(">>> Instrument info: ", instrument_info), "\n")
+cat(paste(">>> Instrument type info: ", type_info), "\n")
 
-cat(">> Write the run and plate info to files and add instrument and type information")
+cat(">> Write run info to file and add instrument and type information", "\n")
 runData <- data.table(
   id = id,
   instrument = instrument_info,
