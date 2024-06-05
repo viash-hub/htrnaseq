@@ -3,11 +3,13 @@ library(data.table)
 ## VIASH START
 par <- list(
   "id" = "id",
-  "sample_sheet" = "sample_sheet1.csv",
-  # "sample_sheet" = "sample_sheet2.csv",
+  # "sample_sheet" = "sample_sheet1.csv",
+  "sample_sheet" = "sample_sheet2.csv",
   "project_name" = "project_name",
   "instrument" = "Foo",
-  "instrument_type" = "Bar"
+  "instrument_type" = "Bar",
+  "run_info" = "run_info.tsv",
+  "plate_info" = "plate_info.tsv"
 )
 ## VIASH END
 
@@ -16,15 +18,18 @@ sample_sheet_file <- par$sample_sheet
 project <- par$project_name
 instrument <- par$instrument
 type <- par$instrument_type
-# run_info_file <- par$run_info
-# plate_info_file <- par$plate_info
+run_info_file <- par$run_info
+plate_info_file <- par$plate_info
 
 cat(">> Parsing sample sheet file: ", sample_sheet_file, "\n")
 
 sample_sheet_lines <- readLines(sample_sheet_file)
 
 # Where does the sample section start?
-start_data_line <- which(grepl("^\\[Data\\]", sample_sheet_lines))
+start_data_line <- which(grepl("^\\[dD]ata\\]|^\\[Cloud_Data\\]", sample_sheet_lines))
+if (length(start_data_line) == 0) {
+  stop("No data section found in the sampleSheet")
+}
 cat(paste(">>> Sample information starts at: ", start_data_line), "\n")
 
 # Read the sample sheet csv section
@@ -46,7 +51,7 @@ cat(">> If not, the user can specify them as parameters as well", "\n")
 instrument_info <- plate_data$Instrument
 type_info <- plate_data$type
 
-if (length(instrument_info) > 1 || length(type_info) > 1) {
+if (length(unique(instrument_info)) > 1 || length(unique(type_info)) > 1) {
   cat(">>> Instrument info: ", instrument_info)
   stop("Instrument and/or type are not unique in the sampleSheet")
 } else {
@@ -66,24 +71,48 @@ if (length(instrument_info) != 1 || length(type_info) != 1) {
 cat(paste(">>> Instrument info: ", instrument_info), "\n")
 cat(paste(">>> Instrument type info: ", type_info), "\n")
 
-cat(">> Write run info to file and add instrument and type information", "\n")
-runData <- data.table(
+cat(">> Write run metadata to file and add instrument and type information", "\n")
+run_data <- data.table(
   id = id,
   instrument = instrument_info,
   type = type_info
 )
 
-print(runData)
+print(run_data)
 
+data.table::fwrite(
+  run_data,
+  file = run_info_file,
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE,
+  col.names = TRUE
+)
 
+cat(">> Validate sample metadata and write to file", "\n")
 
-#
-#
-# setnames(plateData, old = c("Sample_ID", "I7_Index_ID"), new = c("PoolName", "IDT"))
-#
-# if ("index" %in% names(plateData)) {
-#   data.table::fwrite(plateData[, .(PoolName, ProjectName, IDT, index)], file = plateInfoFile, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
-# } else {
-#   data.table::fwrite(plateData[, .(PoolName, ProjectName, IDT)], file = plateInfoFile, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
-# }
-# data.table::fwrite(runData, file = runInfoFile, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+if (!all(c("Sample_ID", "I7_Index_ID") %in% names(plate_data))) {
+  stop("Sample_ID and I7_Index_ID columns are not present in the sampleSheet")
+}
+
+setnames(plate_data, old = c("Sample_ID", "I7_Index_ID"), new = c("PoolName", "IDT"))
+
+if ("index" %in% names(plate_data)) {
+  data.table::fwrite(
+    plate_data[, .(PoolName, ProjectName, IDT, index)],
+    file = plate_info_file,
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE,
+    col.names = TRUE
+  )
+} else {
+  data.table::fwrite(
+    plate_data[, .(PoolName, ProjectName, IDT)],
+    file = plate_info_file,
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE,
+    col.names = TRUE
+  )
+}
