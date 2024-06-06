@@ -1,0 +1,49 @@
+name: well_dempultiplex
+description: Demultiplexing on well level
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: --input_r1
+        description: R1
+        type: file
+        required: true
+      - name: --input_r2
+        description: R2
+        type: file
+        required: true
+      - name: --barcodesFasta
+        type: file
+        required: true
+  - name: Output arguments
+    arguments:
+      - name: --output
+        description: List of demultiplexed fastq files
+        type: file
+        direction: output
+        required: true
+        multiple: true
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+# test_resources:
+#   - type: nextflow_script
+#     path: test.nf
+#     entrypoint: test_wf
+#
+dependencies:
+  - name: cutadapt
+    repository: bb
+repositories:
+  - name: bb
+    type: vsh
+    repo: viash-hub/biobase
+    tag: dev/cutadapt
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native
+
