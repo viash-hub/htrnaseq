@@ -1,4 +1,4 @@
-name: well_dempultiplex
+name: well_demultiplex
 description: Demultiplexing on well level
 argument_groups:
   - name: Input arguments
@@ -20,8 +20,9 @@ argument_groups:
         description: List of demultiplexed fastq files
         type: file
         direction: output
-        required: true
         multiple: true
+        required: true
+        default: "fastq/*_001.fastq"
 resources:
   - type: nextflow_script
     path: main.nf
@@ -40,6 +41,9 @@ repositories:
     type: vsh
     repo: viash-hub/biobase
     tag: dev/cutadapt
+  # - name: bb
+  #   type: local
+  #   path: ../../../../../components/biobase
 
 runners:
   - type: nextflow
