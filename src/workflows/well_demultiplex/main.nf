@@ -4,7 +4,7 @@ workflow run_wf {
 
   main:
     output_ch = input_ch
-      | niceView()
+      //| niceView()
       | cutadapt.run(
           // TODO: Remove hard-coded directives and replace with profiles
           directives: [
@@ -26,7 +26,7 @@ workflow run_wf {
               ]
             }
         )
-      | niceView()
+      //| niceView()
 
   emit:
     output_ch
