@@ -30,10 +30,10 @@ resources:
     entrypoint: run_wf
 
 # Test dataset: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM5357044
-# test_resources:
-#   - type: nextflow_script
-#     path: test.nf
-#     entrypoint: test_wf
+test_resources:
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf
 
 dependencies:
   - name: cutadapt
