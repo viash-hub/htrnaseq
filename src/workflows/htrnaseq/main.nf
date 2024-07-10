@@ -19,7 +19,32 @@ workflow run_wf {
           ]
         }
       )
+
       | niceView()
+
+      // Prep the handover to the mapping step
+      | map { id, state ->
+        // Group by the 'sample' id (ie barcode after demultiplexing)
+        // Omit the 'unknown' group
+        newState = state
+          .output
+          .collect{ p -> [ (p =~ /.*\\/([ACTG]*|unknown)_R?.*/)[0][1], p ] }
+          .groupBy{ k, v -> k }
+          .collect{ k, v -> [ k, v.collect{it[1]} ]}
+          .findAll{ k, v -> k != "unknown"}
+          .collect{ k, v -> [ barcode: k, fastq: v ] }
+        [
+          id, 
+          [
+            output: newState,
+            out: newState.collect{it.fastq}.flatten().flatten() // to keep Viash IO happy
+          ]
+        ]
+      }
+
+      | niceView()
+
+      | setState( [ "output": "out" ] )
 
   emit:
     output_ch

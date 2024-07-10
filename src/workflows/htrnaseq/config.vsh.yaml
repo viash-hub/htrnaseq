@@ -36,9 +36,15 @@ resources:
 dependencies:
   - name: workflows/well_demultiplex
     repository: local
+  - name: star/star_align_reads
+    repository: bb
 repositories:
   - name: local
     type: local
+  - name: bb
+    type: vsh
+    repo: biobox
+    tag: v0.1.0
 
 runners:
   - type: nextflow
