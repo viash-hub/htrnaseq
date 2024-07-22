@@ -1,0 +1,52 @@
+name: well_demultiplex
+namespace: workflows
+description: Demultiplexing on well level
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: --input_r1
+        description: R1
+        type: file
+        required: true
+      - name: --input_r2
+        description: R2
+        type: file
+        required: true
+      - name: --barcodesFasta
+        type: file
+        required: true
+  - name: Output arguments
+    arguments:
+      - name: --output
+        description: List of demultiplexed fastq files
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: "fastq/*_001.fastq"
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+# Test dataset: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM5357044
+test_resources:
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf
+
+dependencies:
+  - name: cutadapt
+    repository: bb
+repositories:
+  - name: bb
+    type: vsh
+    repo: biobox
+    tag: v0.1.0
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native
+
