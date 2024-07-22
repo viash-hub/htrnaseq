@@ -14,6 +14,9 @@ argument_groups:
       - name: --barcodesFasta
         type: file
         required: true
+      - name: --genomeDir
+        type: file
+        required: true
   - name: Output arguments
     arguments:
       - name: --output
@@ -36,8 +39,10 @@ resources:
 dependencies:
   - name: workflows/well_demultiplex
     repository: local
-  - name: star/star_align_reads
-    repository: bb
+  - name: parallel_map
+    repository: local
+  - name: workflows/utils/groupLanes
+    repository: local
 repositories:
   - name: local
     type: local
