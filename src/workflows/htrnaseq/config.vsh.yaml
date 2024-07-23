@@ -43,6 +43,10 @@ dependencies:
     repository: local
   - name: workflows/utils/groupLanes
     repository: local
+  - name: workflows/utils/groupPairs
+    repository: local
+  - name: concat_text
+    repository: cb
 repositories:
   - name: local
     type: local
@@ -50,6 +54,10 @@ repositories:
     type: vsh
     repo: biobox
     tag: v0.1.0
+  - name: cb
+    type: vsh
+    repo: craftbox
+    tag: concat_text
 
 runners:
   - type: nextflow
