@@ -21,22 +21,34 @@ workflow run_wf {
         directives: [label: ["midmem", "midcpu"]]
       )
 
-      | niceView()
-
-      // TODO: turn this into a 'component': splitBarcodes
-      | flatMap{ id, state ->
-        state.output.collect{ p ->
-          barcode = (p =~ /.*\\/([ACTG]*|unknown)_R?.*/)[0][1]
-          pair_end = (p =~ /.*_(R[12])_.*/)[0][1]
-          lane = (id =~ /.*_(L\d+).*/) ? (id =~ /.*_(L\d+).*/)[0][1] : "no_lanes"
-          [ id + "__" + barcode + "__" + pair_end, state + [ sample_id: id, barcode: barcode, barcode_path: p, lane: lane, pair_end: pair_end ] ]
+      | splitWells.run(
+        fromState: { id, state ->
+          [
+            input: state.output,
+          ]
+        },
+        toState: { id, result, state ->
+          state + result
         }
-      }
+      )
+
+      | setState(
+        [
+          "input": "barcode_path",
+          "barcode": "barcode",
+          "barcodesFasta": "barcodesFasta",
+          "genomeDir": "genomeDir",
+        ]
+      )
+
+      // TODO: Expand this into matching a whitelist/blacklist of barcodes
+      // ... and turn into separate component
+      | filter{ id, state -> state.barcode != "unknown" }
 
       | groupPairs.run(
         fromState: { id, state ->
           [
-            input: state.barcode_path
+            input: state.input
           ]
         },
         toState: { id, result, state ->
@@ -46,7 +58,6 @@ workflow run_wf {
 
       // Does the sequencing platform use lanes?
       // Should those lanes be discriminated over?
-      //
       | groupLanes.run(
         fromState: { id, state ->
           [
@@ -92,6 +103,29 @@ workflow run_wf {
         toState: { id, result, state ->
           state + [ input_r2: result.output ]
         }
+      )
+
+      | groupWells.run(
+        fromState: { id, state ->
+          [
+            input_r1: state.input_r1,
+            input_r2: state.input_r2,
+            well: state.barcode
+          ]
+        },
+        toState: { id, result, state ->
+          state + result
+        }
+      )
+
+      | setState(
+        [
+          "input_r1": "output_r1",
+          "input_r2": "output_r2",
+          "wells": "wells",
+          "barcodesFasta": "barcodesFasta",
+          "genomeDir": "genomeDir",
+        ]
       )
 
       | niceView()

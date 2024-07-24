@@ -41,9 +41,13 @@ dependencies:
     repository: local
   - name: parallel_map
     repository: local
+  - name: workflows/utils/splitWells
+    repository: local
   - name: workflows/utils/groupLanes
     repository: local
   - name: workflows/utils/groupPairs
+    repository: local
+  - name: workflows/utils/groupWells
     repository: local
   - name: concat_text
     repository: cb
