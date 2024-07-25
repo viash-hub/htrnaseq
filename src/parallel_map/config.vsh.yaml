@@ -1,0 +1,87 @@
+name: parallel_map
+description: |
+  Map wells in batch, using STAR
+  Spliced Transcripts Alignment to a Reference (C) Alexander Dobin
+  https://github.com/alexdobin/STAR
+argument_groups:
+  - name: Input arguments
+    arguments:
+    - name: "--input"
+      type: file
+      required: true
+      multiple: true
+      multiple_sep: ","
+      description: Location with well-based fastq files, typically the output folder of cutadapt
+    - name: "--poolName"
+      type: string
+      required: true
+      description: The pool name or sample name
+    - name: "--genomeDir"
+      type: file
+      required: true
+      description: STAR reference directory
+    - name: "--barcodes"
+      type: string
+      required: true
+      description: The barcodes/wells to process, as a comma-separated string.
+  - name: Barcode arguments
+    arguments:
+    - name: "--wellBarcodesLength"
+      type: integer
+      required: true
+      description: The length of the well barcodes
+    - name: "--umiLength"
+      type: integer
+      required: true
+      description: The length of the UMIs
+    - name: "--limitBAMsortRAM"
+      type: string
+      default: "10000000000"
+  - name: Runtime arguments
+    arguments:
+    - name: "--runThreadN"
+      type: string
+      default: "1"
+  - name: Output arguments
+    arguments:
+    - name: "--output"
+      type: file
+      required: true
+      direction: output
+
+resources:
+- type: bash_script
+  path: script.sh
+
+# test_resources:
+#   - type: bash_script
+#     path: test.sh
+engines:
+  - type: docker
+    image: debian:stable-slim
+    setup:
+      - type: apt
+        packages:
+          - procps
+          - gzip
+          - bzip2
+          - parallel
+          - wget
+          - zlib1g-dev
+          - unzip
+          - xxd
+      - type: docker
+        env:
+          - STAR_VERSION "2.7.11b"
+          - STAR_SOURCE "https://github.com/alexdobin/STAR/releases/download/$STAR_VERSION/STAR_$STAR_VERSION.zip"
+          - STAR_TARGET "/tmp/star.zip"
+          - STAR_BINARY "STAR"
+        run: |
+          wget -O $STAR_TARGET $STAR_SOURCE && \
+            unzip $STAR_TARGET -d /tmp && \
+            mv /tmp/STAR_$STAR_VERSION/Linux_x86_64_static/STAR /usr/local/bin/$STAR_BINARY && \
+            chmod +x /usr/local/bin/$STAR_BINARY && \
+            rm $STAR_TARGET && rm -rf /tmp/STAR_$STAR_VERSION
+runners:
+  - type: executable
+  - type: nextflow
