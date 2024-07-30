@@ -7,12 +7,9 @@ workflow run_wf {
     out_ = in_
       | map{ id, f -> [ id.replaceAll("__R[12]", ""), [ input: f.input ] , id ] }
       | groupTuple(sort: "hash")
-      | niceView()
       | map{ new_id, inputs, ids ->
-        println(inputs)
         r1 = inputs.collect{it.input}.findAll{it =~ "_R1_"}[0]
         r2 = inputs.collect{it.input}.findAll{it =~ "_R2_"}[0]
-        println(r1)
         [
           new_id,
           [

@@ -6,24 +6,23 @@ description: |
 argument_groups:
   - name: Input arguments
     arguments:
-    - name: "--input"
+    - name: "--input_r1"
       type: file
       required: true
       multiple: true
-      multiple_sep: ","
-      description: Location with well-based fastq files, typically the output folder of cutadapt
-    - name: "--poolName"
-      type: string
+    - name: "--input_r2"
+      type: file
       required: true
-      description: The pool name or sample name
+      multiple: true
     - name: "--genomeDir"
       type: file
       required: true
       description: STAR reference directory
     - name: "--barcodes"
-      type: string
+      type: string 
+      multiple: true
       required: true
-      description: The barcodes/wells to process, as a comma-separated string.
+      description: The barcodes/wells to process
   - name: Barcode arguments
     arguments:
     - name: "--wellBarcodesLength"
@@ -46,8 +45,14 @@ argument_groups:
     arguments:
     - name: "--output"
       type: file
+      description: |
+        Location of the output folders, 1 folder per barcode. The value used
+        for this argument must contain a '*', which will be replaced with the
+        barcode to form the final output location for that barcode.
       required: true
+      multiple: true
       direction: output
+      default: './*'
 
 resources:
 - type: bash_script
@@ -70,6 +75,7 @@ engines:
           - zlib1g-dev
           - unzip
           - xxd
+          - file
       - type: docker
         env:
           - STAR_VERSION "2.7.11b"

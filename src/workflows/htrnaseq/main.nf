@@ -4,7 +4,6 @@ workflow run_wf {
 
   main:
     output_ch = input_ch
-      //| niceView()
       | well_demultiplex.run(
         fromState: { id, state ->
           [
@@ -15,6 +14,7 @@ workflow run_wf {
         },
         toState: { id, result, state ->
           state + [
+              fastq_output: result.output,
               output: result.output,
             ]
         },
@@ -31,13 +31,14 @@ workflow run_wf {
           state + result
         }
       )
-
       | setState(
         [
           "input": "barcode_path",
           "barcode": "barcode",
           "barcodesFasta": "barcodesFasta",
           "genomeDir": "genomeDir",
+          "star_output": "star_output",
+          "fastq_output": "fastq_output",
         ]
       )
 
@@ -77,9 +78,10 @@ workflow run_wf {
           "barcodesFasta": "barcodesFasta",
           "genomeDir": "genomeDir",
           "barcode": "barcode",
+          "star_output": "star_output",
+          "fastq_output": "fastq_output",
         ]
       )
-
       | concat_text.run(
         key: "concat_text_r1",
         fromState: { id, state ->
@@ -114,40 +116,31 @@ workflow run_wf {
           ]
         },
         toState: { id, result, state ->
-          state + result
+          state + [ "wells": result.wells, "input_r1": result.output_r1, "input_r2": result.output_r2]
         }
       )
-
-      | setState(
-        [
-          "input_r1": "output_r1",
-          "input_r2": "output_r2",
-          "wells": "wells",
-          "barcodesFasta": "barcodesFasta",
-          "genomeDir": "genomeDir",
-        ]
+      | parallel_map.run(
+        fromState: { id, state ->
+         [
+           input_r1: state.input_r1,
+           input_r2: state.input_r2,
+           genomeDir: state.genomeDir,
+           barcodes: state.wells,
+           wellBarcodesLength: 10,
+           umiLength: 10,
+           output: state.star_output[0],
+         ]
+        },
+        toState: { id, result, state ->
+          state + [
+            star_output: result.output,
+          ]
+        },
+        directives: [label: ["midmem", "midcpu"]]
       )
-
       | niceView()
-
-      //| parallel_map.run(
-      //  fromState: { id, state ->
-      //    [
-      //      poolName: id,
-      //      input: state.all,
-      //      genomeDir: state.genomeDir,
-      //      barcodes: state.barcodes.join(",").toString(),
-      //      wellBarcodesLength: 10,
-      //      umiLength: 10,
-      //    ]
-      //  },
-      //  toState: { id, result, state ->
-      //    [
-      //      output: result.output,
-      //    ]
-      //  }
-      //)
-      //
+      | setState(["star_output", "fastq_output"])
+      
       //| niceView()
       //
       //| setState( [ "output": "out" ] )

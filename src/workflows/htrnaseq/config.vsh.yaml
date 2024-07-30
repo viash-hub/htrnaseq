@@ -19,13 +19,20 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-      - name: --output
+      - name: --fastq_output
         description: List of demultiplexed fastq files
         type: file
         direction: output
         multiple: true
         required: true
         default: "fastq/*_001.fastq"
+      - name: --star_output
+        description: Output from mapping with STAR
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: $id/star/*
 resources:
   - type: nextflow_script
     path: main.nf

@@ -7,14 +7,15 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
 # Make sure the workflow is built
-viash ns build -q workflows
+viash ns build -q 'workflows|parallel_map'
 
 export NXF_VER=24.04.3
 
 nextflow run . \
   -main-script target/nextflow/workflows/htrnaseq/main.nf \
   -params-file params1.yaml \
-  -with-docker \
+  -config ./src/config/tests.config \
+  -profile docker \
   --publish_dir output \
   -resume
 
