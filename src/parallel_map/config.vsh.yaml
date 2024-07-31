@@ -39,8 +39,9 @@ argument_groups:
   - name: Runtime arguments
     arguments:
     - name: "--runThreadN"
-      type: string
-      default: "1"
+      description: "Number of threads to use for a single STAR execution."
+      type: integer
+      default: 1
   - name: Output arguments
     arguments:
     - name: "--output"

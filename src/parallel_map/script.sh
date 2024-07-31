@@ -90,13 +90,6 @@ function _run() {
     "$star_readFilesIn
 	EOF
 
-  # check if files are compressed 
-  file "$input_R1" | grep -q 'gzip'
-  if [[ "${PIPESTATUS[1]}" -ne 0 ]]; then
-    echo "Detected compressed input files for barcode $barcode"
-    local read_command='zcat -'
-  fi
-
   echo "Writing barcode '$barcode' to $barcode.txt and using it as input".
   # Note that there is no possible conflict between jobs here
   # because the barcodes are unique (and the barcode is part of the name
@@ -107,8 +100,50 @@ function _run() {
   echo "Setting output for barcode '$barcode' to '$dir'."
   mkdir -p "$dir"
 
+  # check if files are compressed
+  TMPDIR=$(mktemp -d "$meta_temp_dir/parallel_map-$barcode-XXXXXX")
+  function clean_up {
+    [[ -d "$TMPDIR" ]] && rm -r "$TMPDIR"
+  }
+  trap clean_up RETURN
+
+  # Decompress the input files when needed
+  echo "Checking for compressed fastq files (barcode $barcode)."
+  # NOTE: for some reason, using STAR's --readFilesCommand does not always work
+  # This might be because STAR creates fifo files (see https://man7.org/linux/man-pages/man7/fifo.7.html)
+  # and this requires a filesystem that supports this. Another cause might be that the input files
+  # are symlinks. When testing this, using '--readFilesCommand "zcat"' 
+  # always produced empty BAM files, but also a succesfull exit code (0) so the problem is not reported.
+  # However, the logs showed the following error: "gzip -: unexpected end of file".
+
+  # TODO: could turn this into a function
+  file "$input_R1" | grep -q 'gzip'
+  if [[ "${PIPESTATUS[1]}" -ne 0 ]]; then
+    echo "Detected compressed input files for R1 (barcode $barcode)"
+    local compressed_file_name_r1="$(basename -- $input_R1)"
+    local uncompressed_file_r1="$TMPDIR/$compressed_file_name_r1"
+    echo "Unpacking input to $uncompressed_file_r1"
+    zcat "$input_R1" > "$uncompressed_file_r1"
+  else
+    echo "$input_R1 is not gzip compressed, assuming to be uncompressed."
+    local uncompressed_file_r1="$input_R1"
+  fi
+
+  file "$input_R2" | grep -q 'gzip'
+  if [[ "${PIPESTATUS[1]}" -ne 0 ]]; then
+    echo "Detected compressed input files for R2 (barcode $barcode)"
+    local compressed_file_name_r2="$(basename -- $input_R2)"
+    local uncompressed_file_r2="$TMPDIR/$(basename -- $input_R2)"
+    echo "Unpacking input to $uncompressed_file_r2"
+    zcat "$input_R2" > "$uncompressed_file_r2"
+  else
+    echo "$input_R2 is not gzip compressed, assuming to be uncompressed."
+    local uncompressed_file_r2="$input_R2"
+  fi
+
+
   STAR \
-    --readFilesIn "$input_R1" "$input_R2" \
+    --readFilesIn "$uncompressed_file_r1" "$uncompressed_file_r2" \
     --soloType Droplet \
     --quantMode GeneCounts \
     --genomeLoad LoadAndKeep \
@@ -130,7 +165,8 @@ function _run() {
     --outSAMattributes NH HI nM AS CR UR CB UB GX GN \
     --soloCBwhitelist "$barcode.txt" \
     --outFileNamePrefix "$dir" \
-    ${read_command:+--readFilesCommand "$read_command"}
+    --outTmpDir "$TMPDIR/STARtemp/" \
+    ${read_command:+--readFilesCommand "$read_command"} 
 }
 
 # Export the function - requires bash
