@@ -39,8 +39,9 @@ argument_groups:
   - name: Runtime arguments
     arguments:
     - name: "--runThreadN"
-      type: string
-      default: "1"
+      description: "Number of threads to use for a single STAR execution."
+      type: integer
+      default: 1
   - name: Output arguments
     arguments:
     - name: "--output"
@@ -53,14 +54,21 @@ argument_groups:
       multiple: true
       direction: output
       default: './*'
+    - name: "--joblog"
+      type: file
+      description: Where to store the log file listing all the jobs.
+      required: false
+      direction: output
+      default: "execution_log.txt"
 
 resources:
 - type: bash_script
   path: script.sh
 
-# test_resources:
-#   - type: bash_script
-#     path: test.sh
+test_resources:
+  - type: bash_script
+    path: test.sh
+
 engines:
   - type: docker
     image: debian:stable-slim

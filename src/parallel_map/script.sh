@@ -16,13 +16,13 @@ par_runThreadN=1
 set -eo pipefail
 
 # Check if wildcard character is present in output folder template
-echo "Checking if output folder template contains a single wildcard character '*'."
+printf "Checking if output folder template ($par_output) contains a single wildcard character '*'. "
 output_glob_character="${par_output//[^\*]}"
 if [[ "${#output_glob_character}" -ne "1" ]]; then
-  echo "The value for --output must contain exactly one '*' character."
+  echo "The value for --output must contain exactly one '*' character. Exiting..."
   exit 1
 else
-  echo "Wildcard character found!"
+  echo "Done, wildcard character found!"
 fi
 
 # Split the delimited strings into arrays
@@ -41,7 +41,7 @@ if [ ! "$num_barcodes" -eq "$num_r1_inputs" ] || [ ! "$num_r1_inputs" -eq "$num_
         "should be the same, and their order should match."
   exit 1
 else
-  echo "Checked if length of barcodes input ($num_barcodes) is " \
+  echo "Checked if length of barcodes input ($num_barcodes) is "\
        "the same as R1 reads ($num_r1_inputs) and R2 reads "\
        "($num_r2_inputs). Seems OK!"
 fi
@@ -84,18 +84,13 @@ function _run() {
   local input_R2="$9"
   local par_UMIstart=$(($par_wellBarcodeLength + 1))
 
+  set -eo pipefail
+
   echo <<-EOF
     Processing $barcode
     For the following inputs (lanes):
     "$star_readFilesIn
 	EOF
-
-  # check if files are compressed 
-  file "$input_R1" | grep -q 'gzip'
-  if [[ "${PIPESTATUS[1]}" -ne 0 ]]; then
-    echo "Detected compressed input files for barcode $barcode"
-    local read_command='zcat -'
-  fi
 
   echo "Writing barcode '$barcode' to $barcode.txt and using it as input".
   # Note that there is no possible conflict between jobs here
@@ -103,12 +98,73 @@ function _run() {
   # of the file).
   echo "$barcode" > "$barcode.txt"
 
-  local dir="./${par_output//\*/$barcode}/"
+  local dir="${par_output//\*/$barcode}/"
   echo "Setting output for barcode '$barcode' to '$dir'."
   mkdir -p "$dir"
 
+  # check if files are compressed
+  local TMPDIR=$(mktemp -d "$meta_temp_dir/parallel_map-$barcode-XXXXXX")
+  function clean_up {
+    [[ -d "$TMPDIR" ]] && rm -r "$TMPDIR"
+  }
+  trap clean_up RETURN
+
+  # Decompress the input files when needed
+  # NOTE: for some reason, using STAR's --readFilesCommand does not always work
+  # This might be because STAR creates fifo files (see https://man7.org/linux/man-pages/man7/fifo.7.html)
+  # and this requires a filesystem that supports this. Another cause might be that the input files
+  # are symlinks. When testing this, using '--readFilesCommand "zcat"' 
+  # always produced empty BAM files, but also a succesfull exit code (0) so the problem is not reported.
+  # However, the logs showed the following error: "gzip -: unexpected end of file".
+
+  function is_gzipped {
+    printf "Checking if input '$1' (barcode '$barcode') is gzipped... "
+    if file "$1" | grep -q 'gzip'; then
+      echo "Done, detected compressed file."
+      return
+    fi
+    echo "Done, file does not need decompression."
+    false
+  }
+   
+  if is_gzipped $input_R1; then
+    local compressed_file_name_r1="$(basename -- $input_R1)"
+    local uncompressed_file_r1="$TMPDIR/${compressed_file_name_r1%.gz}"
+    printf "Unpacking input to $uncompressed_file_r1... "
+    zcat "$input_R1" > "$uncompressed_file_r1"
+    echo "Decompression done."
+  else
+    local uncompressed_file_r1="$input_R1"
+  fi
+
+  if is_gzipped $input_R2; then
+    local compressed_file_name_r2="$(basename -- $input_R2)"
+    local uncompressed_file_r2="$TMPDIR/${compressed_file_name_r2%.gz}"
+    printf "Unpacking input to $uncompressed_file_r2... "
+    zcat "$input_R2" > "$uncompressed_file_r2"
+    echo "Decompression done."
+  else
+    local uncompressed_file_r2="$input_R2"
+  fi
+
+  local n_input_lines_r1=$(wc -l < "$uncompressed_file_r1")
+  local n_input_lines_r2=$(wc -l < "$uncompressed_file_r2")
+
+  printf "Checking if length of input file mates match. "
+  if (( $n_input_lines_r1 != n_input_lines_r2 )); then
+    echo "The length of file $input_R1 ($n_input_lines_r1) does not match with $input_R2 ($n_input_lines_r2)"
+    return 1
+  else
+    echo "Seems OK, $n_input_lines_r1 input lines."
+  fi
+  echo "Starting STAR for barcode '$barcode'"
+  # soloType 'Droplet' is the same as 'CB_UMI_Simple': one UMI and one cell barcode of fixed length. 
+  # By default in this mode, STAR will look for the cell barcode and the UMI int the last files specified with --readFilesIn
+  # So we need to specify R2 first and R1 second, because R1 contains the barcode and UMI.
+  # Also, you might be tempted to use '--soloBarcodeMate 1' to alter this behavior, but this requires the clipping
+  # the barcode from this mate by specifying --clip5pNbases and/or --clip3pNbases, which we do not want to do.
   STAR \
-    --readFilesIn "$input_R1" "$input_R2" \
+    --readFilesIn "$uncompressed_file_r2" "$uncompressed_file_r1" \
     --soloType Droplet \
     --quantMode GeneCounts \
     --genomeLoad LoadAndKeep \
@@ -130,7 +186,18 @@ function _run() {
     --outSAMattributes NH HI nM AS CR UR CB UB GX GN \
     --soloCBwhitelist "$barcode.txt" \
     --outFileNamePrefix "$dir" \
-    ${read_command:+--readFilesCommand "$read_command"}
+    --outTmpDir "$TMPDIR/STARtemp/"
+
+  printf "Done running STAR. "
+  # Check if the number of processed reads is equal to the number of input reads
+  local n_input_reads=$(($n_input_lines_r1 / 4))
+  local nr_output_reads=$(grep -Po "Number\ of\ input\ reads \\|\W*\K\d+" "$dir/Log.final.out")
+  if (( $nr_output_reads != $n_input_reads )); then
+    echo "Not all input reads were processed for barcode $barcode."
+    return 1
+  else
+    echo "Processed $nr_output_reads reads for barcode $barcode".
+  fi
 }
 
 # Export the function - requires bash
@@ -145,9 +212,6 @@ STAR --genomeLoad LoadAndExit --genomeDir "$par_genomeDir"
 # Make sure that parallel uses the correct shell
 export PARALLEL_SHELL="/bin/bash"
 
-# Location of the log file that will be created by parallel
-log_file=execution_log.txt
-
 # Some notes:
 #   --halt now,fail=1: instruct parallel to exit when a job has failed and kill remaining running jobs.
 #   
@@ -159,7 +223,7 @@ log_file=execution_log.txt
 parallel_cmd=("parallel" "--jobs" "80%" "--verbose" "--memfree" "2G"
               "--tmpdir" "$meta_temp_dir"
               "--retry-failed" "--retries" "4" "--halt" "soon,fail=1"
-              "--joblog" "$log_file" "_run" "{}")
+              "--joblog" "$par_joblog" "_run" "{}")
 
 # Arguments for which there is one value, so these will not create extra jobs
 parallel_cmd+=(":::" "$par_wellBarcodesLength" ":::" "$par_umiLength" ":::" "$par_output" ":::" "$par_genomeDir" ":::" "$par_limitBAMsortRAM" ":::" "$par_runThreadN")
@@ -168,13 +232,16 @@ parallel_cmd+=(":::" "$par_wellBarcodesLength" ":::" "$par_umiLength" ":::" "$pa
 # Thus, these argument lists should have the same length.
 parallel_cmd+=(":::" "${barcodes[@]}" ":::+" "${input_r1[@]}" ":::+" "${input_r2[@]}")
 
+set +eo pipefail
 "${parallel_cmd[@]}"
 exit_code=$?
+
 echo "GNU parallel finished!"
 
 # Unload reference
-echo "Unloading reference genome"
+printf "Unloading reference genome. "
 STAR --genomeLoad Remove --genomeDir "$par_genomeDir"
+echo "Done!"
 
 # Exit code from GNU parallel:
 # If fail=1 is used, the exit status will be the exit status of the failing job.
@@ -195,7 +262,7 @@ if ((exit_code>0)); then
 
 		HERE
   )
-  printf $MESSAGE "$(<$log_file)"
+  printf "$MESSAGE" "$(<$par_joblog)"
   exit 1
 else
   cat <<-HERE
