@@ -1,0 +1,39 @@
+name: splitWells
+namespace: workflows/utils
+description: |
+  N/A
+argument_groups:
+  - name: Inputs
+    arguments:
+      - name: "--input"
+        type: file
+        description: List of demultiplexed fastq files
+        required: true
+        multiple: true
+        example: ACAGCGATCGAC_R1_001.fastq
+
+  - name: Output
+    arguments:
+      - name: "--pool"
+        type: string
+        description: The original pool / sample name
+        direction: output
+      - name: "--barcode"
+        type: string
+        direction: output
+      - name: "--barcode_path"
+        type: file
+        direction: output
+      - name: "--lane"
+        type: string
+        direction: output
+      - name: "--pair_end"
+        type: string
+        direction: output
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+runners:
+  - type: nextflow

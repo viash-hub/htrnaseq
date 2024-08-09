@@ -1,0 +1,77 @@
+name: htrnaseq
+namespace: workflows
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: --input_r1
+        description: R1
+        type: file
+        required: true
+      - name: --input_r2
+        description: R2
+        type: file
+        required: true
+      - name: --barcodesFasta
+        type: file
+        required: true
+      - name: --genomeDir
+        type: file
+        required: true
+  - name: Output arguments
+    arguments:
+      - name: --fastq_output
+        description: List of demultiplexed fastq files
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: "fastq/*_001.fastq"
+      - name: --star_output
+        description: Output from mapping with STAR
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: $id/star/*
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+# test_resources:
+#   - type: nextflow_script
+#     path: test.nf
+#     entrypoint: test_wf
+
+dependencies:
+  - name: workflows/well_demultiplex
+    repository: local
+  - name: parallel_map
+    repository: local
+  - name: workflows/utils/splitWells
+    repository: local
+  - name: workflows/utils/groupLanes
+    repository: local
+  - name: workflows/utils/groupPairs
+    repository: local
+  - name: workflows/utils/groupWells
+    repository: local
+  - name: concat_text
+    repository: cb
+repositories:
+  - name: local
+    type: local
+  - name: bb
+    type: vsh
+    repo: biobox
+    tag: v0.1.0
+  - name: cb
+    type: vsh
+    repo: craftbox
+    tag: concat_text
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native
