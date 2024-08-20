@@ -235,6 +235,7 @@ parallel_cmd+=(":::" "${barcodes[@]}" ":::+" "${input_r1[@]}" ":::+" "${input_r2
 set +eo pipefail
 "${parallel_cmd[@]}"
 exit_code=$?
+set -eo pipefail
 
 echo "GNU parallel finished!"
 
