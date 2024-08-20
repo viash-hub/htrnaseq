@@ -126,7 +126,11 @@ function _run() {
     echo "Done, file does not need decompression."
     false
   }
-   
+  
+  # Resolve symbolic links to actual file paths
+  input_R1=$(realpath $input_R1)
+  input_R2=$(realpath $input_R2)
+
   if is_gzipped $input_R1; then
     local compressed_file_name_r1="$(basename -- $input_R1)"
     local uncompressed_file_r1="$TMPDIR/${compressed_file_name_r1%.gz}"
