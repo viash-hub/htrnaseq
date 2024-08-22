@@ -3,7 +3,41 @@ workflow run_wf {
     input_ch
 
   main:
-    output_ch = input_ch
+    // Untar input genome if needed
+    untar_ch = input_ch
+      | toSortedList()
+      | map {ids_and_states ->
+        def ids = ids_and_states.collect{it[0]}
+        def genomeDirs = ids_and_states.collect{it[1].genomeDir}.unique()
+        assert genomeDirs.size() == 1, "Only one value for 'genomeDirs' should have been defined across all inputs."
+        def genomeDir
+        genomeDirs.each { genomeDir = it }
+        ["unpack_genome", ["genomeDir": genomeDir, "original_ids": ids]]
+      }
+      | untar.run(
+        runIf: {id, state ->
+          def genomeDirStr = state.genomeDir.toString()
+          genomeDirStr.endsWith(".tar.gz") || \
+          genomeDirStr.endsWith(".tar") || \
+          genomeDirStr.endsWith(".tgz") ? true : false
+        },
+        fromState: [
+          "input": "genomeDir",
+        ],
+        toState: { id, result, state ->
+          state + ["genomeDir": result.output]
+        },
+      )
+      | flatMap{ id, state ->
+        state.original_ids.collect{[it, state.genomeDir]}
+      }
+
+    output_ch = input_ch.join(untar_ch)
+      | niceView()
+      | map {id, state, genomeDir ->
+        def newState = state + ["genomeDir": genomeDir]
+        [id, newState]
+      }
       | well_demultiplex.run(
         fromState: { id, state ->
           [
