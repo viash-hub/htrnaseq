@@ -19,13 +19,20 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-      - name: --fastq_output
+      - name: --fastq_output_r1
         description: List of demultiplexed fastq files
         type: file
         direction: output
         multiple: true
         required: true
-        default: "fastq/*_001.fastq"
+        default: "fastq/*_R1_001.fastq"
+      - name: --fastq_output_r2
+        description: List of demultiplexed fastq files
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: "fastq/*_R2_001.fastq"
       - name: --star_output
         description: Output from mapping with STAR
         type: file
@@ -46,13 +53,7 @@ resources:
 dependencies:
   - name: workflows/well_demultiplex
     repository: local
-  - name: parallel_map
-    repository: local
-  - name: workflows/utils/splitWells
-    repository: local
-  - name: workflows/utils/groupLanes
-    repository: local
-  - name: workflows/utils/groupPairs
+  - name: workflows/parallel_map_wf
     repository: local
   - name: workflows/utils/groupWells
     repository: local

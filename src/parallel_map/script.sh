@@ -202,6 +202,11 @@ function _run() {
   else
     echo "Processed $nr_output_reads reads for barcode $barcode".
   fi
+
+  printf "Making sure that the output has the proper permissions."
+  find "$dir" -type d -exec chmod o+x {} \;
+  chmod -R o+r "$dir"
+  echo "Done"
 }
 
 # Export the function - requires bash

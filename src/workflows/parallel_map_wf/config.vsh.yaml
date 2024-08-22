@@ -1,0 +1,58 @@
+name: parallel_map_wf
+namespace: workflows
+description: |
+  Map RNA sequencing data, provided as fastq files (paired-end) to a reference genome using STAR Solo.
+  Input data must have been demultiplexed beforehand, meaning that a single fastq pair provides data for
+  one barcode (one well). Multiple wells can be mapped in parallel by providing multiple events to the 
+  workflow. Output is provided as mapped output per pool, i.e. one output is provided per pool.xx
+argument_groups:
+  - name: "Arguments"
+    arguments:
+      - name: "--input_r1"
+        type: file
+        direction: input
+        required: true
+      - name: "--input_r2"
+        type: file
+        direction: input
+        required: true
+      - name: "--barcode"
+        type: string
+        required: true
+      - name: "--pool"
+        type: string
+        required: true
+      - name: "--genomeDir"
+        type: file
+        required: true
+        direction: input
+      - name: "--output"
+        type: file
+        direction: output
+        multiple: true
+        required: true
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+# test_resources:
+#   - type: nextflow_script
+#     path: test.nf
+#     entrypoint: test_wf
+
+dependencies:
+  - name: parallel_map
+    repository: local
+  - name: workflows/utils/groupWells
+    repository: local
+repositories:
+  - name: local
+    type: local
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native
+

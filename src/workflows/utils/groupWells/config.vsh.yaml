@@ -9,7 +9,12 @@ argument_groups:
         type: string
         description: Barcode identifier for a well
         required: true
-        example: input.fastq.gz
+        example: barcode_1
+      - name: "--pool"
+        type: string
+        description: Identifier of the pool
+        required: true
+        example: pool_1
       - name: "--input_r1"
         type: file
         description: Path to the input for R1
