@@ -17,13 +17,33 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-      - name: --output
+      - name: --output_r1
         description: List of demultiplexed fastq files
         type: file
         direction: output
         multiple: true
         required: true
-        default: "fastq/*_001.fastq"
+        default: "fastq/*_R1_001.fastq"
+      - name: "--output_r2"
+        description: List of demultiplexed fastq files
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: "fastq/*_R2_001.fastq" 
+      - name: "--pool"
+        type: string
+        description: The original pool / sample name
+        direction: output
+      - name: "--barcode"
+        type: string
+        direction: output
+      - name: "--lane"
+        type: string
+        direction: output
+      - name: "--pair_end"
+        type: string
+        direction: output
 resources:
   - type: nextflow_script
     path: main.nf
