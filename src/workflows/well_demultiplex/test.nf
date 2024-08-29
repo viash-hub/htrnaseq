@@ -31,16 +31,11 @@ workflow test_wf {
     )
     | view { output ->
       assert output.size() == 2 : "outputs should contain two elements; [id, file]"
-      assert output[1].output.size == 6 : "6 fastq files should be generated: pairs for 2 wells and 1 unkonwn"
       "Output: $output"
-    }
-    | view { id, state ->
-      assert state.output.size == 6 : "6 fastq files should be generated: pairs for 2 wells and 1 unkonwn"
-      "State: $state"
     }
     | toSortedList()
     | view { output ->
-      assert output.size() == 2 : "2 samples in should result in 2 results out"
+      assert output.size() == 6 : "2 samples, each with 2 barcodes and 1 unkown"
     }
 }
 
