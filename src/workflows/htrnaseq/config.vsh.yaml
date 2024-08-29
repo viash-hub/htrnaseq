@@ -40,6 +40,12 @@ argument_groups:
         multiple: true
         required: true
         default: $id/star/*
+      - name: "--nrReadsNrGenesPerChrom"
+        type: file
+        direction: output
+        multiple: true
+        required: true
+        default: "nrReadsNrGenesPerChrom_$id.txt"
 resources:
   - type: nextflow_script
     path: main.nf
@@ -51,6 +57,10 @@ resources:
 #     entrypoint: test_wf
 
 dependencies:
+  - name: stats/generate_pool_statistics
+    repository: local
+  - name: stats/generate_well_statistics
+    repository: local
   - name: workflows/well_demultiplex
     repository: local
   - name: workflows/parallel_map_wf
