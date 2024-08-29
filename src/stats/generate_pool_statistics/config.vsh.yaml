@@ -1,0 +1,51 @@
+name: generate_pool_statistics
+namespace: "stats"
+argument_groups:
+  - name: "Arguments"
+    arguments:
+      - name: "--nrReadsNrGenesPerChrom"
+        type: file
+        multiple: true
+        description: |
+          Path to an output file that contains a .tsv formatted table describing
+          per chromosome the number of reads that were mapped to that chromosome (NumberOfReads
+          column) and the number of genes on that chromosome that had at least one
+          read mapped to it (NumberOfGenes).
+        direction: input
+        default: [processedBamFile_well1.tsv, processedBamfile_well2.tsv]
+      - name: "--nrReadsNrGenesPerChromPool"
+        direction: output
+        type: file
+        multiple: false
+        description: |
+          Pivot table in tsv format of the combined input nrReadsNrGenesPerChrom files. Describes
+          per chromosome (as columns) the number of reads, as well as the total number 
+          of reads per cell barcode and the percentage of nuclear, ERCC and mitochondrial
+          reads.
+        example: "nrReadsNrGenesPerChrom.txt"
+
+resources:
+- type: python_script
+  path: script.py
+
+test_resources:
+  - type: python_script
+    path: test.py
+
+engines:
+  - type: docker
+    image: python:3.11-slim
+    setup:
+      - type: apt
+        packages:
+          - procps
+      - type: python
+        packages:
+          - pandas
+    test_setup:
+      - type: python
+        packages:
+          - viashpy
+runners:
+  - type: executable
+  - type: nextflow

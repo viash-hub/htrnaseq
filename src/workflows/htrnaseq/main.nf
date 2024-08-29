@@ -68,12 +68,47 @@ workflow run_wf {
           state + ["star_output": result.output]
         },
       )
+      | generate_well_statistics.run(
+        fromState: { id, state ->
+          [
+            "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
+            "barcode": state.barcode,
+          ]
+        },
+        toState: [
+          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
+          "nrReadsNrUMIsPerCB": "nrReadsNrUMIsPerCB",
+        ]
+      )
+      | map {id, state -> 
+        [state.pool, id, state]
+      }
+      | groupTuple(by: 0, sort: "hash")
+      | map {id, well_ids, states ->
+        def collected_state = [
+          "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
+          "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
+          "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
+        ]
+        def newState = states[0] + collected_state
+        [id, newState]
+      }
+      | generate_pool_statistics.run(
+        fromState: [
+          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
+        ],
+        toState: {id, result, state -> 
+          state + ["nrReadsNrGenesPerChrom": result.nrReadsNrGenesPerChromPool]
+        }
+      )
       | niceView()
-      | setState(["star_output", "fastq_output_r1", "fastq_output_r2", "star_output"])
-      
-      //| niceView()
-      //
-      //| setState( [ "output": "out" ] )
+      | setState([
+        "star_output", 
+        "fastq_output_r1",
+        "fastq_output_r2",
+        "star_output",
+        "nrReadsNrGenesPerChrom",
+      ])
 
   emit:
     output_ch

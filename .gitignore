@@ -5,3 +5,7 @@ testData
 .nextflow
 .nextflow.log*
 work
+
+# Python related files
+*__pycache__*
+.venv

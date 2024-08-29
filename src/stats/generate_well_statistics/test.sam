@@ -1,0 +1,7 @@
+@HD	VN:1.4	SO:coordinate
+@SQ	SN:1	LN:200
+@SQ	SN:2	LN:50
+test_1	16	1	22	255	1M	*	0	0	C	I	NH:i:1	HI:i:1	nM:i:0	AS:i:47	CR:Z:ACA	UR:Z:CGG	GX:Z:gene1	GN:Z:gene1	CB:Z:ACA	UB:Z:CGG
+test_2	16	1	22	255	1M	*	0	0	G	!	NH:i:1	HI:i:1	nM:i:0	AS:i:47	CR:Z:ACA	UR:Z:CGG	GX:Z:gene1	GN:Z:gene1	CB:Z:ACA	UB:Z:CGG
+test_3	0	2	40	255	1M	*	0	0	T	!	NH:i:1	HI:i:1	nM:i:0	AS:i:47	CR:Z:GGG	UR:Z:GTT	GX:Z:gene2	GN:Z:gene2	CB:Z:GGG	UB:Z:GTT
+test_4	0	2	60	255	1M	*	0	0	C	!	NH:i:1	HI:i:1	nM:i:0	AS:i:47	CR:Z:GGG	UR:Z:GTC	GX:Z:gene3	GN:Z:gene3	CB:Z:GGG	UB:Z:GTC
