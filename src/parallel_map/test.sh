@@ -1,7 +1,7 @@
 set -eo pipefail
 
 ## VIASH START
-meta_executable="target/executable/parallel_map/parallel_map"
+meta_executable=$(realpath "target/executable/parallel_map/parallel_map")
 ## VIASH END
 
 # Some helper functions
