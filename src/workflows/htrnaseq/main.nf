@@ -97,10 +97,11 @@ workflow run_wf {
         fromState: [
           "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
         ],
-        toState: {id, result, state -> [
-          state + ["nrReadsNrGenesPerChrom": result.nrReadsNrGenesPerChrom], 
-        ]},
+        toState: {id, result, state -> 
+          state + ["nrReadsNrGenesPerChrom": result.nrReadsNrGenesPerChromPool]
+        }
       )
+      | niceView()
       | setState([
         "star_output", 
         "fastq_output_r1",

@@ -43,9 +43,8 @@ argument_groups:
       - name: "--nrReadsNrGenesPerChrom"
         type: file
         direction: output
-        multiple: true
         required: true
-        default: "nrReadsNrGenesPerChrom_$id.txt"
+        default: "nrReadsNrGenesPerChrom.txt"
 resources:
   - type: nextflow_script
     path: main.nf
