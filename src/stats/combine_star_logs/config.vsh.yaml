@@ -1,0 +1,65 @@
+name: combine_star_logs
+namespace: "stats"
+argument_groups:
+  - name: "Arguments"
+    arguments:
+      - name: "--barcodes"
+        type: string
+        multiple: true
+        description: |
+          Barcodes responding to the respective log files.
+      - name: "--star_logs"
+        type: file
+        multiple: true
+        description: |
+          Paths to the STAR log files (most frequently called Log.final.out)
+        direction: input
+        example: "Log.final.out"
+      - name: "--gene_summary_logs"
+        direction: input
+        type: file
+        multiple: true
+        description: |
+          Paths to the Summary.csv files from the STAR Solo output. Can be found in
+          the 'Solo.out/Gene' folder relative to the root of the STAR output directory. 
+        example: "Summary.txt"
+      - name: "--reads_per_gene_logs"
+        direction: input
+        type: file
+        multiple: true
+        description: |
+          Paths to the 'ReadsPerGene.out.tab' files as output by STAR.
+      - name: "--output"
+        type: file
+        direction: output
+        default: "starLogs.txt"
+        description: |
+          Tab-delimited file describing for each barcode (as the rows), the metrics (as columns)
+          gathered from the different input files. 
+      
+resources:
+- type: python_script
+  path: script.py
+
+test_resources:
+  - type: python_script
+    path: test.py
+  - path: test_data
+
+engines:
+  - type: docker
+    image: python:3.12-slim
+    setup:
+      - type: apt
+        packages:
+          - procps
+      - type: python
+        packages:
+          - pandas
+    test_setup:
+      - type: python
+        packages:
+          - viashpy
+runners:
+  - type: executable
+  - type: nextflow
