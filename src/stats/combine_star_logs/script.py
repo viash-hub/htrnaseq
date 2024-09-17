@@ -1,8 +1,12 @@
 import logging
 import pandas as pd
 import numpy as np
+from itertools import batched, starmap
 
 ### VIASH START
+meta = {
+    "name": "combine_star_logs",
+}
 par = {
     "star_logs": ["testData/STAR/ACGCCTTCGT/Log.final.out",
                   "testData/STAR/GTCTCGAGTG/Log.final.out"],
@@ -28,27 +32,39 @@ def handle_percentages(column_value):
         return np.float64(column_value.strip('%'))
     return column_value
 
-def star_log_to_dataframe(log_path):
-    return pd.read_table(log_path, sep=r"\|\t+", converters={"Value": handle_percentages},
-                         engine="python", header=None, skip_blank_lines=True,
-                         skipinitialspace=True, names=["Category", "Value"], index_col=0,
-                         skiprows=[0, 1, 2])
+def star_log_to_dataframe(barcode: str, log_path) -> pd.DataFrame:
+    logger.info("Reading STAR log %s for barcode '%s'", log_path, barcode)
+    result = pd.read_table(log_path, sep=r"\|\t+", converters={"Value": handle_percentages},
+                           engine="python", header=None, skip_blank_lines=True,
+                           skipinitialspace=True, names=["Category", "Value"], index_col=0,
+                           skiprows=[0, 1, 2])
+    logger.info("Read %d row(s) and %d column(s) from STAR logs at %s", 
+                *result.shape, log_path)
+    return result
 
-def summary_to_dataframe(summary_path):
-    return pd.read_table(summary_path, sep=",",
-                         header=None, names=["Category", "Value"],
-                         index_col=0)
+
+def summary_to_dataframe(barcode: str, summary_path) -> pd.DataFrame:
+    logger.info("Reading summary log %s for barcode %s", summary_path, barcode)
+    result = pd.read_table(summary_path, sep=",",
+                           header=None, names=["Category", "Value"],
+                           index_col=0)
+    logger.info("Read %d row(s) and %d column(s) from summary file at %s",
+                *result.shape, summary_path)
+    return result
 
 
-def reads_per_gene_to_dataframe(read_per_gene_path):
+def reads_per_gene_to_dataframe(barcode, read_per_gene_path) -> pd.DataFrame:
+    logger.info("Reading reads per gene file %s for barcode %s", read_per_gene_path, barcode)
     result = pd.read_table(read_per_gene_path, skiprows=[0, 1, 2, 3], header=None, sep="\t",
                            index_col=0, names=["geneID", "Unstranded", "posStrand", "negStrand"])
     result = result[["Unstranded"]] # Do not use .loc here because we need a DataFrame, not a Series
     df = pd.DataFrame({"Value": result.sum()})
     df.index.name = "Category"
+    logger.info("Read %d row(s) and %d column(s) from reads per gene file at %s",
+                *df.shape, read_per_gene_path)
     return df
 
-def star_log_remove_unwanted_entries_and_adjust_format(df: pd.DataFrame) -> pd.DataFrame:
+def star_log_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame) -> pd.DataFrame:
     """
     For a single star log (Log.final.out) in dataframe format, filter out the
     entries that are not needed and format the labels for some metrics:
@@ -59,12 +75,16 @@ def star_log_remove_unwanted_entries_and_adjust_format(df: pd.DataFrame) -> pd.D
           Mapping speed, Average, Number of splices, per base, chimeric reads, average
     
     The dataframe provided as input must have an index with 1 level with the metric names.
-    """ 
+    """
     # Remove index values ending with ':' (rows like 'MULTI-MAPPING READS:','UNIQUE READS:')
+    logger.info("Filtering STAR logs for barcode %s. Starting with %d row(s) and %d column(s)", barcode, *df.shape)
     to_keep = ~df.index.to_series().str.endswith(":")
     # Remove index values where the values contain any of these substrings
     regex_columns_to_remove = "Mapping speed|Average|Number of splices|per base|chimeric reads|average"
     to_keep = to_keep & ~df.index.to_series().str.contains(regex_columns_to_remove, regex=True)
+    logger.info("Removed the following log entries for barcode '%s':\n\t%s",
+                barcode,
+                "\n\t".join(to_keep[~to_keep].index.to_list()))
     result = df.loc[to_keep]
 
     result.index = result.index.str.replace("%", "pect")\
@@ -73,10 +93,15 @@ def star_log_remove_unwanted_entries_and_adjust_format(df: pd.DataFrame) -> pd.D
                     .str.replace(" ", "")
     result = result.rename({"UniquelyMappedReadsNumber": "NumberOfMappedReads", 
                             "UniquelyMappedReadsPect": "pctMappedReads"}, errors="raise")
+    logger.info("Done filtering STAR logs for barcode %s. Result has %d row(s) and %d column(s). "
+                "Found entries:\n\t%s", 
+                barcode, *result.shape, "\n\t".join(result.index.to_list()))
     return result
 
 
-def summary_remove_unwanted_entries_and_adjust_format(df: pd.DataFrame) -> pd.DataFrame:
+def summary_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame) -> pd.DataFrame:
+    logger.info("Filtering and formatting summary logs for barcode %s. "
+                "Starting with %d row(s) and %d column(s)", barcode, *df.shape)
     columns_to_remove = (
         "Number of Reads",
         "Q30 Bases in RNA read",
@@ -96,14 +121,21 @@ def summary_remove_unwanted_entries_and_adjust_format(df: pd.DataFrame) -> pd.Da
     )
 
     to_keep = ~df.index.isin(columns_to_remove)
+    logger.info("Removed the following summary entries for barcode '%s':\n\t%s",
+                barcode,
+                "\n\t".join(df.loc[~to_keep].index.to_list()))
     result = df.loc[to_keep]
-    result.index = result.index.str.replace(r"(?:^|\s).", lambda m:m.group(0).upper(), regex=True).str.replace(" ", "")
+    result.index = result.index.str.replace(r"(?:^|\s).", lambda m:m.group(0).upper(),
+                                            regex=True).str.replace(" ", "")
     result = result.rename({"UMIsInCells": "NumberOfUMIs", 
                             "TotalGenesDetected": "NumberOfGenes"}, errors="raise")
+    logger.info("Done filtering summary logs for barcode %s. Result has %d row(s) and %d column(s). "
+                "Found entries:\n\t%s",
+                barcode, *result.shape, "\n\t".join(result.index.to_list()))
     return result
 
 
-def join_dfs(df_list, barcodes):
+def join_dfs(df_list, barcodes) -> pd.DataFrame:
     # Combine the dataframes together and add the barcodes as a level to the dataframe
     # in order to make a 2-level index (first level the barcodes and second level the metrics).
     result = pd.concat(dict(zip(barcodes, df_list)), names=["WellBC"])
@@ -114,31 +146,45 @@ def join_dfs(df_list, barcodes):
 
 def main(par):
     logger.info("Component started.")
+    # Provide an overview of the parameters in the logs
     parameters_str = [f'\t{param}: {param_val}\n' for param, param_val in par.items()]
     logger.info("Parameters:\n%s", "".join(parameters_str).rstrip())
     star_logs, gene_summary_logs, reads_per_gene_logs, barcodes  = par["star_logs"], \
         par["gene_summary_logs"], par["reads_per_gene_logs"], par["barcodes"]
+    number_of_inputs = tuple(len(i) for i in (star_logs, gene_summary_logs,
+                                              reads_per_gene_logs, barcodes))
+    if len(set(number_of_inputs)) != 1:
+        raise ValueError("Expected the same number of inputs for 'star_logs' (%d), "
+                         "'gene_summary_logs' (%d), 'reads_per_gene_logs' (%d) "
+                         "and 'barcodes' (%d)." % number_of_inputs)
     
-    if len({len(i) for i in (star_logs, gene_summary_logs, reads_per_gene_logs,
-                             reads_per_gene_logs, barcodes)}) != 1:
-        raise ValueError("Expected the same number of inputs for 'star_logs', "
-                         "'gene_summary_logs' and 'reads_per_gene_logs'")
-    
-    # TODO: put this in a loop
-    star_log_dfs = list(map(star_log_to_dataframe, star_logs))
-    star_log_dfs = list(map(star_log_remove_unwanted_entries_and_adjust_format, star_log_dfs))
-    star_log_df = join_dfs(star_log_dfs, barcodes)
+    logs_to_process = [
+        (star_log_to_dataframe, star_log_remove_unwanted_entries_and_adjust_format, star_logs),
+        (summary_to_dataframe, summary_remove_unwanted_entries_and_adjust_format, gene_summary_logs),
+        (reads_per_gene_to_dataframe, None, reads_per_gene_logs),
+    ]
+    logger.info("Formatting the contents of the log files.") 
+    all_logs_data = []
+    for df_generator, formatter, data in logs_to_process:
+        data_as_df = list(starmap(df_generator, zip(barcodes, data)))
+        data_formatted = data_as_df
+        if formatter:
+            data_formatted = list(starmap(formatter, zip(barcodes, data_as_df)))
+        data_joined = join_dfs(data_formatted, barcodes)
+        all_logs_data.append(data_joined)
 
-    summary_dfs = list(map(summary_to_dataframe, gene_summary_logs))
-    summary_dfs = list(map(summary_remove_unwanted_entries_and_adjust_format, summary_dfs))
-    summary_df = join_dfs(summary_dfs, barcodes)
-
-    gene_tab_dfs = list(map(reads_per_gene_to_dataframe, reads_per_gene_logs))
-    gene_tab_df = join_dfs(gene_tab_dfs, barcodes)
-
-    all_stats = pd.concat([star_log_df, summary_df, gene_tab_df], axis=1)
+    logger.info("Joining entries across the different logs together.") 
+    all_stats = pd.concat(all_logs_data, axis=1)
+    logger.info("Log statistics were gathered for the following barcodes: %s", 
+                ", ".join(all_stats.index.to_list()))
+    # batched() is used here to print a limited amount of columnns at a time
+    # to make sure that they are all displayed (pandas might limit the view for readability)
+    logger.info("Summary of final output:\n%s\n",
+                "\n".join(repr(all_stats.loc[:,columns].describe())
+                          for columns in batched(all_stats.columns, 3))) 
+    logger.info("Writing output to %s", par["output"])
     all_stats.reset_index("WellBC").to_csv(par["output"], sep="\t", header=True, index=False)
-
+    logger.info("Finished %s.", meta["name"])
 
 if __name__ == "__main__":
     main(par)
