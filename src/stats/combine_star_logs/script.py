@@ -59,6 +59,7 @@ def reads_per_gene_to_dataframe(barcode, read_per_gene_path) -> pd.DataFrame:
                            index_col=0, names=["geneID", "Unstranded", "posStrand", "negStrand"])
     result = result[["Unstranded"]] # Do not use .loc here because we need a DataFrame, not a Series
     df = pd.DataFrame({"Value": result.sum()})
+    df = df.rename({"Unstranded": "NumberOfCountedReads"}, errors="raise")
     df.index.name = "Category"
     logger.info("Read %d row(s) and %d column(s) from reads per gene file at %s",
                 *df.shape, read_per_gene_path)
@@ -87,12 +88,16 @@ def star_log_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame
                 "\n\t".join(to_keep[~to_keep].index.to_list()))
     result = df.loc[to_keep]
 
+    # Replace % by pect, remove columns, use camel case and remove spaces
+    # You might be tempted to use .title() to make everything uppercase,
+    # but characters which are already uppercase should stay that way.
+    # (example: NumberOfUMIs and not NumberOfUmis)
     result.index = result.index.str.replace("%", "pect")\
                     .str.replace(":", "")\
                     .str.replace(r"(?:^|\s).", lambda m:m.group(0).upper(), regex=True)\
                     .str.replace(" ", "")
     result = result.rename({"UniquelyMappedReadsNumber": "NumberOfMappedReads", 
-                            "UniquelyMappedReadsPect": "pctMappedReads"}, errors="raise")
+                            "UniquelyMappedReadsPect": "PctMappedReads"}, errors="raise")
     logger.info("Done filtering STAR logs for barcode %s. Result has %d row(s) and %d column(s). "
                 "Found entries:\n\t%s", 
                 barcode, *result.shape, "\n\t".join(result.index.to_list()))
@@ -127,8 +132,15 @@ def summary_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame)
     result = df.loc[to_keep]
     result.index = result.index.str.replace(r"(?:^|\s).", lambda m:m.group(0).upper(),
                                             regex=True).str.replace(" ", "")
-    result = result.rename({"UMIsInCells": "NumberOfUMIs", 
-                            "TotalGenesDetected": "NumberOfGenes"}, errors="raise")
+    to_rename = {"UMIsInCells": "NumberOfUMIs", 
+                 "TotalGenesDetected": "NumberOfGenes"}
+    try:
+        result = result.rename(to_rename, errors="raise")
+    except KeyError as e:
+        raise KeyError(f"Tried to rename log entries ({','.join(to_rename)}) in the summary "
+                       f"log for barcode {barcode}, but an entry was not found in the file. "
+                       "Make sure that you are using the correct version of STAR."
+                       f"Available entries: {", ".join(result.index.to_list())}") from e
     logger.info("Done filtering summary logs for barcode %s. Result has %d row(s) and %d column(s). "
                 "Found entries:\n\t%s",
                 barcode, *result.shape, "\n\t".join(result.index.to_list()))

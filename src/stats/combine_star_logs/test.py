@@ -85,7 +85,7 @@ def test_equal_number_of_argument(run_component,
     expected_dict = {
         'NumberOfInputReads': [96398.0, 10155.0], 
         'NumberOfMappedReads': [70824.0, 7179.0], 
-        'pctMappedReads': [73.47, 70.69], 
+        'PctMappedReads': [73.47, 70.69], 
         'NumberOfReadsMappedToMultipleLoci': [0.0, 0.0], 
         'PectOfReadsMappedToMultipleLoci': [0.0, 0.0], 
         'NumberOfReadsMappedToTooManyLoci': [22281.0, 2248.0],
@@ -101,12 +101,16 @@ def test_equal_number_of_argument(run_component,
         'EstimatedNumberOfCells': [1.0, 1.0], 
         'NumberOfUMIs': [50370.0, 4701.0], 
         'NumberOfGenes': [8767.0, 2397.0],
-        'Unstranded': [17, 15],
+        'NumberOfCountedReads': [17, 15],
     }
     expected = pd.DataFrame.from_dict(expected_dict)
     expected.index = pd.Index(["foo", "bar"], name="WellBC")
     assert output_path.is_file()
+
     contents = pd.read_csv(output_path, sep="\t", index_col=0)
+    assert set(("NumberOfInputReads", "SequencingSaturation",
+                "NumberOfGenes", "NumberOfUMIs", "NumberOfCountedReads",
+                "PctMappedReads")).issubset(set(contents.columns))
     pd.testing.assert_frame_equal(contents, expected)
 
 

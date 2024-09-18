@@ -45,6 +45,11 @@ argument_groups:
         direction: output
         required: true
         default: "nrReadsNrGenesPerChrom.txt"
+      - name: "--star_qc_metrics"
+        type: file
+        direction: output
+        required: true
+        default: "starLogs.txt"
 resources:
   - type: nextflow_script
     path: main.nf
@@ -56,6 +61,8 @@ resources:
 #     entrypoint: test_wf
 
 dependencies:
+  - name: stats/combine_star_logs
+    repository: local
   - name: stats/generate_pool_statistics
     repository: local
   - name: stats/generate_well_statistics

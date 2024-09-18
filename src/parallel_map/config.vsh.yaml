@@ -64,6 +64,7 @@ argument_groups:
 resources:
 - type: bash_script
   path: script.sh
+- path: STAR
 
 test_resources:
   - type: bash_script
@@ -76,26 +77,23 @@ engines:
       - type: apt
         packages:
           - procps
-          - gzip
-          - bzip2
-          - parallel
           - wget
+          - automake
+          - make
+          - gcc
+          - g++
           - zlib1g-dev
-          - unzip
-          - xxd
-          - file
+          - parallel
       - type: docker
+        build_args:
+          - STAR_V=2.7.6a
         env:
-          - STAR_VERSION "2.7.11b"
-          - STAR_SOURCE "https://github.com/alexdobin/STAR/releases/download/$STAR_VERSION/STAR_$STAR_VERSION.zip"
-          - STAR_TARGET "/tmp/star.zip"
-          - STAR_BINARY "STAR"
-        run: |
-          wget -O $STAR_TARGET $STAR_SOURCE && \
-            unzip $STAR_TARGET -d /tmp && \
-            mv /tmp/STAR_$STAR_VERSION/Linux_x86_64_static/STAR /usr/local/bin/$STAR_BINARY && \
-            chmod +x /usr/local/bin/$STAR_BINARY && \
-            rm $STAR_TARGET && rm -rf /tmp/STAR_$STAR_VERSION
+          - STAR_SOURCE="https://github.com/alexdobin/STAR/archive/refs/tags/$STAR_V.tar.gz"
+          - STAR_TARGET="/app/star-$STAR_V.tar.gz"
+          - STAR_INSTALL_DIR="/app/STAR-$STAR_V"
+          - STAR_BINARY=STAR
+        copy:
+          - STAR /usr/local/bin/$STAR_BINARY
 runners:
   - type: executable
   - type: nextflow

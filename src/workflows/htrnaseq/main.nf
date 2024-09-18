@@ -88,10 +88,12 @@ workflow run_wf {
         def collected_state = [
           "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
           "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
+          "barcodes": states.collect{it.barcode},
+          "star_output": states.collect{it.star_output},
           "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
+          "star_qc_metrics": states.collect{it.star_qc_metrics}[0]
         ]
-        def newState = states[0] + collected_state
-        [id, newState]
+        [id, collected_state]
       }
       | generate_pool_statistics.run(
         fromState: [
@@ -101,6 +103,26 @@ workflow run_wf {
           state + ["nrReadsNrGenesPerChrom": result.nrReadsNrGenesPerChromPool]
         }
       )
+      | map {id, state ->
+        def extraState = [
+            "star_logs": state.star_output.collect{it.resolve("Log.final.out")},
+            "summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
+            "reads_per_gene": state.star_output.collect{it.resolve("ReadsPerGene.out.tab")}
+        ]
+        return [id, state + extraState]
+      }
+      | combine_star_logs.run(
+        fromState: [
+          "star_logs": "star_logs",
+          "gene_summary_logs": "summary_logs",
+          "reads_per_gene_logs": "reads_per_gene",
+          "barcodes": "barcodes",
+          "output": "star_qc_metrics",
+        ],
+        toState: [
+          "star_qc_metrics": "output",
+        ]
+      )
       | niceView()
       | setState([
         "star_output", 
@@ -108,6 +130,7 @@ workflow run_wf {
         "fastq_output_r2",
         "star_output",
         "nrReadsNrGenesPerChrom",
+        "star_qc_metrics",
       ])
 
   emit:
