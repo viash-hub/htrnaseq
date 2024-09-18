@@ -1,11 +1,11 @@
 param_list:
   - input_r1: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R1_001.fastq"
     input_r2: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R2_001.fastq"
-    genomeDir: "/home/di/code/htrnaseq/genomes/gencode.v41.sparse"
+    genomeDir: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.star.sparse"
     barcodesFasta: "gs://viash-hub-test-data/htrnaseq/v1/2-wells.fasta"
     id: sample_one
   - input_r1: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730302/VH02001614_S8_R1_001.fastq"
     input_r2: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730302/VH02001614_S8_R2_001.fastq"
-    genomeDir: "/home/di/code/htrnaseq/genomes/gencode.v41.sparse"
+    genomeDir: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.star.sparse"
     barcodesFasta: "gs://viash-hub-test-data/htrnaseq/v1/2-wells.fasta"
     id: sample_two
