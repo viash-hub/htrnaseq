@@ -4,17 +4,26 @@ argument_groups:
   - name: Input arguments
     arguments:
       - name: --input_r1
-        description: R1
+        description: |
+          Forward reads in FASTQ format. Multiple files can be provided which will
+          be demultiplexed separately before joining the results for each individual well.
         type: file
         required: true
+        multiple: true
       - name: --input_r2
-        description: R2
+        description: |
+          Reverse reads in FASTQ format. Multiple files can be provided which will
+          be demultiplexed separately before joining the results for each individual well.
         type: file
         required: true
+        multiple: true
       - name: --barcodesFasta
         type: file
         required: true
       - name: --genomeDir
+        type: file
+        required: true
+      - name: --annotation
         type: file
         required: true
   - name: Output arguments
@@ -44,12 +53,17 @@ argument_groups:
         type: file
         direction: output
         required: true
-        default: "nrReadsNrGenesPerChrom.txt"
+        default: "nrReadsNrGenesPerChrom.$id.txt"
       - name: "--star_qc_metrics"
         type: file
         direction: output
         required: true
-        default: "starLogs.txt"
+        default: "starLogs.$id.txt"
+      - name: "--eset"
+        type: file
+        direction: output
+        required: true
+        default: eset.$id.rds
 resources:
   - type: nextflow_script
     path: main.nf
@@ -73,8 +87,12 @@ dependencies:
     repository: local
   - name: workflows/utils/groupWells
     repository: local
-  - name: concat_text
-    repository: cb
+  - name: eset/create_eset
+    repository: local
+  - name: eset/create_fdata
+    repository: local
+  - name: eset/create_pdata
+    repository: local
 repositories:
   - name: local
     type: local
@@ -82,10 +100,6 @@ repositories:
     type: vsh
     repo: biobox
     tag: v0.1.0
-  - name: cb
-    type: vsh
-    repo: craftbox
-    tag: concat_text
 
 runners:
   - type: nextflow

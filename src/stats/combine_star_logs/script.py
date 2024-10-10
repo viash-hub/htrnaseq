@@ -1,6 +1,5 @@
 import logging
 import pandas as pd
-import numpy as np
 from itertools import batched, starmap
 
 ### VIASH START
@@ -8,12 +7,12 @@ meta = {
     "name": "combine_star_logs",
 }
 par = {
-    "star_logs": ["testData/STAR/ACGCCTTCGT/Log.final.out",
-                  "testData/STAR/GTCTCGAGTG/Log.final.out"],
-    "gene_summary_logs": ["testData/STAR/ACGCCTTCGT/Solo.out/Gene/Summary.csv",
-                          "testData/STAR/GTCTCGAGTG/Solo.out/Gene/Summary.csv"], 
-    "reads_per_gene_logs": ["testData/STAR/ACGCCTTCGT/ReadsPerGene.out.tab",
-                            "testData/STAR/GTCTCGAGTG/ReadsPerGene.out.tab"],
+    "star_logs": ["src/stats/combine_star_logs/test_data/barcode_1/Log.final.out",
+                  "src/stats/combine_star_logs/test_data/barcode_2/Log.final.out"],
+    "gene_summary_logs": ["src/stats/combine_star_logs/test_data/barcode_1/summary.csv",
+                          "src/stats/combine_star_logs/test_data/barcode_2/summary.csv"], 
+    "reads_per_gene_logs": ["src/stats/combine_star_logs/test_data/barcode_1/ReadsPerGene.out.tab",
+                            "src/stats/combine_star_logs/test_data/barcode_2/ReadsPerGene.out.tab"],
     "output": "output.txt",
     "barcodes": ["ACGG", "TTTT"],
 }
@@ -29,7 +28,7 @@ logger.setLevel(logging.DEBUG)
 def handle_percentages(column_value):
     # TODO: handle this more gracefully
     if column_value:
-        return np.float64(column_value.strip('%'))
+        return column_value.strip('%')
     return column_value
 
 def star_log_to_dataframe(barcode: str, log_path) -> pd.DataFrame:
@@ -47,7 +46,7 @@ def summary_to_dataframe(barcode: str, summary_path) -> pd.DataFrame:
     logger.info("Reading summary log %s for barcode %s", summary_path, barcode)
     result = pd.read_table(summary_path, sep=",",
                            header=None, names=["Category", "Value"],
-                           index_col=0)
+                           index_col=0, dtype=pd.StringDtype())
     logger.info("Read %d row(s) and %d column(s) from summary file at %s",
                 *result.shape, summary_path)
     return result
@@ -56,6 +55,10 @@ def summary_to_dataframe(barcode: str, summary_path) -> pd.DataFrame:
 def reads_per_gene_to_dataframe(barcode, read_per_gene_path) -> pd.DataFrame:
     logger.info("Reading reads per gene file %s for barcode %s", read_per_gene_path, barcode)
     result = pd.read_table(read_per_gene_path, skiprows=[0, 1, 2, 3], header=None, sep="\t",
+                           dtype={"geneID": pd.StringDtype(),
+                                  "Unstranded": pd.Int64Dtype(),
+                                  "posStrand": pd.Int64Dtype(),
+                                  "negStrand": pd.Int64Dtype()},
                            index_col=0, names=["geneID", "Unstranded", "posStrand", "negStrand"])
     result = result[["Unstranded"]] # Do not use .loc here because we need a DataFrame, not a Series
     df = pd.DataFrame({"Value": result.sum()})
@@ -113,13 +116,9 @@ def summary_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame)
         "Reads Mapped to Genome: Unique",
         "Reads Mapped to Transcriptome: Unique Genes",
         "Reads in Cells Mapped to Unique Genes",
-        "Mean Reads per Cell",
         "Median UMI per Cell",
         "Median Genes per Cell",
-        "Q30 Bases in CB+UMI",
         "Reads Mapped to Genome: Unique+Multiple",
-        "Reads Mapped to Transcriptome: Unique+Multipe Genes",
-        "Fraction of Reads in Cells",
         "Median Reads per Cell",
         "Mean UMI per Cell",
         "Mean Genes per Cell",
@@ -189,13 +188,40 @@ def main(par):
     all_stats = pd.concat(all_logs_data, axis=1)
     logger.info("Log statistics were gathered for the following barcodes: %s", 
                 ", ".join(all_stats.index.to_list()))
+    dtypes = {
+        'NumberOfInputReads': pd.UInt64Dtype(),
+        'NumberOfMappedReads': pd.UInt64Dtype(),
+        'PctMappedReads': pd.Float64Dtype(),
+        'NumberOfReadsMappedToMultipleLoci': pd.UInt64Dtype(),
+        'PectOfReadsMappedToMultipleLoci':  pd.Float64Dtype(), 
+        'NumberOfReadsMappedToTooManyLoci': pd.UInt64Dtype(),
+        'PectOfReadsMappedToTooManyLoci':  pd.Float64Dtype(),
+        'NumberOfReadsUnmappedTooManyMismatches': pd.UInt64Dtype(),
+        'PectOfReadsUnmappedTooManyMismatches':  pd.Float64Dtype(),
+        'NumberOfReadsUnmappedTooShort': pd.UInt64Dtype(), 
+        'PectOfReadsUnmappedTooShort':  pd.Float64Dtype(),
+        'NumberOfReadsUnmappedOther': pd.UInt64Dtype(),
+        'PectOfReadsUnmappedOther': pd.Float64Dtype(),
+        'ReadsWithValidBarcodes': pd.Float64Dtype(),
+        'SequencingSaturation': pd.Float64Dtype(),
+        'Q30BasesInCB+UMI': pd.Float64Dtype(),
+        'ReadsMappedToTranscriptome:Unique+MultipeGenes': pd.Float64Dtype(),
+        'EstimatedNumberOfCells': pd.UInt64Dtype(),
+        'FractionOfReadsInCells': pd.Float64Dtype(),
+        'MeanReadsPerCell': pd.UInt64Dtype(),
+        'NumberOfUMIs': pd.UInt64Dtype(),
+        'NumberOfGenes': pd.UInt64Dtype(),
+        'NumberOfCountedReads': pd.UInt64Dtype(),
+    }
+    all_stats = all_stats.astype(dtypes) 
     # batched() is used here to print a limited amount of columnns at a time
     # to make sure that they are all displayed (pandas might limit the view for readability)
     logger.info("Summary of final output:\n%s\n",
                 "\n".join(repr(all_stats.loc[:,columns].describe())
                           for columns in batched(all_stats.columns, 3))) 
     logger.info("Writing output to %s", par["output"])
-    all_stats.reset_index("WellBC").to_csv(par["output"], sep="\t", header=True, index=False)
+    all_stats.reset_index("WellBC").to_csv(par["output"], sep="\t", header=True,
+                                           index=False, float_format='%g')
     logger.info("Finished %s.", meta["name"])
 
 if __name__ == "__main__":

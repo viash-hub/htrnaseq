@@ -3,6 +3,11 @@ description: |
   Map wells in batch, using STAR
   Spliced Transcripts Alignment to a Reference (C) Alexander Dobin
   https://github.com/alexdobin/STAR
+requirements:
+  commands:
+    - STAR
+    - file
+    - parallel
 argument_groups:
   - name: Input arguments
     arguments:
@@ -84,6 +89,7 @@ engines:
           - g++
           - zlib1g-dev
           - parallel
+          - file
       - type: docker
         build_args:
           - STAR_V=2.7.6a

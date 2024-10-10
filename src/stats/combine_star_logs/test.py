@@ -82,32 +82,38 @@ def test_equal_number_of_argument(run_component,
         "--gene_summary_logs", f"{barcode_1_summary};{barcode_2_summary}",
         "--output", output_path,
     ])
+    # We use strings here to make a comparison of the file contents without
+    # doing any inferences of the numerical data type (i.e. exact file contents).
     expected_dict = {
-        'NumberOfInputReads': [96398.0, 10155.0], 
-        'NumberOfMappedReads': [70824.0, 7179.0], 
-        'PctMappedReads': [73.47, 70.69], 
-        'NumberOfReadsMappedToMultipleLoci': [0.0, 0.0], 
-        'PectOfReadsMappedToMultipleLoci': [0.0, 0.0], 
-        'NumberOfReadsMappedToTooManyLoci': [22281.0, 2248.0],
-        'PectOfReadsMappedToTooManyLoci': [23.11, 22.14],
-        'NumberOfReadsUnmappedTooManyMismatches': [0.0, 0.0], 
-        'PectOfReadsUnmappedTooManyMismatches': [0.0, 0.0], 
-        'NumberOfReadsUnmappedTooShort': [2697.0, 553.0], 
-        'PectOfReadsUnmappedTooShort': [2.8, 5.45], 
-        'NumberOfReadsUnmappedOther': [596.0, 175.0], 
-        'PectOfReadsUnmappedOther': [0.62, 1.72], 
-        'ReadsWithValidBarcodes': [0.999782, 0.999803],
-        'SequencingSaturation': [0.0602963, 0.0539344], 
-        'EstimatedNumberOfCells': [1.0, 1.0], 
-        'NumberOfUMIs': [50370.0, 4701.0], 
-        'NumberOfGenes': [8767.0, 2397.0],
-        'NumberOfCountedReads': [17, 15],
+        'NumberOfInputReads': ["96398", "10155"], 
+        'NumberOfMappedReads': ["70824", "7179"], 
+        'PctMappedReads': ["73.47", "70.69"], 
+        'NumberOfReadsMappedToMultipleLoci': ["0", "0"], 
+        'PectOfReadsMappedToMultipleLoci': ["0", "0"], 
+        'NumberOfReadsMappedToTooManyLoci': ["22281", "2248"],
+        'PectOfReadsMappedToTooManyLoci': ["23.11", "22.14"],
+        'NumberOfReadsUnmappedTooManyMismatches': ["0", "0"], 
+        'PectOfReadsUnmappedTooManyMismatches': ["0", "0"], 
+        'NumberOfReadsUnmappedTooShort': ["2697", "553"], 
+        'PectOfReadsUnmappedTooShort': ["2.8", "5.45"], 
+        'NumberOfReadsUnmappedOther': ["596", "175"], 
+        'PectOfReadsUnmappedOther': ["0.62", "1.72"], 
+        'ReadsWithValidBarcodes': ["0.999782", "0.999803"],
+        'SequencingSaturation': ["0.0602963", "0.0539344"], 
+        'Q30BasesInCB+UMI': ["0.980096", "0.984461"],
+        'ReadsMappedToTranscriptome:Unique+MultipeGenes': ["0.60411", "0.530871"],
+        'EstimatedNumberOfCells': ["1", "1"],
+        'FractionOfReadsInCells': ["1", "1"],
+        'MeanReadsPerCell': ["53602", "4969"],
+        'NumberOfUMIs': ["50370", "4701"], 
+        'NumberOfGenes': ["8767", "2397"],
+        'NumberOfCountedReads': ["17", "15"],
     }
-    expected = pd.DataFrame.from_dict(expected_dict)
-    expected.index = pd.Index(["foo", "bar"], name="WellBC")
+    expected = pd.DataFrame.from_dict(expected_dict, dtype=pd.StringDtype())
+    expected.index = pd.Index(["foo", "bar"], name="WellBC", dtype=pd.StringDtype())
     assert output_path.is_file()
 
-    contents = pd.read_csv(output_path, sep="\t", index_col=0)
+    contents = pd.read_csv(output_path, sep="\t", index_col=0, dtype=pd.StringDtype())
     assert set(("NumberOfInputReads", "SequencingSaturation",
                 "NumberOfGenes", "NumberOfUMIs", "NumberOfCountedReads",
                 "PctMappedReads")).issubset(set(contents.columns))
