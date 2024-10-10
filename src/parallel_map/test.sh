@@ -148,7 +148,7 @@ done
 
 echo ">> Check contents of output"
 echo ">>> Sample 1"
-assert_file_contains "$sample1_out/Solo.out/Barcodes.stats" "yesWLmatchExact              2"
+assert_file_contains "$sample1_out/Solo.out/Barcodes.stats" "nExactMatch              2"
 assert_file_contains "$sample1_out/Log.final.out" "Uniquely mapped reads number |	2"
 assert_file_contains "$sample1_out/Log.final.out" "Number of input reads |	2"
 
@@ -169,7 +169,7 @@ cat << EOF | cmp -s "$sample1_out/Solo.out/Gene/filtered/matrix.mtx" || { echo "
 EOF
 
 echo ">>> Sample 2"
-assert_file_contains "$sample2_out/Solo.out/Barcodes.stats" "yesWLmatchExact              2"
+assert_file_contains "$sample2_out/Solo.out/Barcodes.stats" "nExactMatch              2"
 assert_file_contains "$sample2_out/Log.final.out" "Uniquely mapped reads number |	2"
 assert_file_contains "$sample2_out/Log.final.out" "Number of input reads |	2"
 
@@ -241,7 +241,7 @@ done
 
 echo ">> Check contents of output"
 echo ">>> Sample 1"
-assert_file_contains "$sample1_out/Solo.out/Barcodes.stats" "yesWLmatchExact              2"
+assert_file_contains "$sample1_out/Solo.out/Barcodes.stats" "nExactMatch              2"
 assert_file_contains "$sample1_out/Log.final.out" "Uniquely mapped reads number |	2"
 assert_file_contains "$sample1_out/Log.final.out" "Number of input reads |	2"
 
@@ -262,7 +262,7 @@ cat << EOF | cmp -s "$sample1_out/Solo.out/Gene/filtered/matrix.mtx" || { echo "
 EOF
 
 echo ">>> Sample 2"
-assert_file_contains "$sample2_out/Solo.out/Barcodes.stats" "yesWLmatchExact              2"
+assert_file_contains "$sample2_out/Solo.out/Barcodes.stats" "nExactMatch              2"
 assert_file_contains "$sample2_out/Log.final.out" "Uniquely mapped reads number |	2"
 assert_file_contains "$sample2_out/Log.final.out" "Number of input reads |	2"
 

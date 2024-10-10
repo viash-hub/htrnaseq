@@ -70,6 +70,7 @@ def simple_input_file_two(random_tsv_path, request):
         open_file.write(contents)
     return output_file
 
+
 @pytest.mark.parametrize("simple_input_file_one,simple_input_file_two,expected", [("chr", "chr", "chr"), ("", "", "")], 
                          indirect=["simple_input_file_one", "simple_input_file_two"])
 def test_generate_pool_statistics_simple(run_component, simple_input_file_one,
@@ -82,15 +83,89 @@ def test_generate_pool_statistics_simple(run_component, simple_input_file_one,
         "--nrReadsNrGenesPerChromPool", output_path
     ])
     mito_name = f"{expected}M{'T' if not expected else ''}"
-    expected_output = StringIO(dedent(
-    f"""\
-    WellBC	ERCC-1	ERCC-2	ERCC-3	{expected}1	{expected}2	{expected}3	{expected}5	{mito_name}	{expected}X	{expected}Y	SumReads	pctMT	pctERCC	pctChrom	NumberOfGenes
-    AGG	1	1	0	2	3	4	0	4	2	0	17	23.53	11.76	52.94	12
-    CCC	0	1	1	4	2	3	4	0	2	2	19	0.0	10.53	68.42	15
-    """))
+    expected_dict = {
+        "WellBC": ["AGG", "CCC"],
+        "ERCC-1": ["1", "0"],
+        "ERCC-2": ["1", "1"],
+        "ERCC-3": ["0", "1"],
+        f"{expected}1": ["2", "4"],
+        f"{expected}2": ["3", "2"],
+        f"{expected}3": ["4", "3"],
+        f"{expected}5": ["0", "4"],
+        f"{mito_name}": ["4", "0"],
+        f"{expected}X": ["2", "2"],
+        f"{expected}Y": ["0", "2"],
+        "SumReads": ["17", "19"],
+        "pctMT": ["23.53", "0"],
+        "pctERCC": ["11.76", "10.53"],
+        "pctChrom": ["52.94", "68.42"],
+        "NumberOfGenes": ["12", "15"],
+        "NumberOfMTReads": ["4", "0"],
+        "NumberOfChromReads": ["9", "13"],
+        "NumberOfERCCReads": ["2", "2"],
+    }
+    expected_frame = pd.DataFrame.from_dict(expected_dict, dtype=pd.StringDtype())
     assert output_path.is_file()
-    contents = pd.read_csv(output_path, sep="\t")
-    expected_frame = pd.read_csv(expected_output, sep="\t")
+    contents = pd.read_csv(output_path, sep="\t", dtype=pd.StringDtype())
+    pd.testing.assert_frame_equal(contents, expected_frame, check_like=True)
+
+
+def test_only_numerical_chromosomes(run_component, random_tsv_path):
+    """
+    The chromosome column might be read as an integer instead of a string,
+    make sure that a numerical column only works.
+    """
+    output_path = random_tsv_path()
+    contents1 = dedent(
+    f"""\
+    WellBC	Chr	NumberOfReads	NumberOfGenes
+    CCC	2	2	1
+    CCC	3	3	2
+    CCC	5	4	2
+    CCC	1	4	2
+    """)
+    input_file_1 = random_tsv_path()
+    with input_file_1.open("w") as open_file:
+        open_file.write(contents1)
+
+    contents2 = dedent(
+    f"""\
+    WellBC	Chr	NumberOfReads	NumberOfGenes
+    AGG	2	2	1
+    AGG	3	3	2
+    AGG	5	4	2
+    AGG	1	4	2
+    """)
+    input_file_2 = random_tsv_path()
+    with input_file_2.open("w") as open_file:
+        open_file.write(contents2)
+        output_path = random_tsv_path()
+    run_component([
+        "--nrReadsNrGenesPerChrom", input_file_1,
+        "--nrReadsNrGenesPerChrom", input_file_2,
+        "--nrReadsNrGenesPerChromPool", output_path
+    ])
+
+    expected_dict = {
+        "WellBC": ["AGG", "CCC"],
+        "1": ["4", "4"],
+        "2": ["2", "2"],
+        "3": ["3", "3"],
+        "5": ["4", "4"],
+        "pctChrom": ["100", "100"],
+        "pctMT": ["0", "0"],
+        "pctERCC": ["0", "0"],
+        "SumReads": ["13", "13"],
+        "NumberOfGenes": ["7", "7"],
+        "NumberOfERCCReads": ["0", "0"],
+        "NumberOfChromReads": ["13", "13"],
+        "NumberOfMTReads": ["0", "0"],
+    }
+    expected_frame = pd.DataFrame.from_dict(expected_dict,
+                                            dtype=pd.StringDtype())
+
+    assert output_path.is_file()
+    contents = pd.read_csv(output_path, sep="\t", dtype=pd.StringDtype())
     pd.testing.assert_frame_equal(contents, expected_frame, check_like=True)
 
 

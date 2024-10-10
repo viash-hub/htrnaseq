@@ -3,7 +3,7 @@ workflow run_wf {
     input_ch
 
   main:
-    output_ch = input_ch
+    mapping_ch = input_ch
       | well_demultiplex.run(
         fromState: { id, state ->
           [
@@ -22,36 +22,6 @@ workflow run_wf {
         },
         directives: [label: ["midmem", "midcpu"]]
       )
-
-      // TODO: Expand this into matching a whitelist/blacklist of barcodes
-      // ... and turn into separate component
-      | filter{ id, state -> state.barcode != "unknown" }
-      | concat_text.run(
-        key: "concat_txt_r1",
-        runIf: {id, state -> state.input_r1.size() > 1},
-        fromState: { id, state ->
-          [
-            input: state.input_r1,
-            gzip_output: true,
-          ]
-        },
-        toState: { id, result, state ->
-          state + [ input_r1: [ result.output ] ]
-        }
-      )
-      | concat_text.run(
-        key: "concat_text_r2",
-        runIf: {id, state -> state.input_r2.size() > 1},
-        fromState: { id, state ->
-          [
-            input: state.input_r2,
-            gzip_output: true
-          ]
-        },
-        toState: { id, result, state ->
-          state + [ input_r2: [ result.output ] ]
-        }
-      )
       | parallel_map_wf.run(
         fromState: {id, state ->
           def star_output = state.star_output[0]
@@ -65,7 +35,7 @@ workflow run_wf {
           ]
         },
         toState: {id, result, state -> 
-          state + ["star_output": result.output]
+          state + ["star_output": result.output,]
         },
       )
       | generate_well_statistics.run(
@@ -88,10 +58,15 @@ workflow run_wf {
         def collected_state = [
           "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
           "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
+          "annotation": states.collect{it.annotation}[0],
+          "barcodes": states.collect{it.barcode},
+          "star_output": states.collect{it.star_output},
           "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
+          "star_qc_metrics": states.collect{it.star_qc_metrics}[0],
+          "eset": states.collect{it.eset}[0],
+          "pool": states.collect{it.pool}[0],
         ]
-        def newState = states[0] + collected_state
-        [id, newState]
+        [id, collected_state]
       }
       | generate_pool_statistics.run(
         fromState: [
@@ -101,14 +76,71 @@ workflow run_wf {
           state + ["nrReadsNrGenesPerChrom": result.nrReadsNrGenesPerChromPool]
         }
       )
-      | niceView()
+      | map {id, state ->
+        def extraState = [
+            "star_logs": state.star_output.collect{it.resolve("Log.final.out")},
+            "summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
+            "reads_per_gene": state.star_output.collect{it.resolve("ReadsPerGene.out.tab")}
+        ]
+        return [id, state + extraState]
+      }
+      | combine_star_logs.run(
+        fromState: [
+          "star_logs": "star_logs",
+          "gene_summary_logs": "summary_logs",
+          "reads_per_gene_logs": "reads_per_gene",
+          "barcodes": "barcodes",
+          "output": "star_qc_metrics",
+        ],
+        toState: [
+          "star_qc_metrics": "output",
+        ]
+      )
+
+
+    f_data_ch = mapping_ch
+      | create_fdata.run(
+        fromState: ["gtf": "annotation"],
+        toState: ["f_data": "output"],
+      )
+
+    p_data_ch = mapping_ch
+      | create_pdata.run(
+        fromState: [
+          "star_stats_file": "star_qc_metrics",
+          "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChrom",
+        ],
+        toState: ["p_data": "output"],
+      )
+
+    output_ch = f_data_ch.join(p_data_ch, remainder: true)
+      | map {id, f_data_state, p_data_state ->
+        [id, f_data_state + ["p_data": p_data_state["p_data"]]]
+      }
+      | create_eset.run(
+        fromState: [
+          "pDataFile": "p_data",
+          "fDataFile": "f_data",
+          "mappingDir": "star_output",
+          "output": "eset",
+          "barcodes": "barcodes",
+          "poolName": "pool",
+        ],
+        toState: [
+          "eset": "output",
+        ]
+      )
       | setState([
         "star_output", 
         "fastq_output_r1",
         "fastq_output_r2",
         "star_output",
         "nrReadsNrGenesPerChrom",
+        "star_qc_metrics",
+        "eset",
       ])
+      | niceView()
+
 
   emit:
     output_ch
