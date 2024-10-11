@@ -9,4 +9,4 @@ param_list:
     genomeDir: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.star.sparse"
     barcodesFasta: "gs://viash-hub-test-data/htrnaseq/v1/2-wells.fasta"
     id: sample_two
-annotation: gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf
+annotation: gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf.gz
