@@ -6,11 +6,13 @@ argument_groups:
       - name: "--barcodes"
         type: string
         multiple: true
+        required: true
         description: |
           Barcodes responding to the respective log files.
       - name: "--star_logs"
         type: file
         multiple: true
+        required: true
         description: |
           Paths to the STAR log files (most frequently called Log.final.out)
         direction: input
@@ -19,6 +21,7 @@ argument_groups:
         direction: input
         type: file
         multiple: true
+        required: true
         description: |
           Paths to the Summary.csv files from the STAR Solo output. Can be found in
           the 'Solo.out/Gene' folder relative to the root of the STAR output directory. 
@@ -27,6 +30,7 @@ argument_groups:
         direction: input
         type: file
         multiple: true
+        required: true
         description: |
           Paths to the 'ReadsPerGene.out.tab' files as output by STAR.
       - name: "--output"
