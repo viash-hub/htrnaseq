@@ -3,7 +3,7 @@ import re
 
 ### VIASH START
 par = {
-    "nrReadsNrGenesPerChrom": ["test/nrReadsNrGenesPerChrom_2.txt", "test/nrReadsNrGenesPerChrom.txt"],
+    "nrReadsNrGenesPerChrom": ["src/stats/generate_pool_statistics/test1.tsv", "src/stats/generate_pool_statistics/test2.tsv"],
     "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChrom_pool.txt"
 }
 
@@ -16,9 +16,13 @@ if __name__ == "__main__":
     nr_reads_nr_genes_wells = []
     for nr_reads_nr_genes_file in par["nrReadsNrGenesPerChrom"]:
         nr_reads_nr_genes_wells.append(pd.read_csv(nr_reads_nr_genes_file, 
-                                                   header=0, delimiter="\t"))
-    nr_reads_nr_genes_pool = pd.concat(nr_reads_nr_genes_wells, ignore_index=True)
-    total_nr_reads_per_chromosome = nr_reads_nr_genes_pool.pivot_table(index="WellBC", columns="Chr", 
+                                                   header=0, delimiter="\t",
+                                                   dtype={"WellBC":	pd.StringDtype(),
+                                                          "Chr": pd.StringDtype(),
+                                                          "NumberOfReads": pd.UInt64Dtype(),
+                                                          "NumberOfGenes": pd.UInt64Dtype()}))
+    nr_reads_nr_genes_pool = pd.concat(nr_reads_nr_genes_wells, ignore_index=True,)
+    total_nr_reads_per_chromosome = nr_reads_nr_genes_pool.pivot_table(index="WellBC", columns="Chr",
                                                                        values=["NumberOfReads"], fill_value=0,
                                                                        aggfunc="sum").droplevel(0, axis=1)
     total_nr_reads_per_chromosome.columns.name = None
@@ -59,17 +63,23 @@ if __name__ == "__main__":
     total_chromosomal_reads = total_nr_reads_per_chromosome.loc[:,matching_chromosomes].sum(axis=1)
     percentage_chromosomal_reads = round(total_chromosomal_reads / total_sum_of_reads * 100, 2)
 
+    cols_to_add = {
+        "pctChrom": percentage_chromosomal_reads,
+        "pctMT": percentage_mitochondrial_reads,
+        "pctERCC": percentage_ercc_reads,
+        "SumReads": total_sum_of_reads,
+        "NumberOfGenes": total_nr_genes,
+        "NumberOfERCCReads": total_ercc_reads,
+        "NumberOfChromReads": total_chromosomal_reads,
+        "NumberOfMTReads": mitochondrial_reads,
+    }
     total_nr_reads_per_chromosome = total_nr_reads_per_chromosome.assign(
-        pctChrom=percentage_chromosomal_reads,
-        pctMT=percentage_mitochondrial_reads,
-        pctERCC=percentage_ercc_reads,
-        SumReads=total_sum_of_reads,
-        NumberOfGenes=total_nr_genes,
+       **cols_to_add
     )
 
     total_nr_reads_per_chromosome.reset_index(names="WellBC")\
         .to_csv(par["nrReadsNrGenesPerChromPool"], sep="\t",
-                header=True, index=False, 
-                columns=("WellBC",) + tuple(chromosome_names) + \
-                        ("SumReads", "pctMT", "pctERCC", "pctChrom", "NumberOfGenes"))
+                header=True, index=False, float_format="%g",
+                columns=("WellBC",) + tuple(chromosome_names) + tuple(cols_to_add.keys())
+               )
 

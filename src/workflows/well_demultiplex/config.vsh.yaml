@@ -5,13 +5,19 @@ argument_groups:
   - name: Input arguments
     arguments:
       - name: --input_r1
-        description: R1
+        description: |
+          Forward reads in FASTQ format. Multiple files can be provided which will
+          be demultiplexed separately before joining the results for each individual well.
         type: file
         required: true
+        multiple: true
       - name: --input_r2
-        description: R2
+        description: |
+          Reverse reads in FASTQ format. Multiple files can be provided which will
+          be demultiplexed separately before joining the results for each individual well.
         type: file
         required: true
+        multiple: true
       - name: --barcodesFasta
         type: file
         required: true
@@ -58,10 +64,16 @@ test_resources:
 dependencies:
   - name: cutadapt
     repository: bb
+  - name: concat_text
+    repository: cb
 repositories:
   - name: bb
     type: vsh
     repo: biobox
+    tag: main
+  - name: cb
+    type: vsh
+    repo: craftbox
     tag: v0.1.0
 
 runners:
