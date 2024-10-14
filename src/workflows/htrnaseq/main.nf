@@ -4,27 +4,28 @@ workflow run_wf {
 
   main:
     mapping_ch = input_ch
+      | map {id, state ->
+        def newState = state + ["n_barcodes": state.barcodesFasta.countFasta() as int]
+        [id, newState]
+      }
       | well_demultiplex.run(
-        fromState: { id, state ->
-          [
-            input_r1: state.input_r1,
-            input_r2: state.input_r2,
-            barcodesFasta: state.barcodesFasta,
-          ]
-        },
+        fromState: [
+            "input_r1": "input_r1",
+            "input_r2": "input_r2",
+            "barcodesFasta": "barcodesFasta",
+        ],
         toState: { id, result, state ->
-          state + result + [
-              fastq_output_r1: result.output_r1, 
-              fastq_output_r2: result.output_r2, 
-              input_r1: result.output_r1,
-              input_r2: result.output_r2,
+          def newState = state + result + [
+              "fastq_output_r1": result.output_r1, 
+              "fastq_output_r2": result.output_r2, 
+              "input_r1": result.output_r1,
+              "input_r2": result.output_r2,
             ]
-        },
-        directives: [label: ["midmem", "midcpu"]]
+          return newState
+        }
       )
       | parallel_map_wf.run(
         fromState: {id, state ->
-          def star_output = state.star_output[0]
           [
             "input_r1": state.input_r1[0],
             "input_r2": state.input_r2[0],
@@ -34,11 +35,10 @@ workflow run_wf {
             "genomeDir": state.genomeDir,
           ]
         },
-        toState: {id, result, state -> 
-          state + ["star_output": result.output,]
-        },
+        toState: ["star_output": "output"]
       )
       | generate_well_statistics.run(
+        directives: [label: ["lowmem", "lowcpu"]],
         fromState: { id, state ->
           [
             "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
@@ -50,11 +50,21 @@ workflow run_wf {
           "nrReadsNrUMIsPerCB": "nrReadsNrUMIsPerCB",
         ]
       )
-      | map {id, state -> 
-        [state.pool, id, state]
+      | map {id, state ->
+        // Create a special groupKey, such that groupTuple
+        // knows when all the barcodes have been grouped into 1 event.
+        // This way the processing is as distributed as possible.
+        def key = groupKey(state.pool, state.n_barcodes)
+        def newEvent = [key, state]
+        return newEvent
       }
-      | groupTuple(by: 0, sort: "hash")
-      | map {id, well_ids, states ->
+      // Use a custom sorting function because sort: 'hash'
+      // requires a hash to be calculated on every entry of the state
+      // This is inefficient when the number of events is large 
+      // (i.e large number or barcodes).
+      // Sorting on lexographical order of the barcode is sufficient here.
+      | groupTuple(sort: {a, b -> a.barcode <=> b.barcode})
+      | map {id, states ->
         def collected_state = [
           "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
           "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
@@ -66,15 +76,16 @@ workflow run_wf {
           "eset": states.collect{it.eset}[0],
           "pool": states.collect{it.pool}[0],
         ]
-        [id, collected_state]
+        [id.getGroupTarget(), collected_state]
       }
       | generate_pool_statistics.run(
+        directives: ["label": ["lowmem", "lowcpu"]],
         fromState: [
           "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
         ],
-        toState: {id, result, state -> 
-          state + ["nrReadsNrGenesPerChrom": result.nrReadsNrGenesPerChromPool]
-        }
+        toState: [
+          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromPool"
+        ]
       )
       | map {id, state ->
         def extraState = [
@@ -82,9 +93,11 @@ workflow run_wf {
             "summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
             "reads_per_gene": state.star_output.collect{it.resolve("ReadsPerGene.out.tab")}
         ]
-        return [id, state + extraState]
+        def newState = state + extraState
+        return [id, newState]
       }
       | combine_star_logs.run(
+        directives: ["label": ["lowmem", "lowcpu"]],
         fromState: [
           "star_logs": "star_logs",
           "gene_summary_logs": "summary_logs",
@@ -100,12 +113,14 @@ workflow run_wf {
 
     f_data_ch = mapping_ch
       | create_fdata.run(
+        directives: [label: ["lowmem", "lowcpu"]],
         fromState: ["gtf": "annotation"],
         toState: ["f_data": "output"],
       )
 
     p_data_ch = mapping_ch
       | create_pdata.run(
+        directives: [label: ["lowmem", "lowcpu"]],
         fromState: [
           "star_stats_file": "star_qc_metrics",
           "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChrom",
@@ -115,9 +130,11 @@ workflow run_wf {
 
     output_ch = f_data_ch.join(p_data_ch, remainder: true)
       | map {id, f_data_state, p_data_state ->
-        [id, f_data_state + ["p_data": p_data_state["p_data"]]]
+        def newState = f_data_state + ["p_data": p_data_state["p_data"]]
+        [id, newState]
       }
       | create_eset.run(
+        directives: [label: ["lowmem", "lowcpu"]],
         fromState: [
           "pDataFile": "p_data",
           "fDataFile": "f_data",
