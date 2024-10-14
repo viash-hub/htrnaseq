@@ -14,8 +14,8 @@ export NXF_VER=24.04.4
 nextflow run . \
   -main-script target/nextflow/workflows/htrnaseq/main.nf \
   -params-file ./src/workflows/htrnaseq/params.yaml \
-  -config ./src/config/tests.config \
-  -profile docker \
+  -config ./src/config/labels.config \
+  -profile docker,local \
   --publish_dir output \
   -resume
 

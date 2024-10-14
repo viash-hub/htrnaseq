@@ -5,19 +5,22 @@ workflow run_wf {
   main:
     output_ch = input_ch
       | flatMap {id, state ->
-         [state.input_r1, state.input_r2].transpose().withIndex().collect{ input_pair, index ->
+        assert state.input_r1.size() == state.input_r2.size(), "Expected equal number of inputs for R1 and R2"
+        def n_lanes = state.input_r1.size()
+        [state.input_r1, state.input_r2].transpose().withIndex().collect{ input_pair, index ->
           def single_input_r1 = input_pair[0]
           def single_input_r2 = input_pair[1]
-          def newState = state + ["input_r1": single_input_r1, "input_r2": single_input_r2, "pool": id, "lane_sorting": index]
+          def newState = state + ["input_r1": single_input_r1, 
+                                  "input_r2": single_input_r2, 
+                                  "pool": id, 
+                                  "lane_sorting": index,
+                                  "n_lanes": n_lanes]
           def newId = id + "_" + index 
           [newId, newState]
         }
       }
       | cutadapt.run(
-        // TODO: Remove hard-coded directives and replace with profiles
-        directives: [
-            cpus: 4
-          ],
+        directives: [label: ["highmem", "midcpu"]],
         fromState: { id, state ->
           def new_output = ("fastq_${state.lane_sorting}/*_001.fastq")
           [
@@ -32,11 +35,13 @@ workflow run_wf {
           ]
         },
         toState: { id, result, state ->
-          [
+          def newState = [
             pool: state.pool,
+            n_lanes: state.n_lanes,
             output: result.output,
             lane_sorting: state.lane_sorting,
           ]
+          return newState
         }
       )
       // Parse the file names to obtain metadata about the output
@@ -47,8 +52,9 @@ workflow run_wf {
           def pair_end = (p =~ /.*_(R[12])_.*/)[0][1]
           def lane = (p =~ /.*_(L\d+).*/) ? (p =~ /.*_(L\d+).*/)[0][1] : "NA"
           def new_id = pool + "__" + barcode
+          def group_key = groupKey(new_id, state.n_lanes * 2)
           [
-            new_id,
+            group_key,
             [
               pool: pool,
               barcode: barcode,
@@ -62,8 +68,8 @@ workflow run_wf {
         }
       }
       // Group the outputs from across lanes
-      | groupTuple(by: 0, sort: "hash")
-      | map {id, states ->
+      | groupTuple(sort: "hash")
+      | map {_, states ->
         def r1_output = states.findAll{ it.pair_end == "R1" }.collect{it.output}
         def r2_output = states.findAll{ it.pair_end == "R2" }.collect{it.output}
         def lane_sorting_r1 = states.findAll{ it.pair_end == "R1" }.collect{it.lane_sorting}
@@ -95,6 +101,7 @@ workflow run_wf {
       // ... and turn into separate component
       | filter{ id, state -> state.barcode != "unknown" }
       | concat_text.run(
+        directives: [label: ["lowmem", "lowcpu"]],
         key: "concat_txt_r1",
         runIf: {id, state -> state.output_r1.size() > 1},
         fromState: { id, state ->
@@ -105,10 +112,12 @@ workflow run_wf {
           ]
         },
         toState: { id, result, state ->
-          state + [ output_r1: [ result.output ] ]
+          def newState = state + [ output_r1: [ result.output ] ]
+          return newState
         }
       )
       | concat_text.run(
+        directives: [label: ["lowmem", "lowcpu"]],
         key: "concat_text_r2",
         runIf: {id, state -> state.output_r2.size() > 1},
         fromState: { id, state ->
@@ -119,7 +128,8 @@ workflow run_wf {
           ]
         },
         toState: { id, result, state ->
-          state + [ output_r2: [ result.output ] ]
+          def newState = state + [ output_r2: [ result.output ] ]
+          return newState
         }
       )
       | setState(["pool", "barcode", "lane", "_meta", "output_r1", "output_r2"])
