@@ -155,6 +155,8 @@ workflow run_wf {
         "nrReadsNrGenesPerChrom",
         "star_qc_metrics",
         "eset",
+        "f_data",
+        "p_data"
       ])
       | niceView()
 
