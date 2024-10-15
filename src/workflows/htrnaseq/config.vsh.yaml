@@ -64,6 +64,16 @@ argument_groups:
         direction: output
         required: true
         default: eset.$id.rds
+      - name: "--f_data"
+        type: file
+        direction: output
+        required: true
+        default: fData.$id.tsv
+      - name: "--p_data"
+        type: file
+        direction: output
+        required: true
+        default: pData.$id.tsv
 resources:
   - type: nextflow_script
     path: main.nf
