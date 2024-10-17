@@ -3,9 +3,31 @@ workflow run_wf {
     input_ch
 
   main:
+    // The featureData only has one requirement: the genome annotation.
+    // It can be generated straight away.
+    f_data_ch = input_ch
+      | create_fdata.run(
+        directives: [label: ["lowmem", "lowcpu"]],
+        fromState: ["gtf": "annotation"],
+        toState: {id, result, state -> ["f_data": result.output]}
+      )
+
+    // Perform mapping of each well. The input here are events per pool,
+    // the output channel is one event per well.
     mapping_ch = input_ch
       | map {id, state ->
-        def newState = state + ["n_barcodes": state.barcodesFasta.countFasta() as int]
+        def n_barcodes = state.barcodesFasta.countFasta() as int
+        def newState = state + ["n_barcodes": n_barcodes]
+        // The header is the full header, the id is the part header up to the first whitespace character
+        // We do not allow whitespace in the header of the fasta file, so assert this.
+        def fasta_entries = state.barcodesFasta.splitFasta(record: ["id": true, "header": true, "seqString": true])
+        assert fasta_entries.every{it.id == it.header}, "The barcodes FASTA headers must not contain any whitespace!"
+        // Check if the fasta headers are unique
+        def fasta_ids = fasta_entries.collect{it.id}
+        assert fasta_ids.clone().unique() == fasta_ids, "The barcodes FASTA entries must have a unique name!"
+        // Check if the sequences are unique
+        def fasta_sequences = fasta_entries.collect{it.seqString}
+        assert fasta_sequences.clone().unique() == fasta_sequences, "The barcodes FASTA sequences must be unique!"
         [id, newState]
       }
       | well_demultiplex.run(
@@ -15,20 +37,20 @@ workflow run_wf {
             "barcodesFasta": "barcodesFasta",
         ],
         toState: { id, result, state ->
-          def newState = state + result + [
-              "fastq_output_r1": result.output_r1, 
-              "fastq_output_r2": result.output_r2, 
-              "input_r1": result.output_r1,
-              "input_r2": result.output_r2,
-            ]
-          return newState
+          def filtered_input = state.findAll{!["input_r1", "input_r2"].contains(it.key)} 
+          def filtered_results = result.findAll{!["output_r1", "output_r2"].contains(it.key)} 
+          def new_state = filtered_input + filtered_results + [ 
+            "fastq_output_r1": result.output_r1, 
+            "fastq_output_r2": result.output_r2, 
+          ]
+          return new_state
         }
       )
       | parallel_map_wf.run(
         fromState: {id, state ->
           [
-            "input_r1": state.input_r1[0],
-            "input_r2": state.input_r2[0],
+            "input_r1": state.fastq_output_r1[0],
+            "input_r2": state.fastq_output_r2[0],
             "barcode": state.barcode,
             "pool": state.pool,
             "output": state.star_output[0],
@@ -37,6 +59,10 @@ workflow run_wf {
         },
         toState: ["star_output": "output"]
       )
+
+    // From the mapped wells, create statistics based on the BAM file
+    // and join the events back to pool level.
+    pool_ch = mapping_ch
       | generate_well_statistics.run(
         directives: [label: ["lowmem", "lowcpu"]],
         fromState: { id, state ->
@@ -47,7 +73,6 @@ workflow run_wf {
         },
         toState: [
           "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
-          "nrReadsNrUMIsPerCB": "nrReadsNrUMIsPerCB",
         ]
       )
       | map {id, state ->
@@ -65,72 +90,86 @@ workflow run_wf {
       // Sorting on lexographical order of the barcode is sufficient here.
       | groupTuple(sort: {a, b -> a.barcode <=> b.barcode})
       | map {id, states ->
-        def collected_state = [
+        // Gather the keys from all states. for some state items,
+        // we need gather all the different items from across the states
+        def barcodes = states.collect{it.barcode}
+        assert barcodes.clone().unique().size() == barcodes.size(), \
+          "Error when gathering information for pool ${id}, barcodes are not unique!"
+        def custom_state = [
           "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
           "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
-          "annotation": states.collect{it.annotation}[0],
-          "barcodes": states.collect{it.barcode},
+          "barcode": barcodes,
           "star_output": states.collect{it.star_output},
           "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
-          "star_qc_metrics": states.collect{it.star_qc_metrics}[0],
-          "eset": states.collect{it.eset}[0],
-          "pool": states.collect{it.pool}[0],
         ]
-        [id.getGroupTarget(), collected_state]
+        //For many state items, the value is the same across states.
+        def other_state_keys = states.inject([].toSet()){ current_keys, state ->
+            def new_keys = current_keys + state.keySet()
+            return new_keys
+          }.minus(custom_state.keySet())
+        // All other state should have a unique value
+        def old_state_items = other_state_keys.inject([:]){ old_state, argument_name ->
+            argument_values = states.collect{it.get(argument_name)}.unique()
+            assert argument_values.size() == 1, "Arguments should be the same across modalities. Please report this \
+                                                 as a bug. Argument name: $argument_name, \
+                                                 argument value: $argument_values"
+            def argument_value
+            argument_values.each { argument_value = it }
+            def current_state = old_state + [(argument_name): argument_value]
+            return current_state
+          }
+
+        def new_state = custom_state + old_state_items
+        [id.getGroupTarget(), new_state]
       }
+
+    // The well statistics are merged on pool level. 
+    pool_statistics_ch = pool_ch
       | generate_pool_statistics.run(
         directives: ["label": ["lowmem", "lowcpu"]],
         fromState: [
           "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
         ],
         toState: [
-          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromPool"
+          "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool"
         ]
       )
-      | map {id, state ->
-        def extraState = [
-            "star_logs": state.star_output.collect{it.resolve("Log.final.out")},
-            "summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
-            "reads_per_gene": state.star_output.collect{it.resolve("ReadsPerGene.out.tab")}
-        ]
-        def newState = state + extraState
-        return [id, newState]
-      }
+
+    // The statistics from the STAR logs of different wells are joined
+    // on pool level 
+    star_logs_ch = pool_ch
       | combine_star_logs.run(
         directives: ["label": ["lowmem", "lowcpu"]],
-        fromState: [
-          "star_logs": "star_logs",
-          "gene_summary_logs": "summary_logs",
-          "reads_per_gene_logs": "reads_per_gene",
-          "barcodes": "barcodes",
-          "output": "star_qc_metrics",
-        ],
+        fromState: {id, state -> [
+            "star_logs": state.star_output.collect{it.resolve("Log.final.out")},
+            "gene_summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
+            "reads_per_gene_logs": state.star_output.collect{it.resolve("ReadsPerGene.out.tab")},
+            "barcodes": state.barcode,
+            "output": state.star_qc_metrics
+          ]
+        },
         toState: [
           "star_qc_metrics": "output",
         ]
       )
-
-
-    f_data_ch = mapping_ch
-      | create_fdata.run(
-        directives: [label: ["lowmem", "lowcpu"]],
-        fromState: ["gtf": "annotation"],
-        toState: ["f_data": "output"],
-      )
-
-    p_data_ch = mapping_ch
+    
+    p_data_ch = star_logs_ch.join(pool_statistics_ch, remainder: true)
+      | map {id, star_logs_state, pool_statistics_state ->
+        def newState = star_logs_state + ["nrReadsNrGenesPerChromPool": pool_statistics_state.nrReadsNrGenesPerChromPool]
+        return [id, newState]
+      }
       | create_pdata.run(
         directives: [label: ["lowmem", "lowcpu"]],
         fromState: [
           "star_stats_file": "star_qc_metrics",
-          "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChrom",
+          "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool",
         ],
         toState: ["p_data": "output"],
       )
 
-    output_ch = f_data_ch.join(p_data_ch, remainder: true)
-      | map {id, f_data_state, p_data_state ->
-        def newState = f_data_state + ["p_data": p_data_state["p_data"]]
+    output_ch = p_data_ch.join(f_data_ch, remainder: true)
+      | map {id, p_data_state, f_data_state ->
+        def newState = p_data_state + ["f_data": f_data_state["f_data"]]
         [id, newState]
       }
       | create_eset.run(
@@ -140,7 +179,7 @@ workflow run_wf {
           "fDataFile": "f_data",
           "mappingDir": "star_output",
           "output": "eset",
-          "barcodes": "barcodes",
+          "barcodes": "barcode",
           "poolName": "pool",
         ],
         toState: [
@@ -148,17 +187,16 @@ workflow run_wf {
         ]
       )
       | setState([
-        "star_output", 
-        "fastq_output_r1",
-        "fastq_output_r2",
-        "star_output",
-        "nrReadsNrGenesPerChrom",
-        "star_qc_metrics",
-        "eset",
-        "f_data",
-        "p_data"
+        "star_output": "star_output", 
+        "fastq_output_r1": "fastq_output_r1",
+        "fastq_output_r2": "fastq_output_r2",
+        "star_output": "star_output",
+        "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromPool",
+        "star_qc_metrics": "star_qc_metrics",
+        "eset": "eset",
+        "f_data": "f_data",
+        "p_data": "p_data"
       ])
-      | niceView()
 
 
   emit:
