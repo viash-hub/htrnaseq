@@ -10,7 +10,7 @@ meta = {
 }
 
 par = {
-  "gtf": "src/eset/create_fdata/test_annotation.gtf",
+  "gtf": "src/eset/create_fdata/gencode.v41.annotation.gtf",
   "output": "fData.tsv"
 }
 
@@ -95,8 +95,8 @@ def main(par):
     if "gene_id" in annotation.columns:
         logger.info("'gene_id' column was detected in attributes. Performing extra parsing of ENSEMBL ids.")
         annotation["ENSEMBL_with_version"] = annotation["gene_id"].where(annotation["gene_id"].str.startswith("ENS"))
-        annotation["ENSEMBL"] = annotation["ENSEMBL_with_version"].str.replace(r"\.\d+$", "")
-        annotation["gene_id"] = annotation["gene_id"].str.replace(r"\.\d+$", "")
+        annotation["ENSEMBL"] = annotation["ENSEMBL_with_version"].str.replace(r"\.\d+$", "", regex=True)
+        annotation["gene_id"] = annotation["gene_id"].str.replace(r"\.\d+$", "", regex=True)
 
     possible_name_columns = ("Name", "name", "gene_name")
     found_columns = list(filter(lambda col_name: col_name in annotation, possible_name_columns))
