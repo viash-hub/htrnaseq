@@ -1,0 +1,31 @@
+name: "check_eset"
+namespace: "integration_test_components/htrnaseq"
+description: "This component test the ExpressionSet object as output by the main pipeline."
+argument_groups:
+  - name: Inputs
+    arguments:
+      - name: "--eset"
+        type: file
+        required: true
+        description: Path to an ExpressionSet object.
+        example: eset.rds
+      - name: "--star_output"
+        type: file
+        required: true
+        multiple: true
+resources:
+  - type: r_script
+    path: script.R
+engines:
+  - type: docker
+    image: bioconductor/bioconductor_docker:3.19
+    setup:
+      - type: r
+        cran:
+          - bit64
+        bioc:
+          - Biobase
+
+runners:
+  - type: executable
+  - type: nextflow
