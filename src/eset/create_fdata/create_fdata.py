@@ -10,7 +10,7 @@ meta = {
 }
 
 par = {
-  "gtf": "src/eset/create_fdata/gencode.v41.annotation.gtf",
+  "gtf": "src/eset/create_fdata/test_annotation.gtf",
   "output": "fData.tsv"
 }
 
