@@ -7,7 +7,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
 # Make sure the workflow is built
-# viash ns build --setup cb
+viash ns build --setup cb
 
 export NXF_VER=24.04.4
 
