@@ -11,7 +11,7 @@ viash_version: 0.9.0
 
 info:
   test_resources:
-      path: gs://openpipelines-data
+      path: gs://viash-hub-test-data/htrnaseq/v1/
       dest: resources_test
 
 config_mods: |
