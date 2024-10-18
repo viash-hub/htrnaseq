@@ -5,26 +5,26 @@ include { htrnaseq } from targetDir + "/workflows/htrnaseq/main.nf"
 include { check_eset } from targetDir + "/integration_test_components/htrnaseq/check_eset/main.nf"
 
 
-params.resources_test = params.rootDir + "/resources_test"
+params.resources_test =  "gs://viash-hub-test-data/htrnaseq/v1/"
 
 workflow test_wf {
-
+  resources_test_file = file(params.resources_test)
   input_ch = Channel.fromList([
       [
           id: "sample_one",
-          input_r1: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R1_001.fastq",
-          input_r2: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R2_001.fastq",
-          genomeDir: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.star.sparse",
-          barcodesFasta: "gs://viash-hub-test-data/htrnaseq/v1/360-wells.fasta",
-          annotation: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf.gz"
+          input_r1: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R1_001.fastq"),
+          input_r2: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R2_001.fastq"),
+          genomeDir: resources_test_file.resolve("genomeDir/gencode.v41.star.sparse"),
+          barcodesFasta: resources_test_file.resolve("360-wells.fasta"),
+          annotation: resources_test_file.resolve("genomeDir/gencode.v41.annotation.gtf.gz")
       ],
       [
           id: "sample_two",
-          input_r1: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730302/VH02001614_S8_R1_001.fastq",
-          input_r2: "gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730302/VH02001614_S8_R2_001.fastq",
-          genomeDir: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.star.sparse",
-          barcodesFasta: "gs://viash-hub-test-data/htrnaseq/v1/360-wells.fasta",
-          annotation: "gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf.gz"
+          input_r1: resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R1_001.fastq"),
+          input_r2: resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R2_001.fastq"),
+          genomeDir: resources_test_file.resolve("genomeDir/gencode.v41.star.sparse"),
+          barcodesFasta: resources_test_file.resolve("360-wells.fasta"),
+          annotation: resources_test_file.resolve("genomeDir/gencode.v41.annotation.gtf.gz")
       ]
     ])
     | map{ state -> [state.id, state] }

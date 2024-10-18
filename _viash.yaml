@@ -9,6 +9,11 @@ links:
 
 viash_version: 0.9.0
 
+info:
+  test_resources:
+      path: gs://openpipelines-data
+      dest: resources_test
+
 config_mods: |
   .requirements.commands := ['ps']
   .runners[.type == 'nextflow'].config.script := 'includeConfig("nextflow_labels.config")'
