@@ -13,7 +13,7 @@ export NXF_VER=24.04.4
 
 nextflow \
   run . \
-  -main-script src/workflows/htrnaseq/test.nf \
+  -main-script src/workflows/well_demultiplex/test.nf \
   -config ./src/config/labels.config \
   -entry test_wf \
   -resume \
