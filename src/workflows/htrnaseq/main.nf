@@ -64,7 +64,7 @@ workflow run_wf {
     // and join the events back to pool level.
     pool_ch = mapping_ch
       | generate_well_statistics.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["lowmem", "verylowcpu"]],
         fromState: { id, state ->
           [
             "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
@@ -126,7 +126,7 @@ workflow run_wf {
     // The well statistics are merged on pool level. 
     pool_statistics_ch = pool_ch
       | generate_pool_statistics.run(
-        directives: ["label": ["lowmem", "lowcpu"]],
+        directives: ["label": ["lowmem", "verylowcpu"]],
         fromState: [
           "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
         ],
@@ -139,7 +139,7 @@ workflow run_wf {
     // on pool level 
     star_logs_ch = pool_ch
       | combine_star_logs.run(
-        directives: ["label": ["lowmem", "lowcpu"]],
+        directives: ["label": ["lowmem", "verylowcpu"]],
         fromState: {id, state -> [
             "star_logs": state.star_output.collect{it.resolve("Log.final.out")},
             "gene_summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
