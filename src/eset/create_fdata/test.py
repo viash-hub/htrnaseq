@@ -47,7 +47,7 @@ def test_create_fdata(run_component, test_annotation_path, random_path):
                         "ensembl_havana", "havana"],
         "gene_biotype": ["protein_coding", "protein_coding",
                          "protein_coding", "protein_coding"],
-        "ENSEMBL_with_version": ["ENSG00000178591", "ENSG00000125788",
+        "ENSEMBL_with_version": ["ENSG00000178591.7", "ENSG00000125788",
                                  "ENSG00000088782", "ENSG00000247315"],
         "ENSEMBL": ["ENSG00000178591", "ENSG00000125788",
                     "ENSG00000088782", "ENSG00000247315"],
