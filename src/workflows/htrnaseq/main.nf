@@ -64,7 +64,7 @@ workflow run_wf {
     // and join the events back to pool level.
     pool_ch = mapping_ch
       | generate_well_statistics.run(
-        directives: [label: ["lowmem", "verylowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         fromState: { id, state ->
           [
             "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
