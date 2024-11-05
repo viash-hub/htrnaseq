@@ -52,19 +52,15 @@ workflow run_wf {
           // One STAR output contains the results for one
           // well barcode. We can look for the barcode in
           // the 'Solo.out/Gene/raw/barcode.tsv' file.
-          def barcode_file_regex = ~/.*\/raw\/barcodes\.tsv$/
-          star_output_dir.eachFileRecurse{barcode_file ->
-            if (barcode_file =~ barcode_file_regex) {
-              assert barcode_file.countLines() == 1, \
-                "Expected only one barcode in a single STAR output."
-              barcodes_list.add(barcode_file.text.trim())
-            }
-          }
-          assert barcodes_list.size() == 1, \
-            "Exactly one file should have matched the barcodes file regex (found: $barcodes_list)."
-          // Get the first and only element in the list of barcodes.
+          def barcodes_files = files("${star_output_dir}/Solo.out/Gene/raw/barcodes.tsv")
+          assert barcodes_files.size() == 1, \
+            "Exactly one file should have matched the barcodes files (found: $barcodes_files)."
           def barcode
-          barcodes_list.each{ it -> barcode = it }
+          barcodes_files.each{ it ->
+            assert it.countLines() == 1,
+              "Expected only one barcode in a single STAR output."
+            barcode = it.text.trim()
+          }
           return barcode == state_well.barcode
         }
         assert well_output.size() == 1, \
