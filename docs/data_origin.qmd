@@ -1,0 +1,61 @@
+# Data Origin
+
+## Feature Data
+
+The following metadat is available for the features, they can be acessed by using `featureData(eset)`:
+
+| Column name           | Data origin              | Origin field              | Component       | Comment                        |
+|-----------------------|--------------------------|---------------------------|-----------------| -------------------------------|
+| start                 | Genome annotation (gtf)  | Column 4                  | create_fdata    |                                |
+| end                   | Genome annotation (gtf)  | Column 5                  | create_fdata    |                                |
+| strand                | Genome annotation (gtf)  | Column 7                  | create_fdata    |                                |
+| gene_biotype          | Genome annotation (gtf)  | Column 9                  | create_fdata    |                                |
+| gene_id               | Genome annotation (gtf)  | Column 9                  | create_fdata    |                                |
+| gene_name             | Genome annotation (gtf)  | Column 9                  | create_fdata    |                                |
+| gene_source           | Genome annotation (gtf)  | Column 9                  | create_fdata    |                                |
+| gene_version          | Genome annotation (gtf)  | Column 9                  | create_fdata    |                                |
+| transcript_id         | Genome annotation (gtf)  | Column 9                  | create_fdata    |                                |
+| ENSEMBL_with_version  | Calculated               | gene_id                   | create_fdata    | gene_id starts with 'ENS'      |
+| ENSEMBL               | Calculated               | ENSEMBL_with_version      | create_fdata    | Remove version number from end |
+| SYMBOL                | Calculated               | '(n/N)ame' or 'gene_name' | create_fdata    | Whichever origin is available  |
+
+## Sample information (phenoData)
+
+The 
+
+| Column name                                      | Data origin                | Origin field                                  | Component                | Comment                           |
+|--------------------------------------------------|----------------------------|-----------------------------------------------|--------------------------| ----------------------------------|
+| NumberOfInputReads                               | STAR: Log.final.out        | Number of input reads                         | combine_star_logs        |                                   |
+| NumberOfMappedReads                              | STAR: Log.final.out        | Uniquely mapped reads number                  | combine_star_logs        |                                   |
+| PctMappedReads                                   | STAR: Log.final.out        | Uniquely mapped reads %                       | combine_star_logs        |                                   |
+| NumberOfReadsMappedToMultipleLoci                | STAR: Log.final.out        | Number of reads mapped to multiple loci       | combine_star_logs        |                                   |
+| PectOfReadsMappedToMultipleLoci                  | STAR: Log.final.out        | % of reads mapped to multiple loci            | combine_star_logs        |                                   |
+| NumberOfReadsMappedToTooManyLoci                 | STAR: Log.final.out        | Number of reads mapped to too many loci       | combine_star_logs        |                                   |
+| PectOfReadsMappedToTooManyLoci                   | STAR: Log.final.out        | % of reads mapped to too many loci            | combine_star_logs        |                                   |
+| NumberOfReadsUnmappedTooManyMismatches           | STAR: Log.final.out        | Number of reads unmapped: too many mismatches | combine_star_logs        |                                   |
+| PectOfReadsUnmappedTooManyMismatches             | STAR: Log.final.out        | % of reads unmapped: too many mismatches      | combine_star_logs        |                                   |
+| NumberOfReadsUnmappedTooShort                    | STAR: Log.final.out        | Number of reads unmapped: too short           | combine_star_logs        |                                   |
+| PectOfReadsUnmappedTooShort                      | STAR: Log.final.out        | % of reads unmapped: too short                | combine_star_logs        |                                   |
+| NumberOfReadsUnmappedOther                       | STAR: Log.final.out        | Number of reads unmapped: other               | combine_star_logs        |                                   |
+| PectOfReadsUnmappedOther                         | STAR: Log.final.out        | Number of reads unmapped: other               | combine_star_logs        |                                   |
+| ReadsWithValidBarcodes                           | STAR: summary.csv          | Sequencing Saturation                         | combine_star_logs        |                                   |
+| SequencingSaturation                             | STAR: summary.csv          | Sequencing Saturation                         | combine_star_logs        |                                   |
+| Q30BasesInCB+UMI                                 | STAR: summary.csv          | Sequencing Saturation                         | combine_star_logs        |                                   |
+| ReadsMappedToTranscriptome:Unique+MultipeGenes   | STAR: summary.csv          | Q30 Bases in CB+UMI                           | combine_star_logs        |                                   |
+| EstimatedNumberOfCells                           | STAR: summary.csv          | Estimated Number of Cells                     | combine_star_logs        |                                   |
+| FractionOfReadsInCells                           | STAR: summary.csv          | Fraction of Reads in Cells                    | combine_star_logs        |                                   |
+| MeanReadsPerCell                                 | STAR: summary.csv          | Mean Reads per Cell                           | combine_star_logs        |                                   |
+| NumberOfUMIs                                     | STAR: summary.csv          | UMIsInCells                                   | combine_star_logs        |                                   |
+| NumberOfCountedReads                             | STAR: ReadsPerGene.out.tab | Second column                                 | combine_star_logs        |                                   |
+| NumberOfReads                                    | Calculated from BAM file   | CB tag (= error-corrected cell barcodes)      | generate_well_statistics | Count the number per CB tag       |
+| NumberOfGenes                                    | Calculated from BAM file   | GX tag (= gene ID)                            | generate_well_statistics | Number of unique GX tags          |
+| NumberOfMTReads                                  | Calculated from BAM file   | GX tag (= gene ID)                            | generate_pool_statistics | NumberOfReads, filtered on string |
+| pctMT                                            | Calculated from BAM file   | GX tag (= gene ID)                            | generate_pool_statistics | Based on NumberOfMTReads          |
+| NumberOfERCCReads                                | Calculated from BAM file   | GX tag (= gene ID)                            | generate_pool_statistics | NumberOfReads, filtered on string |
+| pctERCC                                          | Calculated from BAM file   | GX tag (= gene ID)                            | generate_pool_statistics | Based on NumberOfERCCReads        |
+| NumberOfChromReads                               | Calculated from BAM file   | GX tag (= gene ID)                            | generate_pool_statistics | NumberOfReads, filtered on string |
+| pctChrom                                         | Calculated from BAM file   | GX tag (= gene ID)                            | generate_pool_statistics | Based on NumberOfChromReads       |
+
+# Count data
+
+One row in the count matrix populated from the contents of the `Solo.out/Gene/raw/matrix.mtx` file (i.e. each file represents the information for one well).
