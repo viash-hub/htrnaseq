@@ -18,4 +18,4 @@ nextflow \
   -entry test_wf \
   -resume \
   -profile docker,local \
-  --publish_dir output \
+  --publish_dir output

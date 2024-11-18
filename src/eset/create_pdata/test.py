@@ -43,6 +43,7 @@ def test_create_fdata(run_component, test_reads_and_genes_per_chr_path,
     expected_dict = {
         'WellBC': ['AACAAGGTAC', 'ACGCCTTCGT', 'CCATACTGAC', 'GCAAGCGAAT',
                    'GTCTCGAGTG', 'TGCGCTCATT', 'TTGTGTTCGA'],
+        'WellID': ['A1', 'A2', 'A3', 'B1', 'C5', 'D6', 'E19'],
         'NumberOfMTReads': ['0', '0', '0', '0', '0', '0', '0'],
         'pctMT': ['0', '0', '0', '0', '0', '0', '0'],
         'NumberOfERCCReads': ['0', '0', '0', '0', '0', '0', '0'],
