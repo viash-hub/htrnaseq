@@ -33,7 +33,7 @@ def main(par):
   logger.info("Reads per gene and chromosome table contains information for the following barcodes: %s",
               ", ".join(reads_and_genes_per_chr_stats.index))
   logger.info("Filtering mapping statistics file columns.")
-  cols_to_keep = ("NumberOfMTReads", "pctMT", "NumberOfERCCReads",
+  cols_to_keep = ("WellID", "NumberOfMTReads", "pctMT", "NumberOfERCCReads",
                   "pctERCC", "NumberOfChromReads", "pctChrom")
   try:
     reads_and_genes_per_chr_stats = reads_and_genes_per_chr_stats.loc[:,cols_to_keep]

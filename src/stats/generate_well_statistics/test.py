@@ -63,7 +63,8 @@ def test_generate_well_statistics_simple_bam(run_component, input_sam_path, sam_
         "--nrReadsNrGenesPerChrom", reads_per_chromosome,
         "--nrReadsNrUMIsPerCB", nr_reads_nr_umis_per_cb,
         "--umiFreqTop", top_onehundred_umis,
-        "--barcode", "ACGT"
+        "--barcode", "ACGT",
+        "--well_id", "A1",
     ])
     for file_path in (processed_bam, reads_per_chromosome,
                       nr_reads_nr_umis_per_cb, top_onehundred_umis):
@@ -71,33 +72,33 @@ def test_generate_well_statistics_simple_bam(run_component, input_sam_path, sam_
 
     expected_processed_bam = \
     dedent("""\
-    WellBC	Chr	CB	UB	GX	GN
-    ACGT	1	ACA	CGG	gene1	gene1
-    ACGT	1	ACA	CGG	gene1	gene1
-    ACGT	2	GGG	GTT	gene2	gene2
-    ACGT	2	GGG	GTC	gene3	gene3
+    WellBC	WellID	Chr	CB	UB	GX	GN
+    ACGT	A1	1	ACA	CGG	gene1	gene1
+    ACGT	A1	1	ACA	CGG	gene1	gene1
+    ACGT	A1	2	GGG	GTT	gene2	gene2
+    ACGT	A1	2	GGG	GTC	gene3	gene3
     """)
 
     expected_reads_per_chromosome = \
     dedent("""\
-    WellBC	Chr	NumberOfReads	NumberOfGenes
-    ACGT	1	2	1
-    ACGT	2	2	2
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    ACGT	A1	1	2	1
+    ACGT	A1	2	2	2
     """)
 
     expected_nr_reads_nr_umis_per_cb = \
     dedent("""\
-    WellBC	CB	NumberOfReads	nrUMIs
-    ACGT	ACA	2	1
-    ACGT	GGG	2	2
+    WellBC	WellID	CB	NumberOfReads	nrUMIs
+    ACGT	A1	ACA	2	1
+    ACGT	A1	GGG	2	2
     """)
 
     expected_top_onehundred_umis = \
     dedent("""\
-    WellBC	UB	N
-    ACGT	CGG	2
-    ACGT	GTC	1
-    ACGT	GTT	1
+    WellBC	WellID	UB	N
+    ACGT	A1	CGG	2
+    ACGT	A1	GTC	1
+    ACGT	A1	GTT	1
     """)
 
     assert_file_content_equals(processed_bam, expected_processed_bam)

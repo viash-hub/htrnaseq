@@ -9,6 +9,8 @@ par = {
 
 ### VIASH END
 
+INDEX_COL = ["WellBC", "WellID"]
+
 if __name__ == "__main__":
     #########
     # nrReadsNrGenesPerChrom file
@@ -18,17 +20,18 @@ if __name__ == "__main__":
         nr_reads_nr_genes_wells.append(pd.read_csv(nr_reads_nr_genes_file, 
                                                    header=0, delimiter="\t",
                                                    dtype={"WellBC":	pd.StringDtype(),
+                                                          "WellID": pd.StringDtype(),
                                                           "Chr": pd.StringDtype(),
                                                           "NumberOfReads": pd.UInt64Dtype(),
                                                           "NumberOfGenes": pd.UInt64Dtype()}))
     nr_reads_nr_genes_pool = pd.concat(nr_reads_nr_genes_wells, ignore_index=True,)
-    total_nr_reads_per_chromosome = nr_reads_nr_genes_pool.pivot_table(index="WellBC", columns="Chr",
+    total_nr_reads_per_chromosome = nr_reads_nr_genes_pool.pivot_table(index=INDEX_COL, columns="Chr",
                                                                        values=["NumberOfReads"], fill_value=0,
                                                                        aggfunc="sum").droplevel(0, axis=1)
     total_nr_reads_per_chromosome.columns.name = None
 
     ##### Total number of genes from all chromosomes
-    total_nr_genes = nr_reads_nr_genes_pool.loc[:,['WellBC', 'NumberOfGenes']].groupby("WellBC").sum()
+    total_nr_genes = nr_reads_nr_genes_pool.loc[:, INDEX_COL + ['NumberOfGenes']].groupby(["WellBC", "WellID"]).sum()
 
     ##### Total counts across (irrespective of chromosome)
     total_sum_of_reads = total_nr_reads_per_chromosome.sum(numeric_only=True, axis=1) 
@@ -77,9 +80,9 @@ if __name__ == "__main__":
        **cols_to_add
     )
 
-    total_nr_reads_per_chromosome.reset_index(names="WellBC")\
+    total_nr_reads_per_chromosome.reset_index(names=INDEX_COL)\
         .to_csv(par["nrReadsNrGenesPerChromPool"], sep="\t",
                 header=True, index=False, float_format="%g",
-                columns=("WellBC",) + tuple(chromosome_names) + tuple(cols_to_add.keys())
+                columns=tuple(INDEX_COL) + tuple(chromosome_names) + tuple(cols_to_add.keys())
                )
 

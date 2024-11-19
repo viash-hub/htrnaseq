@@ -15,21 +15,6 @@ workflow run_wf {
     // Perform mapping of each well. The input here are events per pool,
     // the output channel is one event per well.
     mapping_ch = input_ch
-      | map {id, state ->
-        def n_barcodes = state.barcodesFasta.countFasta() as int
-        def newState = state + ["n_barcodes": n_barcodes]
-        // The header is the full header, the id is the part header up to the first whitespace character
-        // We do not allow whitespace in the header of the fasta file, so assert this.
-        def fasta_entries = state.barcodesFasta.splitFasta(record: ["id": true, "header": true, "seqString": true])
-        assert fasta_entries.every{it.id == it.header}, "The barcodes FASTA headers must not contain any whitespace!"
-        // Check if the fasta headers are unique
-        def fasta_ids = fasta_entries.collect{it.id}
-        assert fasta_ids.clone().unique() == fasta_ids, "The barcodes FASTA entries must have a unique name!"
-        // Check if the sequences are unique
-        def fasta_sequences = fasta_entries.collect{it.seqString}
-        assert fasta_sequences.clone().unique() == fasta_sequences, "The barcodes FASTA sequences must be unique!"
-        [id, newState]
-      }
       | well_demultiplex.run(
         fromState: [
             "input_r1": "input_r1",
@@ -41,7 +26,7 @@ workflow run_wf {
           def filtered_results = result.findAll{!["output_r1", "output_r2"].contains(it.key)} 
           def new_state = filtered_input + filtered_results + [ 
             "fastq_output_r1": result.output_r1, 
-            "fastq_output_r2": result.output_r2, 
+            "fastq_output_r2": result.output_r2,
           ]
           return new_state
         }
@@ -69,6 +54,7 @@ workflow run_wf {
           [
             "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
             "barcode": state.barcode,
+            "well_id": state.well_id,
           ]
         },
         toState: [
@@ -79,7 +65,7 @@ workflow run_wf {
         // Create a special groupKey, such that groupTuple
         // knows when all the barcodes have been grouped into 1 event.
         // This way the processing is as distributed as possible.
-        def key = groupKey(state.pool, state.n_barcodes)
+        def key = groupKey(state.pool, state.n_wells)
         def newEvent = [key, state]
         return newEvent
       }
@@ -95,10 +81,14 @@ workflow run_wf {
         def barcodes = states.collect{it.barcode}
         assert barcodes.clone().unique().size() == barcodes.size(), \
           "Error when gathering information for pool ${id}, barcodes are not unique!"
+        def well_ids = states.collect{it.well_id}
+        assert well_ids.clone().unique().size() == well_ids.size(), \
+          "Error when gathering information for pool ${id}, well IDs are not unique!"
         def custom_state = [
           "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
           "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
           "barcode": barcodes,
+          "well_id": well_ids,
           "star_output": states.collect{it.star_output},
           "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
         ]
