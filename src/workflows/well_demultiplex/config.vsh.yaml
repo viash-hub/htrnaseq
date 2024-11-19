@@ -41,6 +41,9 @@ argument_groups:
         type: string
         description: The original pool / sample name
         direction: output
+      - name: "--well_id"
+        type: string
+        direction: output
       - name: "--barcode"
         type: string
         direction: output
@@ -50,6 +53,10 @@ argument_groups:
       - name: "--pair_end"
         type: string
         direction: output
+      - name: "--n_wells"
+        type: integer
+        direction: output
+        description: The number of wells in the pool is well is a part of.
 resources:
   - type: nextflow_script
     path: main.nf
@@ -60,6 +67,9 @@ test_resources:
   - type: nextflow_script
     path: test.nf
     entrypoint: test_wf
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf2
 
 dependencies:
   - name: cutadapt

@@ -1,6 +1,5 @@
 from uuid import uuid4
 from textwrap import dedent
-from io import StringIO
 import pandas as pd
 import pytest
 import sys
@@ -35,14 +34,14 @@ def simple_input_file_one(random_tsv_path, request):
 
     contents = dedent(
     f"""\
-    WellBC	Chr	NumberOfReads	NumberOfGenes
-    AGG	{prefix}1	2	1
-    AGG	{prefix}2	3	2
-    AGG	{prefix}3	4	2
-    AGG	{mito_name}	4	2
-    AGG	{prefix}X	2	3
-    AGG	ERCC-1	1	1
-    AGG	ERCC-2	1	1
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    AGG	A1	{prefix}1	2	1
+    AGG	A1	{prefix}2	3	2
+    AGG	A1	{prefix}3	4	2
+    AGG	A1	{mito_name}	4	2
+    AGG	A1	{prefix}X	2	3
+    AGG	A1	ERCC-1	1	1
+    AGG	A1	ERCC-2	1	1
     """)
     output_file = random_tsv_path()
     with output_file.open("w") as open_file:
@@ -55,15 +54,15 @@ def simple_input_file_two(random_tsv_path, request):
     prefix = request.param
     contents = dedent(
     f"""\
-    WellBC	Chr	NumberOfReads	NumberOfGenes
-    CCC	{prefix}2	2	1
-    CCC	{prefix}3	3	2
-    CCC	{prefix}5	4	2
-    CCC	{prefix}1	4	2
-    CCC	{prefix}Y	2	3
-    CCC	{prefix}X	2	3
-    CCC	ERCC-3	1	1
-    CCC	ERCC-2	1	1
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    CCC	B2	{prefix}2	2	1
+    CCC	B2	{prefix}3	3	2
+    CCC	B2	{prefix}5	4	2
+    CCC	B2	{prefix}1	4	2
+    CCC	B2	{prefix}Y	2	3
+    CCC	B2	{prefix}X	2	3
+    CCC	B2	ERCC-3	1	1
+    CCC	B2	ERCC-2	1	1
     """)
     output_file = random_tsv_path()
     with output_file.open("w") as open_file:
@@ -85,6 +84,7 @@ def test_generate_pool_statistics_simple(run_component, simple_input_file_one,
     mito_name = f"{expected}M{'T' if not expected else ''}"
     expected_dict = {
         "WellBC": ["AGG", "CCC"],
+        "WellID": ["A1", "B2"],
         "ERCC-1": ["1", "0"],
         "ERCC-2": ["1", "1"],
         "ERCC-3": ["0", "1"],
@@ -118,11 +118,11 @@ def test_only_numerical_chromosomes(run_component, random_tsv_path):
     output_path = random_tsv_path()
     contents1 = dedent(
     f"""\
-    WellBC	Chr	NumberOfReads	NumberOfGenes
-    CCC	2	2	1
-    CCC	3	3	2
-    CCC	5	4	2
-    CCC	1	4	2
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    CCC	B2	2	2	1
+    CCC	B2	3	3	2
+    CCC	B2	5	4	2
+    CCC	B2	1	4	2
     """)
     input_file_1 = random_tsv_path()
     with input_file_1.open("w") as open_file:
@@ -130,11 +130,11 @@ def test_only_numerical_chromosomes(run_component, random_tsv_path):
 
     contents2 = dedent(
     f"""\
-    WellBC	Chr	NumberOfReads	NumberOfGenes
-    AGG	2	2	1
-    AGG	3	3	2
-    AGG	5	4	2
-    AGG	1	4	2
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    AGG	A1	2	2	1
+    AGG	A1	3	3	2
+    AGG	A1	5	4	2
+    AGG	A1	1	4	2
     """)
     input_file_2 = random_tsv_path()
     with input_file_2.open("w") as open_file:
@@ -148,6 +148,7 @@ def test_only_numerical_chromosomes(run_component, random_tsv_path):
 
     expected_dict = {
         "WellBC": ["AGG", "CCC"],
+        "WellID": ["A1", "B2"],
         "1": ["4", "4"],
         "2": ["2", "2"],
         "3": ["3", "3"],

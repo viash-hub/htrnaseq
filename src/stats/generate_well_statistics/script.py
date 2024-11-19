@@ -36,11 +36,11 @@ if __name__ == "__main__":
                                               columns=tags_selection)
     tag_dataframe_to_write = tag_dataframe.copy()
     logger.info("Done reading BAM file. Found %i entries", tag_dataframe.shape[0])
-    tag_dataframe.assign(WellBC=par["barcode"])\
+    tag_dataframe.assign(WellBC=par["barcode"], WellID=par["well_id"])\
         .reset_index(names="Chr")\
         .to_csv(par["processedBAMFile"], sep="\t", na_rep="",
                 header=True, index=False,
-                columns=("WellBC", "Chr") + tags_selection)
+                columns=("WellBC", "WellID", "Chr") + tags_selection)
     logger.info("Constructing of dataframe done.")
     # Number of genes that had a read mapped to them per chromosome,
     # and the number of reads mapped to those genes per chromosome.
@@ -50,19 +50,19 @@ if __name__ == "__main__":
     )
     logger.info("Done calculating number of reads per gene and per chromesome. Writing to %s",
                 par['nrReadsNrGenesPerChrom'])
-    nr_reads_nr_genes.reset_index(names="Chr").assign(WellBC=par["barcode"])\
+    nr_reads_nr_genes.reset_index(names="Chr").assign(WellBC=par["barcode"], WellID=par["well_id"])\
         .to_csv(par["nrReadsNrGenesPerChrom"], sep="\t",
                 header=True, index=False, 
-                columns=("WellBC", "Chr", "NumberOfReads", "NumberOfGenes"))
+                columns=("WellBC", "WellID", "Chr", "NumberOfReads", "NumberOfGenes"))
 
     # Number of reads mapped to the reference, grouped by UMI
     nr_read_per_umi = tag_dataframe.groupby('UB').size()\
         .drop("", errors="ignore").sort_values(ascending=False).head(100)
     nr_read_per_umi_df = nr_read_per_umi.to_frame(name="N")
     logger.info("Done calculating number of mapped reads per UMI, writing to %s", par["umiFreqTop"])
-    nr_read_per_umi_df.assign(WellBC=par["barcode"]).reset_index(names="UB")\
+    nr_read_per_umi_df.assign(WellBC=par["barcode"], WellID=par["well_id"]).reset_index(names="UB")\
         .to_csv(par["umiFreqTop"], header=True, sep="\t", 
-                index=False, columns=("WellBC", "UB", "N"))
+                index=False, columns=("WellBC", "WellID", "UB", "N"))
 
     # Total number of mapped reads and total number of UMIs (not grouped per chromosome)
     nr_reads_and_umi_per_barcode = tag_dataframe.groupby(by="CB").agg(
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     )
     logger.info("Done calculating number of mapped reads and number of UMIs per Cell Barcode, writing to %s",
                 par["nrReadsNrUMIsPerCB"])
-    nr_reads_and_umi_per_barcode.assign(WellBC=par["barcode"]).reset_index(names="CB")\
+    nr_reads_and_umi_per_barcode.assign(WellBC=par["barcode"], WellID=par["well_id"]).reset_index(names="CB")\
         .to_csv(par["nrReadsNrUMIsPerCB"], sep="\t", header=True, 
-                index=False, columns=("WellBC", "CB", "NumberOfReads", "nrUMIs"))
+                index=False, columns=("WellBC", "WellID", "CB", "NumberOfReads", "nrUMIs"))
     logger.info("Finished!")

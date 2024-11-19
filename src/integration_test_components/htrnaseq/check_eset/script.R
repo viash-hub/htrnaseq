@@ -129,6 +129,7 @@ stopifnot(identical(sampleNames(sample_1_result), expected_sample_names))
 
 expected_var_labels <- c(
   "WellBC",
+  "WellID",
   "NumberOfMTReads",
   "pctMT",
   "NumberOfERCCReads",

@@ -18,4 +18,15 @@ nextflow \
   -entry test_wf \
   -resume \
   -profile docker,local \
-  --publish_dir output \
+  --publish_dir output
+
+
+nextflow \
+  run . \
+  -main-script src/workflows/well_demultiplex/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_wf2 \
+  -resume \
+  -profile docker,local \
+  --publish_dir output_2 \
+

@@ -15,6 +15,11 @@ argument_groups:
           The barcode for the well that is being processed. Is only used to add a metadata
           column to all output files.
         required: true
+      - name: "--well_id"
+        type: string
+        description: |
+          ID of this well. Only used to add a metadata column to the output files.
+        required: true
       - name: "--processedBAMFile"
         type: file
         description: |
