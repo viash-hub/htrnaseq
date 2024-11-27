@@ -3,6 +3,11 @@ description: |
   Map wells in batch, using STAR
   Spliced Transcripts Alignment to a Reference (C) Alexander Dobin
   https://github.com/alexdobin/STAR
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ maintainer ]
+  - __merge__: /src/base/authors/toni_verbeiren.yaml
+    roles: [ author, maintainer ]
 requirements:
   commands:
     - STAR
