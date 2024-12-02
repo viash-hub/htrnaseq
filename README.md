@@ -122,3 +122,8 @@ nextflow run . -main-script target/nextflow/workflows/htrnaseq/main.nf \
 ```
 
 Or, by running `src/workflows/htrnaseq/integration_test.sh`.
+
+
+# Special Thanks
+
+Developed in collaboration with Data Intuitive and Open Analytics.

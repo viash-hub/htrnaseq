@@ -2,6 +2,11 @@ name: create_pdata
 namespace: eset
 description: |
   Create a pdata file by combining the mapping statistics 
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ maintainer ]
+  - __merge__: /src/base/authors/marijke_van_moerbeke.yaml
+    roles: [ contributor ]
 arguments:
 - name: "--star_stats_file"
   type: file
