@@ -1,5 +1,10 @@
 name: generate_pool_statistics
 namespace: "stats"
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ author, maintainer ]
+  - __merge__: /src/base/authors/marijke_van_moerbeke.yaml
+    roles: [ contributor ]
 argument_groups:
   - name: "Arguments"
     arguments:

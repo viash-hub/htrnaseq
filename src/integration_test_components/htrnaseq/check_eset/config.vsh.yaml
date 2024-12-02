@@ -1,6 +1,9 @@
 name: "check_eset"
 namespace: "integration_test_components/htrnaseq"
 description: "This component test the ExpressionSet object as output by the main pipeline."
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ author, maintainer ]
 argument_groups:
   - name: Inputs
     arguments:

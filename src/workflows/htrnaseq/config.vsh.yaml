@@ -1,5 +1,8 @@
 name: htrnaseq
 namespace: workflows
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ maintainer ]
 argument_groups:
   - name: Input arguments
     arguments:

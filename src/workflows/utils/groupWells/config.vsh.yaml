@@ -2,6 +2,9 @@ name: groupWells
 namespace: workflows/utils
 description: |
   N/A
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ maintainer ]
 argument_groups:
   - name: Inputs
     arguments:
