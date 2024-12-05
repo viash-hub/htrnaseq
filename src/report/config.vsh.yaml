@@ -1,0 +1,71 @@
+name: create_report
+namespace: "reports"
+argument_groups:
+  - name: "Arguments"
+    arguments:
+    - type: file
+      name: "--esetDir"
+      required: true
+    - type: file
+      name: "--outputDir"
+      required: true
+      direction: output
+      default: report.$id.html
+resources:
+  - type: r_script
+    path: script.R
+  - type: r_script
+    path: template.Rmd
+  - type: r_script
+    path: plateLayouts.R
+  - path: OutputSTARsolo.png 
+    type: file
+  - path: oaStyle_0.4.3.tar.gz
+    type: file  
+test_resources:
+  - type: r_script
+    path: test.R
+  - path: ./test_data
+engines:
+  - type: docker
+    image: r-base:4.3.0
+    setup:
+      - type: apt
+        packages: # most of these are required for devtools
+          - libcurl4-openssl-dev
+          - libssl-dev
+          - libxml2-dev
+          - procps
+          - pandoc
+          - default-jre
+          - default-jdk
+          - libnlopt-dev
+          - r-base-dev
+          - r-recommended
+      - type: docker
+        copy: 
+          - oaStyle_0.4.3.tar.gz "/tmp/oaStyle_0.4.3.tar.gz"
+      - type: r
+        bioc:
+          - Biobase
+          - ComplexHeatmap
+        cran:
+          - ggplot2
+          - knitr
+          - gridExtra
+          - RColorBrewer
+          - processx
+          - whisker
+          - rmarkdown
+          - bookdown
+          - data.table
+          - platetools
+          - htmltools
+          - DT
+        script:
+          - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))  
+runners:
+  - type: executable
+  - type: nextflow
+
+     
