@@ -5,9 +5,10 @@ editor_options:
   chunk_output_type: console
 output: 
   oaStyle::html_report
+# parameters which are overwritten by the script
 params:
-  outputDir: '{{outputDir}}'
-  esetDir: '{{esetDir}}'
+  outputDir: 'output/'
+  esetDir: 'esetDir/'
 ---
 
 <!---
@@ -35,25 +36,21 @@ esetDir <- params$esetDir
 ```
 
 
-```{r rerunReport, eval = FALSE, echo = FALSE}
-rm(list=ls())
-rmarkdown::render('{{template}}', params = list(
-  outputDir = '{{outputDir}}',
-  esetDir = '{{esetDir}}'
-  )
-)
-```
-
-
 ```{r outputDir, echo = FALSE}
-	
-	## Required: ABSOLUTE outputDir
-  outputDir <- file.path(outputDir)
+## Required: ABSOLUTE outputDir
+outputDir <- file.path(outputDir)
 
-	# When working on a windows computer it should be "/Users/..." instead of "C:/Users/..."
-	if(.Platform$OS.type == "windows") 
-		outputDir <- paste0("/", paste(unlist(strsplit(outputDir, split = "/"))[-1], collapse = "/"),"/")
-
+# When working on a windows computer it should be
+# "/Users/..." instead of "C:/Users/..."
+if (.Platform$OS.type == "windows") {
+  outputDir <- paste0(
+    "/",
+    paste(
+      unlist(strsplit(outputDir, split = "/"))[-1], collapse = "/"
+    ),
+    "/"
+  )
+}
 ```
 
 
@@ -61,30 +58,29 @@ rmarkdown::render('{{template}}', params = list(
 
 ```{r optionsChunkDoNotModify, echo = FALSE, message = FALSE, warning=FALSE}
 
-	## Chunk with options for knitr. This chunk should not be modified.
+## Chunk with options for knitr. This chunk should not be modified.
+knitr::opts_chunk$set(
+  eval = TRUE,
+  echo = FALSE, 
+  message = FALSE,
+  cache = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  comment = NA, #"#",
+  tidy = FALSE,
+  collapse = TRUE,
+  out.width = "100%",
+  fig.width = 20,
+  fig.height = 10,
+  fig.path = "graphs/",
+  base.dir = outputDir,
+  root.dir = outputDir,
+  results = "asis")
 
-	knitr::opts_chunk$set(
-		eval = TRUE, 
-		echo = FALSE, 
-		message = FALSE,
-		cache = FALSE,
-		warning = FALSE,
-		error = FALSE,
-		comment = NA, #"#", 
-	  tidy = FALSE,
-		collapse = TRUE,
-		out.width = "100%",
-		fig.width = 20, 
-		fig.height= 10,
-		base.dir = outputDir,
-		fig.path = "graphs/",
-		root.dir = outputDir,
-		results = "asis")
+knitr::opts_knit$set(root.dir = getwd())
 
-	knitr::opts_knit$set(root.dir = getwd())
-	
-	options(warn = 1, width = 200)
-	
+options(warn = 1, width = 200)
+
 ```
 
 ```{r libraries_and_functions}
@@ -102,17 +98,21 @@ library(RColorBrewer)
 ```{r dataImport}
 
 esets_raw <- c()
-if(dir.exists(esetDir)){
-  esets_raw <- list.files(esetDir, pattern = "eset.*rds",full.names = T)
-}else{
+if (dir.exists(esetDir)) {
+  esets_raw <- list.files(esetDir, pattern = "eset.*rds", full.names = T)
+}else {
   stop("At least one of the esetDirs does not exists.")
 }
 
-# Create esetList  
-esetList <- sapply(esets_raw, simplify = FALSE, USE.NAMES = TRUE, function(eset_raw){
-  eset <- readRDS(eset_raw)
-})
-pools <- sapply(esetList, function(eset){
+# Create esetList
+esetList <- sapply(
+  esets_raw, simplify = FALSE,
+  USE.NAMES = TRUE,
+  function(eset_raw) {
+    eset <- readRDS(eset_raw)
+  }
+)
+pools <- sapply(esetList, function(eset) {
   unique(eset$PoolName)
 })
 names(esetList) <- unlist(pools)
@@ -124,53 +124,63 @@ qcData <- rbindlist(pDataList, fill = TRUE)
 textVars <- "SampleName"
 annotationVar <- "PoolName"
 
-if(!"SampleName" %in% names(qcData)){
+if (!"SampleName" %in% names(qcData)) {
   qcData[, SampleName := paste0(PoolName, "_", WellBC)]
 }
-qcData[,log10LibSize := round(log10(NumberOfInputReads))]
-qcData[,(annotationVar):= lapply(.SD, as.factor), .SDcols = annotationVar]
+qcData[, log10LibSize := round(log10(NumberOfInputReads))]
+qcData[, (annotationVar) := lapply(.SD, as.factor), .SDcols = annotationVar]
 
 
 colourList <- list()
-Design_levels <- sort(as.character(unique(qcData[,..annotationVar][[1]])),decreasing = TRUE)
+Design_levels <- sort(
+  as.character(unique(qcData[, ..annotationVar][[1]])),
+  decreasing = TRUE
+)
 
-if(length(Design_levels)==1){
-  
+if (length(Design_levels) == 1) {
   colours <- c("#d6e0ff", "lightgrey")
-  names(colours) <- c(Design_levels,"Empty")
-  colourList[[annotationVar]] <- list("colours" = colours, "annotVar" = annotationVar, "text" = textVars)
-  
-}else if(length(Design_levels)==2){
-  
-  
-  colours <- c("#d6e0ff","#FF9999")
-  
+  names(colours) <- c(Design_levels, "Empty")
+    colourList[[annotationVar]] <- list(
+      "colours" = colours,
+      "annotVar" = annotationVar,
+      "text" = textVars
+    )
+}else if (length(Design_levels) == 2) {
+  colours <- c("#d6e0ff", "#FF9999")
+
   names(colours) <- c(Design_levels)
-  colourList[[annotationVar]] <- list("colours" = colours, "annotVar" = annotationVar, "text" = textVars)
-  
-}else if(length(Design_levels)<=20){
-  
-  if(length(Design_levels)>12){
-    colours <- c(brewer.pal(12, "Set3"), brewer.pal((length(Design_levels)-12), "Pastel2"))
-  }else{
+  colourList[[annotationVar]] <- list(
+    "colours" = colours,
+    "annotVar" = annotationVar,
+    "text" = textVars
+  )
+} else if (length(Design_levels) <= 20) {
+
+  if (length(Design_levels) > 12) {
+    colours <- c(
+      brewer.pal(12, "Set3"),
+      brewer.pal((length(Design_levels) - 12),
+      "Pastel2")
+    )
+  } else {
     colours <- c(brewer.pal(length(Design_levels), "Set3"))
   }
-  
-  
+
   names(colours) <- c(Design_levels)
-  colourList[[annotationVar]] <- list("colours" = colours, "annotVar" = annotationVar, "text" = textVars)
-  
-}else{
-  
+  colourList[[annotationVar]] <- list(
+    "colours" = colours,
+    "annotVar" = annotationVar,
+    "text" = textVars
+  )
+} else {
   colours <- c("#d6e0ff")
   names(colours) <- c("nonEmpty")
-  colourList[[annotVar]] <- list("colours" = colours, "annotVar" = annotVar, "text" = annotVar)
-  
-} 
-
-
-
-
+  colourList[[annotVar]] <- list(
+    "colours" = colours,
+    "annotVar" = annotVar,
+    "text" = annotVar
+  )
+}
 ```
 
 # Pool Description
@@ -196,35 +206,36 @@ Per pool within this study, there are several pool layout plots shown, based on 
 
 ```{r plateAnnotation, out.width = "100%",fig.width = 20, fig.height= 10}
 
-plateVars <- c("NumberOfInputReads", "log10LibSize", "NumberOfMappedReads", "NumberOfChromReads", "NumberOfUMIs","NumberOfGenes", "pctMT", "pctERCC")
+plateVars <- c("NumberOfInputReads", "log10LibSize", "NumberOfMappedReads",
+               "NumberOfChromReads", "NumberOfUMIs", "NumberOfGenes",
+               "pctMT", "pctERCC")
 
-breaksVars <- lapply(plateVars, function(var){ computeBreaks(7, qcData[, ..var])})
+breaksVars <- lapply(
+  plateVars,
+  function(var) {
+    computeBreaks(7, qcData[, ..var])
+  }
+)
 names(breaksVars) <- plateVars
 
-for(pool in pools){
-  
+for (pool in pools){
   cat("\n\n")
-  cat(paste0('## ', pool, " {.tabset} \n\n"))
-  
+  cat(paste0("## ", pool, " {.tabset} \n\n"))
   poolData <- qcData[PoolName == pool]
-  
-  lapply(plateVars, function(plateVar){
-    
-  cat("\n\n")
-  cat(sprintf("### %s {.unnumbered}", plateVar))
-  cat("\n\n")
-  plateLayout(poolData, valueVariable = plateVar , textFontSize = 10, legendFontSize = 12,
-              plateName = pool, plot.title = "libSize - ", legend.title = "libSize", 
-              breaks = breaksVars[[plateVar]])
-  cat("\n\n")
-    
-    
+  lapply(plateVars, function(plateVar) {
+    cat("\n\n")
+    cat(sprintf("### %s {.unnumbered}", plateVar))
+    cat("\n\n")
+    plateLayout(
+      poolData, valueVariable = plateVar,
+      textFontSize = 10, legendFontSize = 12,
+      plateName = pool, plot.title = "libSize - ",
+      legend.title = "libSize", breaks = breaksVars[[plateVar]]
+    )
+    cat("\n\n")
   })
-
   cat("\n\n")
-
 }
- 
 ```
 
 <br>
@@ -262,9 +273,26 @@ figHeight = 7
 
 
 ```{r boxplots_input_plate, fig.height = figHeight}
-
-ggplot(qcData, aes(x=PoolName, y = NumberOfInputReads, colour=PoolName)) + geom_boxplot() + ylab('Number of Input Reads') + 
-    ggtitle('Number of Input Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(
+    x = PoolName,
+    y = NumberOfInputReads, colour = PoolName
+  )
+) + geom_boxplot() + ylab("Number of Input Reads") +
+  ggtitle("Number of Input Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 
 ```
 
@@ -275,16 +303,48 @@ ggplot(qcData, aes(x=PoolName, y = NumberOfInputReads, colour=PoolName)) + geom_
 
 ```{r boxplots_mapped_plate, fig.height = figHeight}
 
-ggplot(qcData, aes(x=PoolName, y = NumberOfMappedReads, colour = PoolName)) + geom_boxplot() + ylab('Number of Mapped Reads') + 
-    ggtitle('Number of Mapped Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = PoolName, y = NumberOfMappedReads, colour = PoolName)
+) + geom_boxplot() + ylab("Number of Mapped Reads") +
+  ggtitle("Number of Mapped Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 
 #### pct Mapped Reads {.unnumbered}
 
 ```{r boxplots_pctMapped_plate, fig.height = figHeight}
-ggplot(qcData, aes(x=PoolName, y = PctMappedReads, colour = PoolName)) + geom_boxplot() + ylab('pct Mapped Reads') + 
-    ggtitle('pct Mapped Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = PoolName, y = PctMappedReads, colour = PoolName)
+) +
+  geom_boxplot() +
+  ylab("pct Mapped Reads") +
+  ggtitle("pct Mapped Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 ### Number of Chromosomal Reads {.tabset .unnumbered}
@@ -293,8 +353,23 @@ ggplot(qcData, aes(x=PoolName, y = PctMappedReads, colour = PoolName)) + geom_bo
 
 ```{r boxplots_chrom_plate, fig.height = figHeight}
 
-ggplot(qcData, aes(x=PoolName, y = NumberOfChromReads, colour = PoolName)) + geom_boxplot() + ylab('Number of Chromosomal Reads') + 
-    ggtitle('Number of Chromosomal Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = PoolName, y = NumberOfChromReads, colour = PoolName)
+) + geom_boxplot() + ylab("Number of Chromosomal Reads") +
+  ggtitle("Number of Chromosomal Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 
 ```
 
@@ -302,9 +377,23 @@ ggplot(qcData, aes(x=PoolName, y = NumberOfChromReads, colour = PoolName)) + geo
 
 ```{r boxplots_pctChrom_plate, fig.height = figHeight}
 
-ggplot(qcData, aes(x=PoolName, y = pctChrom, colour = PoolName)) + geom_boxplot() + ylab('pct Chromosomal Reads') + 
-    ggtitle('pct Chromosomal Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
-
+ggplot(
+  qcData,
+  aes(x = PoolName, y = pctChrom, colour = PoolName)
+) + geom_boxplot() + ylab("pct Chromosomal Reads") +
+  ggtitle("pct Chromosomal Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 ### Number of UMIs {.tabset .unnumbered}
@@ -314,8 +403,23 @@ ggplot(qcData, aes(x=PoolName, y = pctChrom, colour = PoolName)) + geom_boxplot(
 
 ```{r boxplots_umi_plate, fig.height = figHeight}
 
-ggplot(qcData, aes(x=PoolName, y = NumberOfUMIs, colour=PoolName)) + geom_boxplot() + ylab('Number of UMIs') + 
-    ggtitle('Number of UMIs') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = PoolName, y = NumberOfUMIs, colour = PoolName)
+) + geom_boxplot() + ylab("Number of UMIs") +
+  ggtitle('Number of UMIs') +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 
 ```
 
@@ -324,27 +428,61 @@ ggplot(qcData, aes(x=PoolName, y = NumberOfUMIs, colour=PoolName)) + geom_boxplo
 ```{r density_numberOfUMIs}
 
 ## Pre-filtering data exploration
-dt_plot <- melt(qcData, id.vars = c("SampleName", "PoolName", "WellID"), measure.vars =c("NumberOfInputReads", "NumberOfMappedReads", "NumberOfUMIs"))
+dt_plot <- melt(
+  qcData,
+  id.vars = c("SampleName", "PoolName", "WellID"),
+  measure.vars = c("NumberOfInputReads", "NumberOfMappedReads", "NumberOfUMIs")
+)
 
 readsDensity_plot <- ggplot(dt_plot, aes(value))
-readsDensity_plot <- readsDensity_plot + geom_density(aes(fill=variable), alpha=0.8) + 
+readsDensity_plot <- readsDensity_plot +
+  geom_density(aes(fill = variable), alpha=0.8) +
   facet_grid(~ PoolName, scales = "free_x", space = "fixed", drop = TRUE) +
-  geom_vline(xintercept = 5e5, linetype="dashed", color = "steelblue3", size=2) +
-  annotate("text", x=3.5e5, y=2e-6, label="500k", angle=90, color = "steelblue3",size = 10) +
-  geom_vline(xintercept = 1.5e6, linetype="dashed", color = "forestgreen", size=2) +
-  annotate("text", x=1.35e6, y=2e-6, label="1.5M", angle=90, color = "forestgreen", size = 10) +
-  labs(title="Density plot", 
-       subtitle=paste0("# Samples with NumberOfMappedReads > 1.5M: ",
-                       length(which(qcData$NumberOfMappedReads > 1.5e6)), 
-                       "\n# Samples with NumberOfUMIs > 500k: ",
-                       length(which(qcData$NumberOfUMIs > 5e5))),
-       caption=paste0("# Total samples (after removing empty): ",nrow(qcData)),
-       x="Count",
-       fill="Variable") +
-   theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=5), axis.text.x = element_text(angle = 90,size = 14), plot.title = element_text(size=18), plot.subtitle= element_text(size=17), plot.caption = element_text(size=15), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15), axis.text.y=element_blank(),axis.ticks.y=element_blank(), axis.title.y=element_blank())
-
-
-
+  geom_vline(
+    xintercept = 5e5,
+    linetype = "dashed",
+    color = "steelblue3", size = 2
+  ) +
+  annotate(
+    "text",
+    x = 3.5e5, y = 2e-6, label = "500k",
+    angle = 90, color = "steelblue3", size = 10
+  ) +
+  geom_vline(
+    xintercept = 1.5e6, linetype = "dashed",
+    color = "forestgreen", size = 2
+  ) +
+  annotate(
+    "text", x = 1.35e6, y = 2e-6, label = "1.5M",
+    angle = 90, color = "forestgreen", size = 10
+  ) +
+  labs(
+    title = "Density plot",
+    subtitle = paste0(
+      "# Samples with NumberOfMappedReads > 1.5M: ",
+      length(which(qcData$NumberOfMappedReads > 1.5e6)),
+      "\n# Samples with NumberOfUMIs > 500k: ",
+      length(which(qcData$NumberOfUMIs > 5e5))
+    ),
+    caption = paste0("# Total samples (after removing empty): ", nrow(qcData)),
+    x = "Count",
+    fill = "Variable"
+  ) +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 5),
+    axis.text.x = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    plot.subtitle = element_text(size = 17),
+    plot.caption = element_text(size = 15),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank()
+  )
 readsDensity_plot
 
 ```
@@ -354,8 +492,24 @@ readsDensity_plot
 #### Distribution {.unnumbered}
 
 ```{r boxplots_genes_plate, fig.height = figHeight}
-ggplot(qcData, aes(x=PoolName, y = NumberOfGenes, colour = PoolName)) + geom_boxplot() + ylab('Number of Genes') + 
-    ggtitle('Number of Genes') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = PoolName, y = NumberOfGenes, colour = PoolName)
+) +
+  geom_boxplot() + ylab("Number of Genes") + 
+  ggtitle("Number of Genes") + 
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 ## {.tabset .toc-ignore .unnumbered}
@@ -383,9 +537,24 @@ In addition, several plots are shown visualizing the efficiency of the reads-to-
 
 ```{r mapping_efficiency_1_plate, fig.height = 7}
 
-ggplot(qcData, aes(x = NumberOfInputReads, y = NumberOfMappedReads, colour = PoolName)) + geom_point() + 
-     xlab('Number of Input Reads') + ylab("Number of Mapped Reads") +
-    ggtitle('Number of Mapped Reads vs Number of Input Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18),legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
+ggplot(
+  qcData,
+  aes(x = NumberOfInputReads, y = NumberOfMappedReads, colour = PoolName)
+) + 
+  geom_point() +
+  xlab("Number of Input Reads") +
+  ylab("Number of Mapped Reads") +
+  ggtitle("Number of Mapped Reads vs Number of Input Reads") + 
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+  )
 
 ```
 
@@ -394,9 +563,22 @@ ggplot(qcData, aes(x = NumberOfInputReads, y = NumberOfMappedReads, colour = Poo
 
 ```{r mapping_efficiency_2_plate, fig.height = 7}
 
-ggplot(qcData, aes(x = NumberOfChromReads, y = NumberOfMappedReads, colour = PoolName)) + geom_point() + 
-     xlab('Number of Chromosomal Reads') + ylab("Number of Mapped Reads") +
-    ggtitle('Number of Chromosomal Reads vs Number of Mapped Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
+ggplot(
+  qcData,
+  aes(x = NumberOfChromReads, y = NumberOfMappedReads, colour = PoolName)
+) + geom_point() +
+  xlab("Number of Chromosomal Reads") + ylab("Number of Mapped Reads") +
+  ggtitle("Number of Chromosomal Reads vs Number of Mapped Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+)
 
 ```
 
@@ -405,9 +587,22 @@ ggplot(qcData, aes(x = NumberOfChromReads, y = NumberOfMappedReads, colour = Poo
 
 ```{r mapping_efficiency_4_plate, fig.height = 7}
 
-ggplot(qcData, aes(x =NumberOfUMIs , y =  NumberOfMappedReads, colour = PoolName)) + geom_point() + 
-     ylab('Number of Mapped Reads') + xlab("Number of UMIs ") +
-    ggtitle('Number of UMIs vs Number of Mapped Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
+ggplot(
+  qcData,
+  aes(x =NumberOfUMIs, y =  NumberOfMappedReads, colour = PoolName)
+) + geom_point() +
+  ylab("Number of Mapped Reads") + xlab("Number of UMIs ") +
+  ggtitle("Number of UMIs vs Number of Mapped Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+  )
 
 ```
 
@@ -416,19 +611,43 @@ ggplot(qcData, aes(x =NumberOfUMIs , y =  NumberOfMappedReads, colour = PoolName
 #### Number of Mapped Reads {.unnumbered}
 
 ```{r gene_efficiency_1_plate, fig.height = 7} 
-ggplot(qcData, aes(x = NumberOfMappedReads, y = NumberOfGenes, colour = PoolName)) + geom_point() + 
-     ylab('Number of Genes') + xlab("Number of Mapped Reads") + 
-    ggtitle('Number of Genes vs Number of Mapped Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
-
+ggplot(
+  qcData,
+  aes(x = NumberOfMappedReads, y = NumberOfGenes, colour = PoolName)
+) + geom_point() +
+  ylab("Number of Genes") + xlab("Number of Mapped Reads") +
+  ggtitle("Number of Genes vs Number of Mapped Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+  )
 ```
 
 #### Number of Chromosomal Reads {.unnumbered}
 
 ```{r gene_efficiency_2_plate, fig.height = 7} 
-ggplot(qcData, aes(x = NumberOfChromReads, y = NumberOfGenes, colour = PoolName)) + geom_point() + 
-     ylab('Number of Genes') + xlab("Number of Chromosomal Reads") + 
-    ggtitle('Number of Genes vs Number of Chromosomal Reads') + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
-
+ggplot(
+  qcData,
+  aes(x = NumberOfChromReads, y = NumberOfGenes, colour = PoolName)
+) + geom_point() +
+  ylab("Number of Genes") + xlab("Number of Chromosomal Reads") +
+  ggtitle("Number of Genes vs Number of Chromosomal Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+  )
 ```
 
 
@@ -445,7 +664,23 @@ In addition, the sequencing saturation vs the number of input reads is shown.
 
 ```{r sequencingSaturation, fig.height = figHeight}
 
-ggplot(qcData,aes(x= WellID, y = SequencingSaturation, fill = PoolName)) + geom_bar(stat = "identity", position = "dodge") + xlab("Samples") + ggtitle("Sequencing Saturation per Sample") + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(1, "lines"), text = element_text(size=10), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15), axis.text.x=element_blank(), axis.text.y = element_text(size = 15),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = WellID, y = SequencingSaturation, fill = PoolName)
+) + geom_bar(stat = "identity", position = "dodge") +
+  xlab("Samples") + ggtitle("Sequencing Saturation per Sample") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(1, "lines"),
+    text = element_text(size = 10),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size = 15),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 ### Sequencing Saturation - Input Reads {.unnumbered}
@@ -454,16 +689,40 @@ ggplot(qcData,aes(x= WellID, y = SequencingSaturation, fill = PoolName)) + geom_
 ```{r sequencingSaturation_inputReads, fig.height = figHeight}
 
 
-ggplot(qcData,aes(x= NumberOfInputReads, y = SequencingSaturation, colour = PoolName)) + geom_point() +
-  ggtitle("Sequencing Saturation vs Number of Input Reads") + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
+ggplot(
+  qcData,
+  aes(x = NumberOfInputReads, y = SequencingSaturation, colour = PoolName)
+) + geom_point() +
+  ggtitle("Sequencing Saturation vs Number of Input Reads") +
+  theme(strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+  )
 ```
 
 ### Sequencing Saturation  - Mapped Reads {.unnumbered}
 
 ```{r sequencingSaturation_mappedReads, fig.height = figHeight}
-ggplot(qcData,aes(x= NumberOfChromReads, y = SequencingSaturation, colour = PoolName)) + geom_point() +
-  ggtitle("Sequencing Saturation vs Number of Chromosomal Reads") + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"), text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
-
+ggplot(
+  qcData,
+  aes(x = NumberOfChromReads, y = SequencingSaturation, colour = PoolName)
+) + geom_point() +
+  ggtitle("Sequencing Saturation vs Number of Chromosomal Reads") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size=10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size=18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+)
 ```
 
 <br>
@@ -492,9 +751,23 @@ The 5th plot shows the percentage of reads mapped to the transcriptome (as count
 
 ```{r genomicOrigin_chrom_plate, fig.height = figHeight}
 
-ggplot(qcData, aes(x=PoolName, y=pctChrom, colour=PoolName)) +
+ggplot(
+  qcData, aes(x = PoolName, y = pctChrom, colour = PoolName)
+) +
   geom_boxplot() +
-  ggtitle("pctChrom") + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+  ggtitle("pctChrom") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 
@@ -502,18 +775,44 @@ ggplot(qcData, aes(x=PoolName, y=pctChrom, colour=PoolName)) +
 
 ```{r genomicOrigin_mt_plate, fig.height = figHeight}
 
-ggplot(qcData, aes(x=PoolName, y=pctMT, colour=PoolName)) +
-  geom_boxplot() + 
-   ggtitle("pctMT") + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(
+  qcData,
+  aes(x = PoolName, y = pctMT, colour = PoolName)
+) +
+  geom_boxplot() + ggtitle("pctMT") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 ### pctERCC {.tabset .unnumbered}
 
 
 ```{r genomicOrigin_ercc_plate, fig.height = figHeight}
-ggplot(qcData, aes(x=PoolName, y=pctERCC, colour=PoolName))  +
-  geom_boxplot() + 
-   ggtitle("pctERCC") + theme(strip.text.x = element_text(size = 20),panel.spacing = unit(2, "lines"),text = element_text(size=10), axis.text.y = element_text(angle = 90,size = 14), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title.y = element_text(size = 15),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+ggplot(qcData, aes(x = PoolName, y = pctERCC, colour = PoolName))  +
+  geom_boxplot() +
+  ggtitle("pctERCC") +
+  theme(
+    strip.text.x = element_text(size = 20),
+    panel.spacing = unit(2, "lines"),
+    text = element_text(size = 10),
+    axis.text.y = element_text(angle = 90, size = 14),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
 
 
@@ -522,10 +821,30 @@ ggplot(qcData, aes(x=PoolName, y=pctERCC, colour=PoolName))  +
 
 
 ```{r genomicOrigin_summary_plate}
-meanPctChromMTData <- qcData[,.('pctChrom'= median(pctChrom), 'pctMT'=median(pctMT),'pctERCC'=median(pctERCC)), by = PoolName]
-meanPctChromMTDataLong <- melt(meanPctChromMTData, id.vars="PoolName", measure.vars=c("pctChrom","pctMT","pctERCC"),variable.name="Origin",value.name="pct")
-ggplot(meanPctChromMTDataLong, aes(fill=Origin, y=pct, x=PoolName)) +
-  geom_bar(position="stack", stat="identity") + ggtitle("Genomic Origin") + theme(text = element_text(size=10), axis.text = element_text(angle = 90,size = 15), plot.title = element_text(size=18), legend.text = element_text(size=15), legend.title = element_text(size = 17), axis.title = element_text(size = 15))
+meanPctChromMTData <- qcData[, .(
+  "pctChrom" = median(pctChrom),
+  "pctMT" = median(pctMT),
+  "pctERCC" = median(pctERCC)
+), by = PoolName]
+meanPctChromMTDataLong <- melt(
+  meanPctChromMTData,
+  id.vars = "PoolName",
+  measure.vars = c("pctChrom", "pctMT", "pctERCC"),
+  variable.name = "Origin", value.name = "pct"
+)
+ggplot(
+  meanPctChromMTDataLong,
+  aes(fill = Origin, y = pct, x = PoolName)) +
+  geom_bar(position = "stack", stat = "identity") +
+  ggtitle("Genomic Origin") +
+  theme(
+    text = element_text(size = 10),
+    axis.text = element_text(angle = 90, size = 15),
+    plot.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 17),
+    axis.title = element_text(size = 15)
+  )
 
 ```
 
@@ -537,32 +856,47 @@ ggplot(meanPctChromMTDataLong, aes(fill=Origin, y=pct, x=PoolName)) +
 ```{r depletion}
 
 
-for (eset_name in pools){
-  
+for (eset_name in pools) {
   cat("\n\n")
-  cat(paste0('## ',eset_name," {.unnumbered}"))
+  cat(paste0("## ", eset_name, " {.unnumbered}"))
   cat("\n\n")
 
   eset <- esetList[[eset_name]]
   average_reads <- sort(apply(exprs(eset), 1, mean), decreasing = TRUE)
-  plotData <- data.table(ENSGID = names(average_reads), av_count = average_reads)
-  
-  gen_descript <- data.table(ENSGID = eset@featureData@data$gene_id, Description = eset@featureData@data$GENENAME)
-  order_gen_descript <-gen_descript[match(plotData$ENSGID, gen_descript$ENSGID),]
+  plotData <- data.table(
+    ENSGID = names(average_reads),
+    av_count = average_reads
+  )
 
-  g <- ggplot(plotData[c(1:100)], aes (x = reorder(ENSGID, -av_count), y = av_count)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 12),axis.text.y = element_text(size = 12),legend.text = element_text(size = 15), legend.title = element_text(size = 15), axis.title=element_text(size=18), plot.title = element_text(size = 20)) + ylab("Average Counts") + xlab("Genes")
-  
+  gen_descript <- data.table(
+    ENSGID = eset@featureData@data$gene_id,
+    Description = eset@featureData@data$GENENAME
+  )
+  order_gen_descript <- gen_descript[
+    match(plotData$ENSGID, gen_descript$ENSGID),
+  ]
+
+  g <- ggplot(
+    plotData[c(1:100)],
+    aes(x = reorder(ENSGID, -av_count), y = av_count)
+  ) + geom_bar(stat = "identity") +
+    theme(
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 12),
+      axis.text.y = element_text(size = 12),
+      legend.text = element_text(size = 15),
+      legend.title = element_text(size = 15),
+      axis.title = element_text(size = 18),
+      plot.title = element_text(size = 20)
+    ) + ylab("Average Counts") + xlab("Genes")
+
   print(g)
-  
+
   cat("\n\n")
   cat("<br>")
   cat("<br>")
 
-  print(htmltools::tagList((DT::datatable(order_gen_descript[1:100,]))))
-  
+  print(htmltools::tagList((DT::datatable(order_gen_descript[1:100, ]))))
 }
-
-
 ```
 </div>
 

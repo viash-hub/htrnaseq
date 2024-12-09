@@ -4,13 +4,13 @@ argument_groups:
   - name: "Arguments"
     arguments:
     - type: file
-      name: "--esetDir"
+      name: "--eset_dir"
       required: true
     - type: file
-      name: "--outputDir"
+      name: "--output_report"
       required: true
       direction: output
-      default: report.$id.html
+      example: report.html
 resources:
   - type: r_script
     path: script.R
@@ -20,31 +20,18 @@ resources:
     path: plateLayouts.R
   - path: OutputSTARsolo.png 
     type: file
-  - path: oaStyle_0.4.3.tar.gz
-    type: file  
 test_resources:
   - type: r_script
     path: test.R
   - path: ./test_data
 engines:
   - type: docker
-    image: r-base:4.3.0
+    image: rocker/r2u:24.04
     setup:
       - type: apt
-        packages: # most of these are required for devtools
-          - libcurl4-openssl-dev
-          - libssl-dev
-          - libxml2-dev
+        packages:
           - procps
           - pandoc
-          - default-jre
-          - default-jdk
-          - libnlopt-dev
-          - r-base-dev
-          - r-recommended
-      - type: docker
-        copy: 
-          - oaStyle_0.4.3.tar.gz "/tmp/oaStyle_0.4.3.tar.gz"
       - type: r
         bioc:
           - Biobase
@@ -62,8 +49,13 @@ engines:
           - platetools
           - htmltools
           - DT
+          - logger
         script:
-          - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))  
+          - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))
+    test_setup:
+      - type: r
+        packages:
+          - testthat
 runners:
   - type: executable
   - type: nextflow

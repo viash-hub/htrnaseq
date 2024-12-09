@@ -9,4 +9,10 @@ work
 # Python related files
 *__pycache__*
 .venv
+
+# R related files
 .Rproj.user
+htrnaseq.Rproj
+
+# vscode
+.vscode
