@@ -1,0 +1,70 @@
+name: create_report
+namespace: "reports"
+description: |
+  Create a basic QC report in HTML format based on a number of esets.
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ maintainer ]
+  - __merge__: /src/base/authors/marijke_van_moerbeke.yaml
+    roles: [ author, maintainer ]
+argument_groups:
+  - name: "Arguments"
+    arguments:
+    - type: file
+      name: "--eset_dir"
+      required: true
+    - type: file
+      name: "--output_report"
+      required: true
+      direction: output
+      example: report.html
+resources:
+  - type: r_script
+    path: script.R
+  - type: r_script
+    path: template.Rmd
+  - type: r_script
+    path: plateLayouts.R
+  - path: OutputSTARsolo.png 
+    type: file
+test_resources:
+  - type: r_script
+    path: test.R
+  - path: ./test_data
+engines:
+  - type: docker
+    image: rocker/r2u:24.04
+    setup:
+      - type: apt
+        packages:
+          - procps
+          - pandoc
+      - type: r
+        bioc:
+          - Biobase
+          - ComplexHeatmap
+        cran:
+          - ggplot2
+          - knitr
+          - gridExtra
+          - RColorBrewer
+          - processx
+          - whisker
+          - rmarkdown
+          - bookdown
+          - data.table
+          - platetools
+          - htmltools
+          - DT
+          - logger
+        script:
+          - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))
+    test_setup:
+      - type: r
+        packages:
+          - testthat
+runners:
+  - type: executable
+  - type: nextflow
+
+     
