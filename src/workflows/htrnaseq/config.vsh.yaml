@@ -77,6 +77,11 @@ argument_groups:
         direction: output
         required: true
         default: pData.$id.tsv
+      - name: "--html_report"
+        type: file
+        direction: output
+        required: true
+        default: report.$id.html
 resources:
   - type: nextflow_script
     path: main.nf
@@ -103,6 +108,8 @@ dependencies:
   - name: eset/create_fdata
     repository: local
   - name: eset/create_pdata
+    repository: local
+  - name: report/create_report
     repository: local
 repositories:
   - name: local

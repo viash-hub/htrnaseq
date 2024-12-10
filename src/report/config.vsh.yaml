@@ -1,5 +1,5 @@
 name: create_report
-namespace: "reports"
+namespace: "report"
 description: |
   Create a basic QC report in HTML format based on a number of esets.
 authors:
@@ -11,8 +11,9 @@ argument_groups:
   - name: "Arguments"
     arguments:
     - type: file
-      name: "--eset_dir"
+      name: "--eset"
       required: true
+      multiple: true
     - type: file
       name: "--output_report"
       required: true
@@ -57,12 +58,14 @@ engines:
           - htmltools
           - DT
           - logger
+          - bit64
         script:
           - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))
     test_setup:
       - type: r
         packages:
           - testthat
+          - R.utils
 runners:
   - type: executable
   - type: nextflow
