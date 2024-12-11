@@ -1,5 +1,3 @@
-def date = new Date().format('yyyyMMdd_hhmmss')
-
 workflow run_wf {
   take:
     input_ch
@@ -186,7 +184,7 @@ workflow run_wf {
         def html_report = states[0].html_report
         def ids = ids_and_states.collect{it[0]}
         def esets = states.collect{it.eset}
-        ["${date}", ["esets": esets, "html_report": html_report, "original_ids": ids]]
+        ["report", ["esets": esets, "html_report": html_report, "original_ids": ids]]
       }
       | create_report.run(
         fromState: [

@@ -81,7 +81,7 @@ argument_groups:
         type: file
         direction: output
         required: true
-        default: report.$id.html
+        default: report.html
 resources:
   - type: nextflow_script
     path: main.nf
