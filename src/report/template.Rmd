@@ -8,7 +8,9 @@ output:
 # parameters which are overwritten by the script
 params:
   outputDir: 'output/'
-  esetDir: 'esetDir/'
+  esets:
+    - sample1.rds
+    - sample2.rds
 ---
 
 <!---
@@ -32,7 +34,7 @@ div.main-container {
 
 ```{r params, eval = TRUE, include = FALSE}
 outputDir <- params$outputDir
-esetDir <- params$esetDir
+esets <- params$esets
 ```
 
 
@@ -72,9 +74,6 @@ knitr::opts_chunk$set(
   out.width = "100%",
   fig.width = 20,
   fig.height = 10,
-  fig.path = "graphs/",
-  base.dir = outputDir,
-  root.dir = outputDir,
   results = "asis")
 
 knitr::opts_knit$set(root.dir = getwd())
@@ -97,18 +96,14 @@ library(RColorBrewer)
 
 ```{r dataImport}
 
-esets_raw <- c()
-if (dir.exists(esetDir)) {
-  esets_raw <- list.files(esetDir, pattern = "eset.*rds", full.names = T)
-}else {
-  stop("At least one of the esetDirs does not exists.")
-}
-
 # Create esetList
 esetList <- sapply(
-  esets_raw, simplify = FALSE,
+  esets, simplify = FALSE,
   USE.NAMES = TRUE,
   function(eset_raw) {
+    if (!file.exists(eset_raw)) {
+      stop(paste0("Provided path '", eset_raw, "' is not a file."))
+    }
     eset <- readRDS(eset_raw)
   }
 )

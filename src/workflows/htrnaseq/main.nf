@@ -157,7 +157,7 @@ workflow run_wf {
         toState: ["p_data": "output"],
       )
 
-    output_ch = p_data_ch.join(f_data_ch, remainder: true)
+    eset_ch = p_data_ch.join(f_data_ch, remainder: true)
       | map {id, p_data_state, f_data_state ->
         def newState = p_data_state + ["f_data": f_data_state["f_data"]]
         [id, newState]
@@ -176,6 +176,36 @@ workflow run_wf {
           "eset": "output",
         ]
       )
+
+    report_channel = eset_ch
+      | toSortedList()
+      | map {ids_and_states ->
+        def states = ids_and_states.collect{it[1]}
+        def html_report = states[0].html_report
+        def ids = ids_and_states.collect{it[0]}
+        def esets = states.collect{it.eset}
+        ["report", ["esets": esets, "html_report": html_report, "original_ids": ids]]
+      }
+      | create_report.run(
+        fromState: [
+          "eset": "esets",
+          "output_report": "html_report",
+        ],
+        toState: [
+          "html_report": "output_report"
+        ]
+      )
+      | flatMap {id, state ->
+        state.original_ids.collect{original_id ->
+          [original_id, ["html_report": state.html_report]]
+        }
+      }
+
+    output_ch = eset_ch.join(report_channel)
+      | map {id, state_eset, state_report ->
+        def new_state = state_eset + ["html_report": state_report.html_report]
+        [id, new_state]
+      }
       | setState([
         "star_output": "star_output", 
         "fastq_output_r1": "fastq_output_r1",
@@ -185,7 +215,8 @@ workflow run_wf {
         "star_qc_metrics": "star_qc_metrics",
         "eset": "eset",
         "f_data": "f_data",
-        "p_data": "p_data"
+        "p_data": "p_data",
+        "html_report": "html_report",
       ])
 
 
