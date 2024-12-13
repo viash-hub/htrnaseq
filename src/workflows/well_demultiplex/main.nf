@@ -30,10 +30,19 @@ workflow run_wf {
         def fasta_sequences = fasta_entries.collect{it.seqString}
         assert fasta_sequences.clone().unique() == fasta_sequences, \
           "The barcodes FASTA sequences must be unique!"
-        def barcode_to_well_id = fasta_entries.collectEntries{[it.header, it.seqString]}
+        def well_id_matcher = /^([A-Za-z]+)0*([0-9]+)$/
+        def entries_corrected_id = fasta_entries.collectEntries { it ->
+          def unformatted_id = it.header
+          def id_matched_to_format = unformatted_id =~ well_id_matcher
+          assert (id_matched_to_format && id_matched_to_format.getCount() == 1), \
+            "The FASTA headers must match the coordinate system of a well plate (e.g. A01, B01, ... or AA1, AB1, ...). Found: ${unformatted_id}"
+          def id_letters = id_matched_to_format[0][1].toUpperCase()
+          def id_numbers = id_matched_to_format[0][2]
+          ["${id_letters}${id_numbers}", it.seqString]
+        }
         def newState = state + [
           "n_wells": n_wells,
-          "well_id_barcode_mapping": barcode_to_well_id,
+          "well_id_barcode_mapping": entries_corrected_id,
         ]
         [id, newState]
       }
