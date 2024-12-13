@@ -40,6 +40,12 @@ plateLayout.annotation <- function(
   if (!(all(c("WellID", "SampleName") %in% colnames(plateData)))) {
     stop(" 'WellID' and 'SampleName' column required in plateData object")
   }
+  
+  #Check WellID Format
+  checkWellID <- grepl("^[[:upper:]]{1,2}[[:digit:]]{1,2}$", plateData$WellID)
+  if(!all(checkWellID)){
+    stop("WellID does not have the correct format")
+  }
 
 
   plateData[, WellID := paste0(
@@ -49,7 +55,7 @@ plateLayout.annotation <- function(
     )
   )]
 
-  plateData <- platetools::fill_plate(plateData, "WellID", plate = 384)
+  plateData <- platetools::fill_plate(plateData, "WellID", plate = layout[1]*layout[2])
 
   plateData$column <- factor(
     sprintf(
