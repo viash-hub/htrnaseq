@@ -30,7 +30,7 @@ workflow run_wf {
         def fasta_sequences = fasta_entries.collect{it.seqString}
         assert fasta_sequences.clone().unique() == fasta_sequences, \
           "The barcodes FASTA sequences must be unique!"
-        def well_id_matcher = /^([A-Za-z]+)0*([0-9]+)$/
+        def well_id_matcher = /^([A-Za-z]+)0*([1-9]?[0-9]+)$/
         def entries_corrected_id = fasta_entries.collectEntries { it ->
           def unformatted_id = it.header
           def id_matched_to_format = unformatted_id =~ well_id_matcher
