@@ -9,13 +9,13 @@ workflow test_wf {
         id: "SRR14730301",
         input_r1: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R1_001.fastq"),
         input_r2: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R2_001.fastq"),
-        barcodesFasta: resources_test_file.resolve("2-wells.fasta"),
+        barcodesFasta: resources_test_file.resolve("2-wells-with-ids.fasta"),
       ],
       [
         id: "SRR14730302",
         input_r1: resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R1_001.fastq"),
         input_r2: resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R2_001.fastq"),
-        barcodesFasta:  resources_test_file.resolve("2-wells.fasta"),
+        barcodesFasta:  resources_test_file.resolve("2-wells-with-ids.fasta"),
       ],
     ])
     | map { state -> [ state.id, state ] }
@@ -56,7 +56,7 @@ workflow test_wf2 {
             resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R2_001.fastq"),
             resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R2_001.fastq"),
           ],
-        barcodesFasta: resources_test_file.resolve("2-wells.fasta"),
+        barcodesFasta: resources_test_file.resolve("2-wells-with-ids.fasta"),
       ],
     ])
     | map { state -> [ state.id, state ] }
