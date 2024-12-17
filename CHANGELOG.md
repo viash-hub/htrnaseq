@@ -2,7 +2,7 @@
 
 # New functionality
 
-* Make sure that the Well ID matches the required format (PR #22). 
+* Make sure that the Well ID matches the required format (PR #22 and PR #21). 
 
 # demultiplex v0.1.0
 
