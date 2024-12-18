@@ -85,7 +85,7 @@ repositories:
   - name: bb
     type: vsh
     repo: biobox
-    tag: main
+    tag: v0.2.0
   - name: cb
     type: vsh
     repo: craftbox
