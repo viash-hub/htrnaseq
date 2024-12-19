@@ -2,7 +2,7 @@
 
 # Minor changes
 
-* Use `v0.2.0` version of cutadapt instead of `main` (PR #23).
+* Use `v0.3.0` version of cutadapt instead of `main` (PR #23 and PR #).
 
 # demultiplex v0.2.0
 
