@@ -21,12 +21,12 @@ nextflow \
   --publish_dir output
 
 
-nextflow \
-  run . \
-  -main-script src/workflows/well_demultiplex/test.nf \
-  -config ./src/config/labels.config \
-  -entry test_wf2 \
-  -resume \
-  -profile docker,local \
-  --publish_dir output_2 \
+# nextflow \
+#   run . \
+#   -main-script src/workflows/well_demultiplex/test.nf \
+#   -config ./src/config/labels.config \
+#   -entry test_wf2 \
+#   -resume \
+#   -profile docker,local \
+#   --publish_dir output_2 \
 
