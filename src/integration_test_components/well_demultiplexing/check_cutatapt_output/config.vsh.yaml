@@ -1,0 +1,41 @@
+name: "check_cutadapt_output"
+namespace: "integration_test_components/well_demultiplexing"
+description: "This component test the cutadapt output from the well_demultiplex subworkflow."
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ author, maintainer ]
+argument_groups:
+  - name: Inputs
+    arguments:
+      - name: "--fastq_r1"
+        type: file
+        required: true
+        multiple: true
+        description: Path to the forward reads to test.
+      - name: "--fastq_r2"
+        type: file
+        required: true
+        multiple: true
+        description: Path to the reverse reads to test.
+      - name: "--ids"
+        type: string
+        description: "Well IDs for the corresponding fastq input"
+        required: true
+        multiple: true
+resources:
+  - type: python_script
+    path: script.py
+engines:
+  - type: docker
+    image: python:3.12-slim
+    setup: 
+      - type: apt
+        packages:
+          - procps
+      - type: python
+        packages:
+          - dnaio
+
+runners:
+  - type: executable
+  - type: nextflow
