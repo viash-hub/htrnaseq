@@ -2,15 +2,6 @@ import dnaio
 from operator import itemgetter
 ## VIASH START
 par = {
-    "ids": ["SRR14730302__A1", "SRR14730301__B1", "SRR14730302__B1", "SRR14730301__A1"],
-    "fastq_r1": ["/home/di/code/htrnaseq/work/b2/d4fa61103621a2182f459b7dc319ec/fastq_0/A1_R1_001.fastq",
-                 "/home/di/code/htrnaseq/work/f1/974b88e676f0a64d112d48db46c191/fastq_0/B1_R1_001.fastq",
-                 "/home/di/code/htrnaseq/work/b2/d4fa61103621a2182f459b7dc319ec/fastq_0/B1_R1_001.fastq",
-                 "/home/di/code/htrnaseq/work/f1/974b88e676f0a64d112d48db46c191/fastq_0/A1_R1_001.fastq"],
-    "fastq_r2": ["/home/di/code/htrnaseq/work/b2/d4fa61103621a2182f459b7dc319ec/fastq_0/A1_R2_001.fastq",
-                 "/home/di/code/htrnaseq/work/f1/974b88e676f0a64d112d48db46c191/fastq_0/B1_R2_001.fastq",
-                 "/home/di/code/htrnaseq/work/b2/d4fa61103621a2182f459b7dc319ec/fastq_0/B1_R2_001.fastq",
-                 "/home/di/code/htrnaseq/work/f1/974b88e676f0a64d112d48db46c191/fastq_0/A1_R2_001.fastq"]
 }
 ## VIASH END
 
