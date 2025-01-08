@@ -93,8 +93,8 @@ dependencies:
     repository: local
   - name: workflows/htrnaseq
     repository: local
-  - name: io/publish_fastqs
-    repository: local
+  # - name: io/publish_fastqs
+  #   repository: local
 
 runners:
   - type: nextflow
