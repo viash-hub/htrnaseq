@@ -1,0 +1,52 @@
+name: "publish_results"
+namespace: "io"
+description: "Publish the results"
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: --star_output
+        description: Output from mapping with STAR
+        type: file
+        multiple: true
+        required: true
+      - name: "--nrReadsNrGenesPerChrom"
+        type: file
+        required: true
+      - name: "--star_qc_metrics"
+        type: file
+        required: true
+      - name: "--eset"
+        type: file
+        required: true
+      - name: "--f_data"
+        type: file
+        required: true
+      - name: "--p_data"
+        type: file
+        required: true
+      - name: "--html_report"
+        type: file
+        required: true
+  - name: Output arguments
+    arguments:
+      - name: --output
+        type: file
+        direction: output
+        # ID is the well barcode
+        default: "$id/"
+
+resources:
+  - type: bash_script
+    path: ./code.sh
+
+engines:
+  - type: docker
+    image: debian:stable-slim
+    setup:
+      - type: apt
+        packages:
+          - procps
+
+runners:
+  - type: executable
+  - type: nextflow

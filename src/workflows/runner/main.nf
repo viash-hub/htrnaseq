@@ -30,6 +30,50 @@ workflow run_wf {
         toState: { id, result, state -> result }
       )
 
+      | niceView()
+
+      | publish_results.run(
+        fromState:
+          [
+            star_output: "star_output", 
+            fastq_output_r1: "fastq_output_r1",
+            fastq_output_r2: "fastq_output_r2",
+            star_output: "star_output",
+            nrReadsNrGenesPerChrom: "nrReadsNrGenesPerChrom",
+            star_qc_metrics: "star_qc_metrics",
+            eset: "eset",
+            f_data: "f_data",
+            p_data: "p_data",
+            html_report: "html_report",
+          ],
+        toState: { id, result, state -> state },
+        directives: [
+          publishDir: [
+            path: "${params.results_publish_dir}", 
+            overwrite: false,
+            mode: "copy"
+          ]
+        ]
+      )
+
+      | publish_fastqs.run(
+        fromState: { id, state ->
+          [
+            input_r1: state.fastq_output_r1,
+            input_r2: state.fastq_output_r2,
+            output: "${id}/",
+          ]
+        },
+        toState: { id, result, state -> [:] },
+        directives: [
+          publishDir: [
+            path: "${params.fastq_publish_dir}", 
+            overwrite: false,
+            mode: "copy"
+          ]
+        ]
+      )
+
   emit:
     output_ch
       | map{ id, state -> [ id, state + [ _meta: [ join_id: "run" ] ] ] }

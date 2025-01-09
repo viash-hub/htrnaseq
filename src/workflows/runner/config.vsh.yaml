@@ -31,20 +31,13 @@ argument_groups:
         type: boolean_true
   - name: Output arguments
     arguments:
-      - name: --fastq_output_r1
+      - name: --fastq_output
         description: List of demultiplexed fastq files
         type: file
         direction: output
         multiple: true
         required: true
-        default: "fastq/*_R1_001.fastq"
-      - name: --fastq_output_r2
-        description: List of demultiplexed fastq files
-        type: file
-        direction: output
-        multiple: true
-        required: true
-        default: "fastq/*_R2_001.fastq"
+        default: "${id}/*_R1_001.fastq"
       - name: --star_output
         description: Output from mapping with STAR
         type: file
@@ -93,8 +86,10 @@ dependencies:
     repository: local
   - name: workflows/htrnaseq
     repository: local
-  # - name: io/publish_fastqs
-  #   repository: local
+  - name: io/publish_fastqs
+    repository: local
+  - name: io/publish_results
+    repository: local
 
 runners:
   - type: nextflow
