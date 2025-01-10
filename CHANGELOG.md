@@ -2,11 +2,11 @@
 
 # New functionality
 
-* Added `umi_length` argument (PR )
+* Added `umi_length` argument (PR #27).
 
 # Breaking changes
 
-* Removed `wellBarcodesLength` from `parallel_map` workflow (PR ).
+* Removed `wellBarcodesLength` from `parallel_map` workflow (PR #27).
 
 # Minor changes
 
