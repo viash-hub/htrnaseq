@@ -51,7 +51,7 @@ argument_groups:
         direction: output
         multiple: true
         required: true
-        default: $id/star/*
+        default: star.$id/*
       - name: "--nrReadsNrGenesPerChrom"
         type: file
         direction: output
@@ -81,7 +81,7 @@ argument_groups:
         type: file
         direction: output
         required: true
-        default: report.html
+        default: report.$id.html
 resources:
   - type: nextflow_script
     path: main.nf
