@@ -37,41 +37,18 @@ test_resources:
   - path: test_data/mapping_dir
 engines:
   - type: docker
-    image: r-base:4.3.0
+    image: rocker/r2u:24.04
     setup:
-      - type: apt
-        packages: # most of these are required for devtools
-          - libcurl4-openssl-dev
-          - libssl-dev
-          - libxml2-dev
-          - libfftw3-dev # Seurat
-          - libfontconfig1-dev # Seurat
-          - libfreetype-dev # Seurat
-          - libhdf5-dev # Seurat
-          - bzip2 # Seurat
-          - libharfbuzz-dev # Seurat
-          - libfribidi-dev # Seurat
-          - libtiff-dev # Seurat
-          - libgsl-dev # Seurat
-          - libcairo-dev # Seurat
-          - libudunits2-dev # SeuratObject
-          - procps
       - type: r
         cran:
           - data.table
-          - BiocManager
-          - remotes
-        bioc:
-          - Biobase
-          - limma  # dependency for nlcv 
-          - a4Core # dependency for nlcv 
-          - MLInterfaces # dependency for nlcv 
-          - multtest # dependency for nlcv
-        cran:
           - nlcv
-        script: |
-            remotes::install_url("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz", dependencies=TRUE, upgrade_dependencies=FALSE);\
-            remotes::install_url("https://cran.r-project.org/src/contrib/Archive/Seurat/Seurat_4.4.0.tar.gz", repos=BiocManager::repositories(), dependencies=TRUE, upgrade_dependencies=FALSE)\
+        bioc:
+          - Seurat
+    test_setup:
+      - type: r
+        cran:
+          - testthat
 runners:
   - type: executable
   - type: nextflow
