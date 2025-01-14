@@ -110,7 +110,6 @@ pushd "$run_1_dir" > /dev/null
     --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
     --genomeDir "$TMPDIR/index/" \
     --barcodes "ACAGTCACAG;CGGGTTTACC" \
-    --wellBarcodesLength 10 \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_*" > /dev/null 2>&1 
@@ -203,7 +202,6 @@ pushd "$run_2_dir" > /dev/null
     --input_r2 "$TMPDIR/sample1_R2.fastq.gz;$TMPDIR/sample2_R2.fastq.gz" \
     --genomeDir "$TMPDIR/index/" \
     --barcodes "ACAGTCACAG;CGGGTTTACC" \
-    --wellBarcodesLength 10 \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_gz_*" > /dev/null 2>&1
@@ -293,7 +291,6 @@ set +eo pipefail
     --input_r2 "$TMPDIR/sample1_R2.fastq.gz;$TMPDIR/sample2_R2.fastq.gz" \
     --genomeDir "$TMPDIR/index/" \
     --barcodes "ACAGTCACAG" \
-    --wellBarcodesLength 10 \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_gz_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1
@@ -310,7 +307,6 @@ set +eo pipefail
     --input_r2 "$TMPDIR/sample1_R2.fastq.gz;$TMPDIR/sample2_R2.fastq.gz" \
     --genomeDir "$TMPDIR/index/" \
     --barcodes "ACAGTCACAG;CGGGTTTACC" \
-    --wellBarcodesLength 10 \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_run4" > /dev/null 2>&1 && echo "Expected non-zero exit code." && exit 1 
@@ -329,7 +325,6 @@ set +eo pipefail
     --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
     --genomeDir "$TMPDIR/index/" \
     --barcodes "ACAGTCACAG;CGGGTTTACC" \
-    --wellBarcodesLength 10 \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_run5_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1
@@ -346,7 +341,6 @@ set +eo pipefail
     --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
     --genomeDir "$TMPDIR/index/" \
     --barcodes "ACAGTCACAG;CGGGTTTACC" \
-    --wellBarcodesLength 10 \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_run_6_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1

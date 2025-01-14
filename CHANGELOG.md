@@ -1,5 +1,13 @@
 # demultiplex v0.x.x
 
+# New functionality
+
+* Added `umi_length` argument (PR #27).
+
+# Breaking changes
+
+* Removed `wellBarcodesLength` from `parallel_map` workflow (PR #27).
+
 # Minor changes
 
 * Use `v0.3.0` version of cutadapt instead of `main` (PR #23 and PR #24).
