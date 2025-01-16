@@ -58,11 +58,10 @@ workflow run_wf {
             "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
             "barcode": state.barcode,
             "well_id": state.well_id,
-            "nrReadsNrGenesPerChrom": state.nrReadsNrGenesPerChrom
           ]
         },
         toState: [
-          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
+          "nrReadsNrGenesPerChromWell": "nrReadsNrGenesPerChrom",
         ]
       )
       | map {id, state ->
@@ -94,7 +93,8 @@ workflow run_wf {
           "barcode": barcodes,
           "well_id": well_ids,
           "star_output": states.collect{it.star_output},
-          "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
+          "nrReadsNrGenesPerChromWell": states.collect{it.nrReadsNrGenesPerChromWell},
+          "nrReadsNrGenesPerChromPool": states[0].nrReadsNrGenesPerChrom
         ]
         //For many state items, the value is the same across states.
         def other_state_keys = states.inject([].toSet()){ current_keys, state ->
@@ -117,17 +117,21 @@ workflow run_wf {
         [id.getGroupTarget(), new_state]
       }
 
+      | niceView()
+
     // The well statistics are merged on pool level. 
     pool_statistics_ch = pool_ch
       | generate_pool_statistics.run(
         directives: ["label": ["lowmem", "verylowcpu"]],
         fromState: [
-          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
+          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromWell",
+          "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool"
         ],
         toState: [
           "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool"
         ]
       )
+      | niceView()
 
     // The statistics from the STAR logs of different wells are joined
     // on pool level 
