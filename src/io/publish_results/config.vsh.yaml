@@ -11,18 +11,23 @@ argument_groups:
         required: true
       - name: "--nrReadsNrGenesPerChrom"
         type: file
+        multiple: true
         required: true
       - name: "--star_qc_metrics"
         type: file
+        multiple: true
         required: true
       - name: "--eset"
         type: file
+        multiple: true
         required: true
       - name: "--f_data"
         type: file
+        multiple: true
         required: true
       - name: "--p_data"
         type: file
+        multiple: true
         required: true
       - name: "--html_report"
         type: file
