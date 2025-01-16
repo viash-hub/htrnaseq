@@ -77,7 +77,8 @@ workflow run_wf {
       | cutadapt.run(
         directives: [label: ["highmem", "midcpu"]],
         fromState: { id, state ->
-          def new_output = ("fastq_${state.lane_sorting}/*_001.fastq")
+          // Remark: the fastq path part may seem superfluous but is necessary for publising later
+          def new_output = ("fastq/${id}/*_001.fastq")
           [
             input: state.input_r1,
             input_r2: state.input_r2,
