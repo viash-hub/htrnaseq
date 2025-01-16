@@ -40,6 +40,7 @@ workflow run_wf {
             "input_r1": state.fastq_output_r1[0],
             "input_r2": state.fastq_output_r2[0],
             "barcode": state.barcode,
+            "umi_length": state.umi_length,
             "pool": state.pool,
             "output": state.star_output[0],
             "genomeDir": state.genomeDir,

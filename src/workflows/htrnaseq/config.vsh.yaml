@@ -23,6 +23,12 @@ argument_groups:
       - name: --barcodesFasta
         type: file
         required: true
+      - name: "--umi_length"
+        description: |
+          Length of the UMI sequences
+        type: integer
+        min: 1
+        default: 10
       - name: --genomeDir
         type: file
         required: true

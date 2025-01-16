@@ -25,8 +25,7 @@ workflow run_wf {
            "genomeDir": state.genomeDir,
            "barcodes": state.wells,
            "pool": state.pool,
-           "wellBarcodesLength": 10,
-           "umiLength": 10,
+           "umiLength": state.umi_length,
            "output": state.output,
          ]
         },

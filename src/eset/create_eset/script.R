@@ -217,7 +217,7 @@ create_exprs_matrix <- function(exprs_matrix_path, exprs_file_paths,
   requireNamespace("Seurat")
   seurat_object <- Seurat::CreateSeuratObject(counts = read_matrix)
 
-  exprs_matrix <- as.matrix(seurat_object[['RNA']]@counts)
+  exprs_matrix <- as.matrix(seurat_object[['RNA']]$counts)
   # replace "-" with "_" for features with "_" 
   # before converting to Seurat object
   rownames(exprs_matrix)[idx] <- gsub("-", "_", rownames(exprs_matrix)[idx])
