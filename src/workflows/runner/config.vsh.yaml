@@ -5,7 +5,7 @@ argument_groups:
   - name: Input arguments
     arguments:
       - name: --input
-        description: Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/`
+        description: Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/<demultiplex_dir>`
         type: file
         required: true
       - name: --barcodesFasta
@@ -17,64 +17,34 @@ argument_groups:
       - name: --annotation
         type: file
         required: true
+  - name: Metadata arguments
+    arguments:
+      - name: --id
+        description: Unique identifier for the run
+        type: string
+      - name: --project_id
+        description: Project ID
+        type: string
+        required: true
+      - name: --experiment_id
+        description: Experiment ID
+        type: string
+        required: true
   - name: Annotation flags
     arguments:
-      - name: --add_date_time
+      - name: --plain_output
         description: |
-          Add date and time to the output directory name. This is useful
-          when running the same pipeline multiple times on the same input
-          directory.
+          Flag to indicate that the output should be stored directly under $publish_dir rather than
+          under a subdirectory structure runID/<date_time>_demultiplex_<version>/.
         type: boolean_true
-      - name: --add_workflow_id
-        description: |
-          Add a workflow identifier to the output directory name.
-        type: boolean_true
-  - name: Output arguments
+  - name: Publish arguments
     arguments:
-      - name: --fastq_output
-        description: List of demultiplexed fastq files
-        type: file
-        direction: output
-        multiple: true
+      - name: --fastq_publish_dir
+        type: string
         required: true
-        default: "${id}/*_R1_001.fastq"
-      - name: --star_output
-        description: Output from mapping with STAR
-        type: file
-        direction: output
-        multiple: true
+      - name: --results_publish_dir
+        type: string
         required: true
-        default: $id/star/*
-      - name: "--nrReadsNrGenesPerChrom"
-        type: file
-        direction: output
-        required: true
-        default: "nrReadsNrGenesPerChrom.$id.txt"
-      - name: "--star_qc_metrics"
-        type: file
-        direction: output
-        required: true
-        default: "starLogs.$id.txt"
-      - name: "--eset"
-        type: file
-        direction: output
-        required: true
-        default: eset.$id.rds
-      - name: "--f_data"
-        type: file
-        direction: output
-        required: true
-        default: fData.$id.tsv
-      - name: "--p_data"
-        type: file
-        direction: output
-        required: true
-        default: pData.$id.tsv
-      - name: "--html_report"
-        type: file
-        direction: output
-        required: true
-        default: report.html
 
 resources:
   - type: nextflow_script
