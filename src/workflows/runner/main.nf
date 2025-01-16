@@ -74,19 +74,13 @@ workflow run_wf {
           ]
         }
 
-      | niceView()
-
       | publish_results.run(
         fromState: { id, state ->
-          println(state.plain_output)
-          println(id)
           def project = (state.plain_output) ? id : "${state.project_id}"
           def experiment = (state.plain_output) ? id : "${state.experiment_id}"
-          def id0 = "${id}"
+          def id0 = "${project}/${experiment}"
           def id1 = (state.plain_output) ? id : "${id0}/${date}"
           def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
-
-          println(id2)
 
           if (id == id2) {
             println("Publising results to ${params.results_publish_dir}")
@@ -118,13 +112,11 @@ workflow run_wf {
 
       | publish_fastqs.run(
         fromState: { id, state ->
-          println(state.plain_output)
-          println(id)
           def id0 = "${id}"
           def id1 = (state.plain_output) ? id : "${id0}/${date}"
           def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
 
-          println(id2)
+          println(state.plain_output)
 
           if (id == id2) {
             println("Publising fastqs to ${params.fastq_publish_dir}")
@@ -184,7 +176,6 @@ def reduce_paths(paths, offset = 0) {
 
   println("")
   println("Detecting the common path section to pass to the next step:")
-  println("")
   print("  From: ")
   print paths
   println("")
