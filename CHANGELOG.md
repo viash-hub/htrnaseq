@@ -1,10 +1,11 @@
 # htrnaseq v0.x.x
 
-# New functionality
+## New functionality
 
 * Added `umi_length` argument (PR #27).
+* Added `runner` workflow (PR #26, see below)
 
-# Breaking changes
+## `runner` workflow
 
 * Removed `wellBarcodesLength` from `parallel_map` workflow (PR #27).
 
