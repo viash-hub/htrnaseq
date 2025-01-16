@@ -119,8 +119,6 @@ workflow run_wf {
         [id.getGroupTarget(), new_state]
       }
 
-      | niceView()
-
     // The well statistics are merged on pool level. 
     pool_statistics_ch = pool_ch
       | generate_pool_statistics.run(
@@ -133,7 +131,6 @@ workflow run_wf {
           "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool"
         ]
       )
-      | niceView()
 
     // The statistics from the STAR logs of different wells are joined
     // on pool level 
