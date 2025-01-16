@@ -8,7 +8,10 @@ workflow run_wf {
     f_data_ch = input_ch
       | create_fdata.run(
         directives: [label: ["lowmem", "lowcpu"]],
-        fromState: ["gtf": "annotation"],
+        fromState: [
+          "gtf": "annotation",
+          "output": "f_data"
+        ],
         toState: {id, result, state -> ["f_data": result.output]}
       )
 
@@ -55,6 +58,7 @@ workflow run_wf {
             "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
             "barcode": state.barcode,
             "well_id": state.well_id,
+            "nrReadsNrGenesPerChrom": state.nrReadsNrGenesPerChrom
           ]
         },
         toState: [
@@ -153,6 +157,7 @@ workflow run_wf {
         fromState: [
           "star_stats_file": "star_qc_metrics",
           "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool",
+          "output": "p_data"
         ],
         toState: ["p_data": "output"],
       )
