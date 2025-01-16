@@ -52,6 +52,7 @@ This output structure can be circumvented by using the `--output_dir` option, wh
 ## Minor changes
 
 * Use `v0.2.0` version of cutadapt instead of `main` (PR #23).
+* Use `v0.3.0` version of cutadapt
 
 # demultiplex v0.2.0
 
