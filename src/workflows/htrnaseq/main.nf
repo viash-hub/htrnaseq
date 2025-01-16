@@ -93,6 +93,8 @@ workflow run_wf {
           "barcode": barcodes,
           "well_id": well_ids,
           "star_output": states.collect{it.star_output},
+          // Well and pool stats should be carefully kept separate.
+          // The workflow argument points to the name for the pool statistics:
           "nrReadsNrGenesPerChromWell": states.collect{it.nrReadsNrGenesPerChromWell},
           "nrReadsNrGenesPerChromPool": states[0].nrReadsNrGenesPerChrom
         ]
