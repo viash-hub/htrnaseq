@@ -1,4 +1,4 @@
-# htrnaseq v0.x.x
+# htrnaseq v0.3.0
 
 ## New functionality
 
