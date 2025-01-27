@@ -35,10 +35,6 @@ argument_groups:
       description: The barcodes/wells to process
   - name: Barcode arguments
     arguments:
-    - name: "--wellBarcodesLength"
-      type: integer
-      required: true
-      description: The length of the well barcodes
     - name: "--umiLength"
       type: integer
       required: true

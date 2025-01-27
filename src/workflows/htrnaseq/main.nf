@@ -8,7 +8,10 @@ workflow run_wf {
     f_data_ch = input_ch
       | create_fdata.run(
         directives: [label: ["lowmem", "lowcpu"]],
-        fromState: ["gtf": "annotation"],
+        fromState: [
+          "gtf": "annotation",
+          "output": "f_data"
+        ],
         toState: {id, result, state -> ["f_data": result.output]}
       )
 
@@ -37,6 +40,7 @@ workflow run_wf {
             "input_r1": state.fastq_output_r1[0],
             "input_r2": state.fastq_output_r2[0],
             "barcode": state.barcode,
+            "umi_length": state.umi_length,
             "pool": state.pool,
             "output": state.star_output[0],
             "genomeDir": state.genomeDir,
@@ -58,7 +62,7 @@ workflow run_wf {
           ]
         },
         toState: [
-          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
+          "nrReadsNrGenesPerChromWell": "nrReadsNrGenesPerChrom",
         ]
       )
       | map {id, state ->
@@ -90,7 +94,10 @@ workflow run_wf {
           "barcode": barcodes,
           "well_id": well_ids,
           "star_output": states.collect{it.star_output},
-          "nrReadsNrGenesPerChrom": states.collect{it.nrReadsNrGenesPerChrom},
+          // Well and pool stats should be carefully kept separate.
+          // The workflow argument points to the name for the pool statistics:
+          "nrReadsNrGenesPerChromWell": states.collect{it.nrReadsNrGenesPerChromWell},
+          "nrReadsNrGenesPerChromPool": states[0].nrReadsNrGenesPerChrom
         ]
         //For many state items, the value is the same across states.
         def other_state_keys = states.inject([].toSet()){ current_keys, state ->
@@ -118,7 +125,8 @@ workflow run_wf {
       | generate_pool_statistics.run(
         directives: ["label": ["lowmem", "verylowcpu"]],
         fromState: [
-          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChrom",
+          "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromWell",
+          "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool"
         ],
         toState: [
           "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool"
@@ -153,6 +161,7 @@ workflow run_wf {
         fromState: [
           "star_stats_file": "star_qc_metrics",
           "nrReadsNrGenesPerChromPool": "nrReadsNrGenesPerChromPool",
+          "output": "p_data"
         ],
         toState: ["p_data": "output"],
       )

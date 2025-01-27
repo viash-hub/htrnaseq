@@ -1,0 +1,68 @@
+name: runner
+namespace: workflows
+description: Runner for HT RNA-seq pipeline
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: --input
+        description: Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/<demultiplex_dir>`
+        type: file
+        required: true
+      - name: --barcodesFasta
+        type: file
+        required: true
+      - name: --genomeDir
+        type: file
+        required: true
+      - name: --annotation
+        type: file
+        required: true
+  - name: Metadata arguments
+    arguments:
+      - name: --id
+        description: Unique identifier for the run
+        type: string
+      - name: --project_id
+        description: Project ID
+        type: string
+        required: true
+      - name: --experiment_id
+        description: Experiment ID
+        type: string
+        required: true
+  - name: Annotation flags
+    arguments:
+      - name: --plain_output
+        description: |
+          Flag to indicate that the output should be stored directly under $publish_dir rather than
+          under a subdirectory structure runID/<date_time>_demultiplex_<version>/.
+        type: boolean_true
+  - name: Publish arguments
+    arguments:
+      - name: --fastq_publish_dir
+        type: string
+        required: true
+      - name: --results_publish_dir
+        type: string
+        required: true
+
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+dependencies:
+  - name: utils/listInputDir
+    repository: local
+  - name: workflows/htrnaseq
+    repository: local
+  - name: io/publish_fastqs
+    repository: local
+  - name: io/publish_results
+    repository: local
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native

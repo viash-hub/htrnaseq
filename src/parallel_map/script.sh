@@ -6,7 +6,6 @@ par_input_r2="work/2c/5b8b3a2dd4a988b8838e3f72d38a37/_viash_par/input_r2_1/two__
 par_barcodes="ACACCGAATT;GGCTATTGAT"
 par_output="./*"
 par_genomeDir="star"
-par_wellBarcodesLength=10
 par_umiLength=10
 par_limitBAMsortRAM="10000000000"
 meta_cpus=2
@@ -73,16 +72,17 @@ fi
 
 # Define the function that will be used to run a single job
 function _run() {
-  local par_wellBarcodeLength="$1"
-  local par_UMIlength="$2"
-  local par_output="$3"
-  local par_genomeDir="$4"
-  local par_limitBAMsortRAM="$5"
-  local par_runThreadN="$6"
-  local barcode="$7"
-  local input_R1="$8"
-  local input_R2="$9"
-  local par_UMIstart=$(($par_wellBarcodeLength + 1))
+  local par_UMIlength="$1"
+  local par_output="$2"
+  local par_genomeDir="$3"
+  local par_limitBAMsortRAM="$4"
+  local par_runThreadN="$5"
+  local barcode="$6"
+  local input_R1="$7"
+  local input_R2="$8"
+
+  local barcode_length="${#barcode}"
+  local umi_start="$(($barcode_length + 1))"
 
   set -eo pipefail
 
@@ -178,8 +178,8 @@ function _run() {
     --outSAMtype BAM SortedByCoordinate \
     --soloCBstart 1 \
     --readFilesType "Fastx" \
-    --soloCBlen "$par_wellBarcodeLength" \
-    --soloUMIstart "$par_UMIstart" \
+    --soloCBlen "$barcode_length" \
+    --soloUMIstart "$umi_start" \
     --soloUMIlen "$par_UMIlength" \
     --soloBarcodeReadLength 0 \
     --soloStrand Unstranded \
@@ -235,7 +235,7 @@ parallel_cmd=("parallel" "--jobs" "80%" "--verbose" "--memfree" "2G"
               "--joblog" "$par_joblog" "_run" "{}")
 
 # Arguments for which there is one value, so these will not create extra jobs
-parallel_cmd+=(":::" "$par_wellBarcodesLength" ":::" "$par_umiLength" ":::" "$par_output" ":::" "$par_genomeDir" ":::" "$par_limitBAMsortRAM" ":::" "$par_runThreadN")
+parallel_cmd+=(":::" "$par_umiLength" ":::" "$par_output" ":::" "$par_genomeDir" ":::" "$par_limitBAMsortRAM" ":::" "$par_runThreadN")
 
 # Argument which in fact will cause extra jobs to be spawned, per job one item from each argument will be selected
 # Thus, these argument lists should have the same length.

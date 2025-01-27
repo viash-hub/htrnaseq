@@ -22,6 +22,9 @@ argument_groups:
       - name: "--barcode"
         type: string
         required: true
+      - name: "--umi_length"
+        type: integer
+        min: 1
       - name: "--pool"
         type: string
         required: true

@@ -23,6 +23,12 @@ argument_groups:
       - name: --barcodesFasta
         type: file
         required: true
+      - name: "--umi_length"
+        description: |
+          Length of the UMI sequences
+        type: integer
+        min: 1
+        default: 10
       - name: --genomeDir
         type: file
         required: true
@@ -51,7 +57,7 @@ argument_groups:
         direction: output
         multiple: true
         required: true
-        default: $id/star/*
+        default: star.$id/*
       - name: "--nrReadsNrGenesPerChrom"
         type: file
         direction: output
@@ -81,7 +87,7 @@ argument_groups:
         type: file
         direction: output
         required: true
-        default: report.html
+        default: report.$id.html
 resources:
   - type: nextflow_script
     path: main.nf

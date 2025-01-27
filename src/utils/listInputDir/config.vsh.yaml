@@ -1,0 +1,37 @@
+name: listInputDir
+namespace: utils
+description: List the contents of a directory and parse contained fastq files
+arguments:
+  - name: "--input"
+    alternatives: [-i]
+    type: file
+    description: Path to the sample
+    required: true
+    example: input.fastq.gz
+  - name: "--r1"
+    type: file
+    description: Path to read 1 fastq/fasta file
+    direction: output
+  - name: "--r2"
+    type: file
+    description: Path to read 2 fastq/fasta file
+    direction: output
+  - name: "--lane"
+    type: string
+    description: Lane nr
+    direction: output
+  - name: "--sample"
+    type: string
+    description: Sample nr
+    direction: output
+
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native

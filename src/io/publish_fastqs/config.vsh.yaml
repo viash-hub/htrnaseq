@@ -1,0 +1,39 @@
+name: "publish_fastqs"
+namespace: "io"
+description: "Publish the fastq files per well"
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: --input_r1
+        description: Directory to write R1 fastq data to
+        type: file
+        multiple: true
+        required: true
+      - name: --input_r2
+        description: Directory to write R2 fastq data to
+        type: file
+        multiple: true
+        required: true
+  - name: Output arguments
+    arguments:
+      - name: --output
+        type: file
+        direction: output
+        # ID is the well barcode
+        default: "$id/"
+
+resources:
+  - type: bash_script
+    path: ./code.sh
+
+engines:
+  - type: docker
+    image: debian:stable-slim
+    setup:
+      - type: apt
+        packages:
+          - procps
+
+runners:
+  - type: executable
+  - type: nextflow
