@@ -1,9 +1,5 @@
 name: well_metadata
 namespace: workflows
-description: |
-  Take an input directory of demultiplexed FASTQ files per well and output
-  metadata information together with FASTQ forward and reverse pairs. 
-
 authors:
   - __merge__: /src/base/authors/dries_schaumont.yaml
     roles: [ maintainer ]
@@ -62,30 +58,6 @@ resources:
   - type: nextflow_script
     path: main.nf
     entrypoint: run_wf
-
-# Test dataset: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM5357044
-test_resources:
-  - type: nextflow_script
-    path: test.nf
-    entrypoint: test_wf
-  - type: nextflow_script
-    path: test.nf
-    entrypoint: test_wf2
-
-dependencies:
-  - name: cutadapt
-    repository: bb
-  - name: concat_text
-    repository: cb
-repositories:
-  - name: bb
-    type: vsh
-    repo: biobox
-    tag: v0.3.0
-  - name: cb
-    type: vsh
-    repo: craftbox
-    tag: v0.1.0
 
 runners:
   - type: nextflow

@@ -44,8 +44,7 @@ workflow run_wf {
         ]
       )
 
-    // From the mapped wells, create statistics based on the BAM file
-    // and join the events back to pool level.
+    // From the mapped wells, create statistics based on the BAM files.
     pool_ch = mapping_ch
       // Split the events from 1 event per pool into events per well
       // and add extra metadata about the wells to the state.
@@ -67,6 +66,7 @@ workflow run_wf {
           "star_mapping": "well_star_mapping",
         ]
       )
+      // Use the bam file to generate statistics
       | generate_well_statistics.run(
         directives: [label: ["verylowmem", "verylowcpu"]],
         fromState: { id, state ->
@@ -80,6 +80,7 @@ workflow run_wf {
           "nrReadsNrGenesPerChromWell": "nrReadsNrGenesPerChrom",
         ]
       )
+      // Join the events back to pool-level
       | map {id, state ->
         // Create a special groupKey, such that groupTuple
         // knows when all the barcodes have been grouped into 1 event.
@@ -135,7 +136,6 @@ workflow run_wf {
         [id.getGroupTarget(), new_state]
       }
 
-    // The well statistics are merged on pool level. 
     pool_statistics_ch = pool_ch
       | generate_pool_statistics.run(
         directives: ["label": ["lowmem", "verylowcpu"]],

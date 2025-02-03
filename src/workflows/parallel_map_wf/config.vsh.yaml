@@ -3,8 +3,8 @@ namespace: workflows
 description: |
   Map RNA sequencing data, provided as fastq files (paired-end) to a reference genome using STAR Solo.
   Input data must have been demultiplexed beforehand, meaning that a single fastq pair provides data for
-  one barcode (one well). Multiple wells can be mapped in parallel by providing multiple events to the 
-  workflow. Output is provided as mapped output per pool, i.e. one output is provided per pool.
+  one barcode (one well). Multiple wells can be mapped in parallel by providing more FASTQ files in a single event.
+  Output is provided as mapped output per pool, i.e. one output event is provided per pool.
 authors:
   - __merge__: /src/base/authors/dries_schaumont.yaml
     roles: [ maintainer ]
@@ -12,28 +12,53 @@ argument_groups:
   - name: "Input arguments"
     arguments:
       - name: "--input_r1"
+        description: |
+          Input FASTQ files for the forward reads. All FASTQ file names must start with the prefix '{well_id}_R1', where
+          'well_id' can be found as the sequence identifier in the barcodes FASTA file (see 'barcodesFasta' argument).
+          For each FASTQ file, a matching FASTQ file for the reverse reads must be provided to the 'input_r2' argument,
+          meaning that their 'well_id' prefix must match. The number of items provided for 'input_r1' must be equal
+          to the number of items for 'input_r2'.
         type: file
         direction: input
         required: true
         multiple: true
       - name: "--input_r2"
+        description: |
+          Input FASTQ files for the reverse reads. All FASTQ file names must start with the prefix '{well_id}_R2', where
+          'well_id' can be found as the sequence identifier in the barcodes FASTA file (see 'barcodesFasta' argument).
+          For each FASTQ file, a matching FASTQ file for the reverse reads must be provided to the 'input_r1' argument,
+          meaning that their 'well_id' prefix must match. The number of items provided for 'input_r1' must be equal
+          to the number of items for 'input_r2'.
         type: file
         direction: input
         multiple: true
         required: true
       - name: "--barcodesFasta"
+        description: |
+          FASTA file where each entry specifies a unique barcode sequence present at the start of the forward input reads
+          (input_r1). The IDs of each barcode (the start of the FASTA headers up until the first whitespace character) must
+          match with the start of one input FASTQ pair.
         type: file
         required: true
       - name: "--umi_length"
+        description: |
+          Length of the Unique Molecular Identifiers (UMI). The UMI are expected to be located after the barcodes in the
+          forwards reads.
         type: integer
         min: 1
       - name: "--genomeDir"
+        description: |
+          Reference genome to match to. Can be generated from genomic FASTA sequences and a genome annotation
+          by using STAR with '--runMode genomeGenerate'.
         type: file
         required: true
         direction: input
   - name: "Output arguments"
     arguments:
       - name: "--output"
+        description: |
+          A list of output folders which are the result of using STAR to map each input FASTQ pair STAR to the reference genome.
+          The order of the items DO NOT match with the order of the entries in the barcodes FASTA file or the input FASTQ pairs. 
         type: file
         direction: output
         multiple: true
@@ -42,11 +67,6 @@ resources:
   - type: nextflow_script
     path: main.nf
     entrypoint: run_wf
-
-# test_resources:
-#   - type: nextflow_script
-#     path: test.nf
-#     entrypoint: test_wf
 
 dependencies:
   - name: parallel_map

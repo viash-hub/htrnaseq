@@ -29,7 +29,7 @@ IFS=';' read -r -a input_r1 <<< "$par_input_r1"
 IFS=';' read -r -a input_r2 <<< "$par_input_r2"
 
 # Read barcodes FASTQ
-# seqkit will make sure to take the the leading non-whitespace as sequence identifier (ID)
+# seqkit will make sure to take the leading non-whitespace as sequence identifier (ID)
 # Luckily, this is the same as how cutadapt determines an adapter name from the FASTA header.
 readarray -t well_ids < <(seqkit seq --name "$par_barcodesFasta" )
 readarray -t barcodes < <(seqkit seq --seq --upper-case --remove-gaps --gap-letters '^' --validate-seq "$par_barcodesFasta")
