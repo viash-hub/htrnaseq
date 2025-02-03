@@ -105,9 +105,9 @@ dependencies:
     repository: local
   - name: workflows/well_demultiplex
     repository: local
-  - name: workflows/parallel_map_wf
+  - name: workflows/well_metadata
     repository: local
-  - name: workflows/utils/groupWells
+  - name: workflows/parallel_map_wf
     repository: local
   - name: eset/create_eset
     repository: local

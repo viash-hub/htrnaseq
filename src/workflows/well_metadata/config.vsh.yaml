@@ -1,47 +1,63 @@
-name: well_demultiplex
+name: well_metadata
 namespace: workflows
-description: Demultiplexing on well level
+description: |
+  Take an input directory of demultiplexed FASTQ files per well and output
+  metadata information together with FASTQ forward and reverse pairs. 
+
 authors:
   - __merge__: /src/base/authors/dries_schaumont.yaml
     roles: [ maintainer ]
-  - __merge__: /src/base/authors/marijke_van_moerbeke.yaml
-    roles: [ contributor ]
 argument_groups:
   - name: Input arguments
     arguments:
-      - name: --input_r1
-        description: |
-          Forward reads in FASTQ format. Multiple files can be provided which will
-          be demultiplexed separately before joining the results for each individual well.
+      - name: "--input_r1"
         type: file
+        description: |
+          List of FASTQ files for the forward reads, 1 per well.
         required: true
         multiple: true
-      - name: --input_r2
-        description: |
-          Reverse reads in FASTQ format. Multiple files can be provided which will
-          be demultiplexed separately before joining the results for each individual well.
+      - name: "--input_r2"
         type: file
-        required: true
+        description: |
+          List of FASTQ files for the forward reads, 1 per well.
         multiple: true
+        required: true
+      - name: "--star_mapping"
+        type: file
+        multiple: true
+        required: true
       - name: --barcodesFasta
         type: file
         required: true
   - name: Output arguments
     arguments:
       - name: --output_r1
-        description: List of demultiplexed fastq files
+        description: Output fastq file.
         type: file
         direction: output
-        multiple: true
         required: true
-        default: "fastq/*_R1_001.fastq"
       - name: "--output_r2"
-        description: List of demultiplexed fastq files
+        description: Output fastq file.
         type: file
         direction: output
-        multiple: true
         required: true
-        default: "fastq/*_R2_001.fastq" 
+      - name: "--pool"
+        type: string
+        description: The original pool / sample name
+        direction: output
+      - name: "--well_id"
+        type: string
+        direction: output
+      - name: "--barcode"
+        type: string
+        direction: output
+      - name: "--n_wells"
+        type: integer
+        direction: output
+        description: The number of wells in the pool is well is a part of.
+      - name: "--well_star_mapping"
+        type: file
+        direction: output
 resources:
   - type: nextflow_script
     path: main.nf
@@ -76,4 +92,3 @@ runners:
 
 engines:
   - type: native
-

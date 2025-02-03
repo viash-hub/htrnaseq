@@ -9,32 +9,34 @@ authors:
   - __merge__: /src/base/authors/dries_schaumont.yaml
     roles: [ maintainer ]
 argument_groups:
-  - name: "Arguments"
+  - name: "Input arguments"
     arguments:
       - name: "--input_r1"
         type: file
         direction: input
         required: true
+        multiple: true
       - name: "--input_r2"
         type: file
         direction: input
+        multiple: true
         required: true
-      - name: "--barcode"
-        type: string
+      - name: "--barcodesFasta"
+        type: file
         required: true
       - name: "--umi_length"
         type: integer
         min: 1
-      - name: "--pool"
-        type: string
-        required: true
       - name: "--genomeDir"
         type: file
         required: true
         direction: input
+  - name: "Output arguments"
+    arguments:
       - name: "--output"
         type: file
         direction: output
+        multiple: true
         required: true
 resources:
   - type: nextflow_script
@@ -48,8 +50,6 @@ resources:
 
 dependencies:
   - name: parallel_map
-    repository: local
-  - name: workflows/utils/groupWells
     repository: local
 repositories:
   - name: local
