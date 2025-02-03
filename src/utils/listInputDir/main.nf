@@ -41,10 +41,11 @@ workflow run_wf {
             def r1 = vs.find{it.read == "1"}
             def r2 = vs.find{it.read == "2"}
             def newState = [
-              r1: r1.fastq,
-              r2: r2.fastq
+              r1_output: r1.fastq,
+              r2_output: r2.fastq
             ]
-            [ k, newState + vs[0].findAll{ it.key in ["sample", "lane"] } ]
+            def updtState = newState + vs[0].findAll{ it.key in ["sample", "lane"] }
+            return [k, updtState]
           }
 
         grouped
