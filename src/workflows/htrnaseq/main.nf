@@ -15,8 +15,7 @@ workflow run_wf {
         toState: {id, result, state -> ["f_data": result.output]}
       )
 
-    // Perform mapping of each well. The input here are events per pool,
-    // the output channel is one event per well.
+    // Perform mapping of each well.
     mapping_ch = input_ch
       | well_demultiplex.run(
         fromState: [
@@ -24,39 +23,55 @@ workflow run_wf {
             "input_r2": "input_r2",
             "barcodesFasta": "barcodesFasta",
         ],
-        toState: { id, result, state ->
-          def filtered_input = state.findAll{!["input_r1", "input_r2"].contains(it.key)} 
-          def filtered_results = result.findAll{!["output_r1", "output_r2"].contains(it.key)} 
-          def new_state = filtered_input + filtered_results + [ 
-            "fastq_output_r1": result.output_r1, 
-            "fastq_output_r2": result.output_r2,
-          ]
-          return new_state
-        }
+        toState: [
+          "input_r1": "output_r1",
+          "input_r2": "output_r2",
+        ]
       )
-      | parallel_map_wf.run(
+      | parallel_map.run(
         fromState: {id, state ->
           [
-            "input_r1": state.fastq_output_r1[0],
-            "input_r2": state.fastq_output_r2[0],
-            "barcode": state.barcode,
-            "umi_length": state.umi_length,
-            "pool": state.pool,
+            "input_r1": state.input_r1,
+            "input_r2": state.input_r2,
+            "barcodesFasta": state.barcodesFasta,
+            "umiLength": state.umi_length,
             "output": state.star_output[0],
             "genomeDir": state.genomeDir,
           ]
         },
-        toState: ["star_output": "output"]
+        toState: [
+          "star_output": "output",
+        ]
       )
 
-    // From the mapped wells, create statistics based on the BAM file
-    // and join the events back to pool level.
+    // From the mapped wells, create statistics based on the BAM files.
     pool_ch = mapping_ch
+      // Split the events from 1 event per pool into events per well
+      // and add extra metadata about the wells to the state.
+      | well_metadata.run(
+        fromState: [
+          "barcodesFasta": "barcodesFasta",
+          "input_r1": "input_r1",
+          "input_r2": "input_r2",
+          "star_mapping": "star_output"
+        ],
+        toState: [
+          "input_r1": "output_r1",
+          "input_r2": "output_r2",
+          "pool": "pool",
+          "well_id": "well_id",
+          "barcode": "barcode",
+          "lane": "lane",
+          "n_wells": "n_wells",
+          "star_mapping": "well_star_mapping",
+        ]
+      )
+      // Use the bam file to generate statistics
       | generate_well_statistics.run(
         directives: [label: ["verylowmem", "verylowcpu"]],
         fromState: { id, state ->
           [
-            "input": state.star_output.resolve('Aligned.sortedByCoord.out.bam'),
+            "input": state.star_mapping.resolve('Aligned.sortedByCoord.out.bam'),
             "barcode": state.barcode,
             "well_id": state.well_id,
           ]
@@ -65,6 +80,7 @@ workflow run_wf {
           "nrReadsNrGenesPerChromWell": "nrReadsNrGenesPerChrom",
         ]
       )
+      // Join the events back to pool-level
       | map {id, state ->
         // Create a special groupKey, such that groupTuple
         // knows when all the barcodes have been grouped into 1 event.
@@ -89,11 +105,11 @@ workflow run_wf {
         assert well_ids.clone().unique().size() == well_ids.size(), \
           "Error when gathering information for pool ${id}, well IDs are not unique!"
         def custom_state = [
-          "fastq_output_r1": states.collect{it.fastq_output_r1[0]},
-          "fastq_output_r2": states.collect{it.fastq_output_r2[0]},
+          "input_r1": states.collect{it.input_r1},
+          "input_r2": states.collect{it.input_r2},
           "barcode": barcodes,
           "well_id": well_ids,
-          "star_output": states.collect{it.star_output},
+          "star_mapping": states.collect{it.star_mapping},
           // Well and pool stats should be carefully kept separate.
           // The workflow argument points to the name for the pool statistics:
           "nrReadsNrGenesPerChromWell": states.collect{it.nrReadsNrGenesPerChromWell},
@@ -120,7 +136,6 @@ workflow run_wf {
         [id.getGroupTarget(), new_state]
       }
 
-    // The well statistics are merged on pool level. 
     pool_statistics_ch = pool_ch
       | generate_pool_statistics.run(
         directives: ["label": ["lowmem", "verylowcpu"]],
@@ -217,8 +232,8 @@ workflow run_wf {
       }
       | setState([
         "star_output": "star_output", 
-        "fastq_output_r1": "fastq_output_r1",
-        "fastq_output_r2": "fastq_output_r2",
+        "fastq_output_r1": "input_r1",
+        "fastq_output_r2": "input_r2",
         "star_output": "star_output",
         "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromPool",
         "star_qc_metrics": "star_qc_metrics",

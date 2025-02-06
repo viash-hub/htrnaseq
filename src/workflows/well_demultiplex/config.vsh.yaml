@@ -42,26 +42,6 @@ argument_groups:
         multiple: true
         required: true
         default: "fastq/*_R2_001.fastq" 
-      - name: "--pool"
-        type: string
-        description: The original pool / sample name
-        direction: output
-      - name: "--well_id"
-        type: string
-        direction: output
-      - name: "--barcode"
-        type: string
-        direction: output
-      - name: "--lane"
-        type: string
-        direction: output
-      - name: "--pair_end"
-        type: string
-        direction: output
-      - name: "--n_wells"
-        type: integer
-        direction: output
-        description: The number of wells in the pool is well is a part of.
 resources:
   - type: nextflow_script
     path: main.nf
