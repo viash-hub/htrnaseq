@@ -28,13 +28,13 @@ workflow run_wf {
           "input_r2": "output_r2",
         ]
       )
-      | parallel_map_wf.run(
+      | parallel_map.run(
         fromState: {id, state ->
           [
             "input_r1": state.input_r1,
             "input_r2": state.input_r2,
             "barcodesFasta": state.barcodesFasta,
-            "umi_length": state.umi_length,
+            "umiLength": state.umi_length,
             "output": state.star_output[0],
             "genomeDir": state.genomeDir,
           ]

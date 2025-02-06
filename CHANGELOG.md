@@ -18,6 +18,7 @@ simplify running these steps as seperate steps (PR #37).
       match exactly one FASTQ input pair (forward and reverse reads), but FASTQ files that were not matched to any
       barcode are not processed. Basically, the barcodes fasta can now act as a filter for the FASTQ files to be mapped.
   * The `utils/groupWells` workflow has been removed.
+  * `parallel_map_wf` has been removed as its functionality is now incomporated into the `parallel_map` component. 
   * The `pool`, `well_id`, `barcode`, `lane`, `pair_end` and `n_wells` output arguments have been dropped from the 
      `well_demultiplexing` workflow. This workflow now only outputs a list of demultiplexed FASTQ files.
   * A `well_metadata` workflow has been implemented that extracts the metadata that is no longer output by the `well_demultiplexing`

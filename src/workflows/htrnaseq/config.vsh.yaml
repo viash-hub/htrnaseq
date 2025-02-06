@@ -107,7 +107,7 @@ dependencies:
     repository: local
   - name: workflows/well_metadata
     repository: local
-  - name: workflows/parallel_map_wf
+  - name: parallel_map
     repository: local
   - name: eset/create_eset
     repository: local

@@ -17,27 +17,46 @@ argument_groups:
   - name: Input arguments
     arguments:
     - name: "--input_r1"
+      description: |
+        Input FASTQ files for the forward reads. All FASTQ file names must start with the prefix '{well_id}_R1', where
+        'well_id' can be found as the sequence identifier in the barcodes FASTA file (see 'barcodesFasta' argument).
+        For each FASTQ file, a matching FASTQ file for the reverse reads must be provided to the 'input_r2' argument,
+        meaning that their 'well_id' prefix must match. The number of items provided for 'input_r1' must be equal
+        to the number of items for 'input_r2'.
       type: file
       required: true
       multiple: true
     - name: "--input_r2"
+      description: |
+        Input FASTQ files for the reverse reads. All FASTQ file names must start with the prefix '{well_id}_R2', where
+        'well_id' can be found as the sequence identifier in the barcodes FASTA file (see 'barcodesFasta' argument).
+        For each FASTQ file, a matching FASTQ file for the reverse reads must be provided to the 'input_r1' argument,
+        meaning that their 'well_id' prefix must match. The number of items provided for 'input_r1' must be equal
+        to the number of items for 'input_r2'.
       type: file
       required: true
       multiple: true
     - name: "--genomeDir"
+      description: |
+        Reference genome to match to. Can be generated from genomic FASTA sequences and a genome annotation
+        by using STAR with '--runMode genomeGenerate'.
       type: file
       required: true
-      description: STAR reference directory
     - name: "--barcodesFasta"
       type: file
       required: true
-      description: Fasta file containing barcodes.
+      description: |
+        FASTA file where each entry specifies a unique barcode sequence present at the start of the forward input reads
+        (input_r1). The IDs of each barcode (the start of the FASTA headers up until the first whitespace character) must
+        match with the start of one input FASTQ pair.
   - name: Barcode arguments
     arguments:
     - name: "--umiLength"
       type: integer
       required: true
-      description: The length of the UMIs
+      description: |
+        Length of the Unique Molecular Identifiers (UMI). The UMI are expected to be located after the barcodes in the
+        forwards reads.
     - name: "--limitBAMsortRAM"
       type: string
       default: "10000000000"
@@ -52,9 +71,8 @@ argument_groups:
     - name: "--output"
       type: file
       description: |
-        Location of the output folders, 1 folder per barcode. The value used
-        for this argument must contain a '*', which will be replaced with the
-        barcode to form the final output location for that barcode.
+          A list of output folders which are the result of using STAR to map each input FASTQ pair STAR to the reference genome.
+          The order of the items DO NOT match with the order of the entries in the barcodes FASTA file or the input FASTQ pairs. 
       required: true
       multiple: true
       direction: output
