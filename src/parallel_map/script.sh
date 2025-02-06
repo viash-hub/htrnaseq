@@ -25,25 +25,14 @@ else
 fi
 
 # Split the delimited strings into arrays
-IFS=';' read -r -a barcodes <<< "$par_barcodes"
 IFS=';' read -r -a input_r1 <<< "$par_input_r1"
 IFS=';' read -r -a input_r2 <<< "$par_input_r2"
 
-# Check that the number of values provided for the barcodes and the fastq files are the same.
-num_barcodes="${#barcodes[@]}"
-num_r1_inputs="${#input_r1[@]}"
-num_r2_inputs="${#input_r2[@]}"
-
-if [ ! "$num_barcodes" -eq "$num_r1_inputs" ] || [ ! "$num_r1_inputs" -eq "$num_r2_inputs" ]; then
-  echo "The number of values for arguments 'barcodes' ($num_barcodes), "\
-        "'input_r1' ($num_r1_inputs) and 'input_r2' ($num_r2_inputs) "\
-        "should be the same, and their order should match."
-  exit 1
-else
-  echo "Checked if length of barcodes input ($num_barcodes) is "\
-       "the same as R1 reads ($num_r1_inputs) and R2 reads "\
-       "($num_r2_inputs). Seems OK!"
-fi
+# Read barcodes FASTQ
+# seqkit will make sure to take the leading non-whitespace as sequence identifier (ID)
+# Luckily, this is the same as how cutadapt determines an adapter name from the FASTA header.
+readarray -t well_ids < <(seqkit seq --name "$par_barcodesFasta" )
+readarray -t barcodes < <(seqkit seq --seq --upper-case --remove-gaps --gap-letters '^' --validate-seq "$par_barcodesFasta")
 
 # Function to test for unique values in array
 function arrayContainsUniqueValues {
@@ -69,6 +58,66 @@ if ! (exit $is_array_unique_exit_code); then
   echo "Values: $par_barcodes"
   exit 1
 fi
+
+# Check that the number of values provided for the fastq files are the same.
+num_r1_inputs="${#input_r1[@]}"
+num_r2_inputs="${#input_r2[@]}"
+
+if [ ! "$num_r1_inputs" -eq "$num_r2_inputs" ]; then
+  echo "The number of values for arguments "\
+        "'input_r1' ($num_r1_inputs) and 'input_r2' ($num_r2_inputs) "\
+        "should be the same."
+  exit 1
+else
+  echo "Checked if the same as the number of R1 FASTQ ($num_r1_inputs) and R2 FASTQ files "\
+       "($num_r2_inputs) were provided. Seems OK!"
+fi
+
+# Loop over the well IDs and match them to the input FASTQ files
+# The FASTQ file names should have the format {well_id}_R(1|2).fastq,
+# which is the output format that the cutadapt component uses for demultiplexing.
+# sorted_input_r1 and sorted_input_r2 are the input FASTQ files sorted by the order
+# of the barcodes in the barcodes array (i.e. the order in the barcodes FASTA file).
+declare -a sorted_input_r1=()
+declare -a sorted_input_r2=()
+for barcode_index in "${!barcodes[@]}"; do
+  barcode="${barcodes[$barcode_index]}"
+  well_id="${well_ids[$barcode_index]}"
+  echo "Finding FASTQ files for barcode ${barcode}, well ID '${well_id}'."
+  # The FASTQ files for a particular barcode must match the following regex:
+  input_file_regex="^${well_id}_R[1-2]"
+  
+  for r1_index in "${!input_r1[@]}"; do
+    r1_file_path=${input_r1[$r1_index]}
+    r2_file_path=${input_r2[$r1_index]}
+    # Get the file names from the full path
+    r1_file_name=$(basename -- "$r1_file_path")
+    r2_file_name=$(basename -- "$r2_file_path")
+
+    # Check if the file names match the regex
+    if [[ $r1_file_name =~ $input_file_regex ]]; then
+      echo "Matched with $r1_file_name and $r2_file_name."
+      # If the R1 FASTQ file matched the regex, 
+      # the R2 file must have also been matched
+      if ! [[ $r2_file_name =~ $input_file_regex ]]; then
+        echo "File ${r1_file_name} matched with regex ${input_file_regex} "\
+          "but ${r2_file_name} did not! Make sure that the order of "\
+          "the R1 and R2 input files match."
+        exit 1
+      fi
+      # Add the 
+      sorted_input_r1+=("$r1_file_path")
+      sorted_input_r2+=("$r2_file_path")
+      # Do not continue looking for more files for this barcode
+      # '2' to affect the *outer* loop (which indeed loops barcodes)!
+      continue 2
+    fi
+  done
+  echo "Did not find FASTQ files files for well ${well_id}! "\
+    "Make sure that the input files have the correct file name format."
+  exit 1
+done
+
 
 # Define the function that will be used to run a single job
 function _run() {
@@ -239,7 +288,7 @@ parallel_cmd+=(":::" "$par_umiLength" ":::" "$par_output" ":::" "$par_genomeDir"
 
 # Argument which in fact will cause extra jobs to be spawned, per job one item from each argument will be selected
 # Thus, these argument lists should have the same length.
-parallel_cmd+=(":::" "${barcodes[@]}" ":::+" "${input_r1[@]}" ":::+" "${input_r2[@]}")
+parallel_cmd+=(":::" "${barcodes[@]}" ":::+" "${sorted_input_r1[@]}" ":::+" "${sorted_input_r2[@]}")
 
 set +eo pipefail
 "${parallel_cmd[@]}"

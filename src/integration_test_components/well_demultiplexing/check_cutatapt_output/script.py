@@ -10,7 +10,9 @@ def assert_number_of_reads(reads):
         "SRR14730301__A1": 165,
         "SRR14730301__B1": 194,
         "SRR14730302__A1": 141,
-        "SRR14730302__B1": 213
+        "SRR14730302__B1": 213,
+        "SRR14730302__unknown": 99646,
+        "SRR14730301__unknown": 99641,
     }
     for input_id, expected_reads in expected_number_of_reads.items():
         num_reads = len(reads[input_id]) 
@@ -51,7 +53,8 @@ def create_input_mapping(sample_ids, inputs_r1, inputs_r2):
 
 def read_input_files(input_mapping):
     expected_keys = {"SRR14730301__A1", "SRR14730301__B1",
-                     "SRR14730302__A1", "SRR14730302__B1"}
+                     "SRR14730302__A1", "SRR14730302__B1",
+                     "SRR14730301__unknown", "SRR14730302__unknown"}
     difference = set(input_mapping.keys()) - expected_keys
     assert not difference, f"Found unexpected output id(s): {difference}"
     result = {}

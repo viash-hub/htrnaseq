@@ -1,0 +1,66 @@
+name: well_metadata
+namespace: workflows
+authors:
+  - __merge__: /src/base/authors/dries_schaumont.yaml
+    roles: [ maintainer ]
+argument_groups:
+  - name: Input arguments
+    arguments:
+      - name: "--input_r1"
+        type: file
+        description: |
+          List of FASTQ files for the forward reads, 1 per well.
+        required: true
+        multiple: true
+      - name: "--input_r2"
+        type: file
+        description: |
+          List of FASTQ files for the forward reads, 1 per well.
+        multiple: true
+        required: true
+      - name: "--star_mapping"
+        type: file
+        multiple: true
+        required: true
+      - name: --barcodesFasta
+        type: file
+        required: true
+  - name: Output arguments
+    arguments:
+      - name: --output_r1
+        description: Output fastq file.
+        type: file
+        direction: output
+        required: true
+      - name: "--output_r2"
+        description: Output fastq file.
+        type: file
+        direction: output
+        required: true
+      - name: "--pool"
+        type: string
+        description: The original pool / sample name
+        direction: output
+      - name: "--well_id"
+        type: string
+        direction: output
+      - name: "--barcode"
+        type: string
+        direction: output
+      - name: "--n_wells"
+        type: integer
+        direction: output
+        description: The number of wells in the pool is well is a part of.
+      - name: "--well_star_mapping"
+        type: file
+        direction: output
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+
+runners:
+  - type: nextflow
+
+engines:
+  - type: native

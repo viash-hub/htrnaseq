@@ -5,48 +5,6 @@ workflow run_wf {
   main:
     output_ch = input_ch
       /*
-      Parse the fasta file containing the barcodes and do the following:
-        - The sequence headers must not contain any whitespaces
-        - The headers (Well IDs) must be unique
-        - The barcodes must be unique
-        - Store the number of barcodes in the state
-        - Add a barcode to well ID (header) mapping to the state,
-          in order to be able to retreive the well ID based on the FASTQ name after well demultiplexing
-      */
-      | map {id, state ->
-        def n_wells = state.barcodesFasta.countFasta() as int
-        // The header is the full header, the id is the part header up to the first whitespace character
-        // We do not allow whitespace in the header of the fasta file, so assert this.
-        def fasta_entries = state.barcodesFasta.splitFasta(
-          record: ["id": true, "header": true, "seqString": true]
-        )
-        assert fasta_entries.every{it.id == it.header}, \
-          "The barcodes FASTA headers must not contain any whitespace!"
-        // Check if the fasta headers are unique
-        def fasta_ids = fasta_entries.collect{it.id}
-        assert fasta_ids.clone().unique() == fasta_ids, \
-          "The barcodes FASTA entries must have a unique name!"
-        // Check if the sequences are unique
-        def fasta_sequences = fasta_entries.collect{it.seqString}
-        assert fasta_sequences.clone().unique() == fasta_sequences, \
-          "The barcodes FASTA sequences must be unique!"
-        def well_id_matcher = /^([A-Za-z]+)0*([1-9]?[0-9]+)$/
-        def entries_corrected_id = fasta_entries.collectEntries { it ->
-          def unformatted_id = it.header
-          def id_matched_to_format = unformatted_id =~ well_id_matcher
-          assert (id_matched_to_format && id_matched_to_format.getCount() == 1), \
-            "The FASTA headers must match the coordinate system of a well plate (e.g. A01, B01, ... or AA1, AB1, ...). Found: ${unformatted_id}"
-          def id_letters = id_matched_to_format[0][1].toUpperCase()
-          def id_numbers = id_matched_to_format[0][2]
-          ["${id_letters}${id_numbers}", it.seqString]
-        }
-        def newState = state + [
-          "n_wells": n_wells,
-          "well_id_barcode_mapping": entries_corrected_id,
-        ]
-        [id, newState]
-      }
-      /*
       For each pool (i.e. event) in the channel, a list of R1 and R2 input
       reads is provided which correspond to the lanes. If there are multiple lanes,
       we can demultiplex into the wells for each lane in parallel. Therefore, cutadapt
@@ -61,15 +19,14 @@ workflow run_wf {
         // group them together in an asynchronous manner later by providing
         // the expected number of events to be grouped to groupTuple.
         // see https://www.nextflow.io/docs/latest/reference/operator.html#grouptuple
-        def n_lanes = state.input_r1.size()
         [state.input_r1, state.input_r2].transpose().withIndex().collect{ input_pair, index ->
           def single_input_r1 = input_pair[0]
           def single_input_r2 = input_pair[1]
           def newState = state + ["input_r1": single_input_r1,
                                   "input_r2": single_input_r2,
                                   "pool": id,
-                                  "lane_sorting": index,
-                                  "n_lanes": n_lanes]
+                                  "n_lanes": state.input_r1.size(),
+                                  "lane_sorting": index]
           def newId = id + "_" + index
           [newId, newState]
         }
@@ -96,44 +53,33 @@ workflow run_wf {
             "n_lanes": state.n_lanes,
             "output": result.output,
             "lane_sorting": state.lane_sorting,
-            "n_wells": state.n_wells,
-            "well_id_barcode_mapping": state.well_id_barcode_mapping,
           ]
           return newState
         }
       )
-      // Parse the file names to obtain metadata about the output
       | flatMap{ id, state ->
-        def pool = state.pool
+        // The output from cutadapt should be in the format {name}_R(1|2)_001.fastq
+        // See https://github.com/viash-hub/biobox/blob/952ff0843093b538cbfd6fefdecf2e7a0bc9e70b/src/cutadapt/script.sh#L226
+        // Here, {name} is the name of the sequence in the barcode fasta: https://cutadapt.readthedocs.io/en/v5.0/guide.html#named-adapters
         state.output.collect{ p ->
-          def well_id_matcher = p =~ /.*\\/([A-Za-z0-9]*|unknown)_R?.*/
-          assert well_id_matcher, \
-            "Could not find Well ID in the name of FASTQ file ($p) output from cutadapt."
-          def well_id = well_id_matcher[0][1]
-          // Note: set the barcode to 'null' for reads that were put into 'unknown'
-          def barcode = (well_id != "unknown") ? state.well_id_barcode_mapping[well_id].replaceAll("[^ACGTacgt]", "") : null
-          assert (well_id == "unknown") || (barcode != null), \
-            "After demultiplexing, no Well ID could be retreived for barcode ${barcode}."
-          def pair_end_matcher = p =~ /.*_(R[12])_.*/
-          assert pair_end_matcher, \
-            "Could not find read orientation information in the name of the FASTQ file ($p) output from cutadapt."
-          def pair_end = pair_end_matcher[0][1]
-          def lane_matcher = p =~ /.*_(L\d+).*/
-          def lane = lane_matcher ? lane_matcher[0][1] : "NA"
-          def new_id = pool + "__" + well_id
+          def path_as_string = p.name
+          // Check for correct output file name format
+          assert (path_as_string.endsWith("_R1_001.fastq") || path_as_string.endsWith("_R2_001.fastq")), \
+            "Expected cutadapt output to contain files ending in '_R1_001.fastq' or _R1_001.fastq' only. Found: ${p}."
+          // Detect read orientation from file name
+          def pair_end = path_as_string.endsWith("_R1_001.fastq") ? "R1" : "R2"
+          // Use the start of the file
+          def barcode_id = p.name - ~/_R(1|2)_001\.fastq$/
+          def new_id = state.pool + "__" + barcode_id
           [
             new_id,
             [
-              "pool": pool,
-              "barcode": barcode,
-              "well_id": well_id,
+              "pool": state.pool,
+              "barcode_id": barcode_id,
               "output": p,
-              "lane": lane,
-              "n_wells": state.n_wells,
               "pair_end": pair_end,
               "n_lanes": state.n_lanes,
               "lane_sorting": state.lane_sorting,
-              "_meta": [ "join_id": pool ]
             ]
           ]
         }
@@ -154,7 +100,7 @@ workflow run_wf {
           def group_key = groupKey(id, state.n_lanes * 2)
           return [group_key, state]
       }
-      | groupTuple(sort: {a, b ->
+      | groupTuple(by: 0, remainder: true, sort: {a, b ->
         // Make sure that the grouped states are in order,
         // meaning forward and reverse FASTQs are paired and the FASTQ
         // for the forward reads comes before the reverse reads FASTQ.
@@ -163,7 +109,7 @@ workflow run_wf {
         }
         return a.lane_sorting <=> b.lane_sorting
       })
-      | map {_, states ->
+      | map {group_key, states ->
         // The states are in one long flat list, group them into pairs
         // This assumes that the FASTQ files are already in order!
         // (See the 'sort' argument of groupTuple above)
@@ -176,9 +122,7 @@ workflow run_wf {
             "found output state: $pair"
           def (first, second) = pair
           def should_be_the_same = [
-            "barcode",
-            "well_id",
-            "lane",
+            "barcode_id",
             "pool",
             "lane_sorting",
           ]
@@ -190,18 +134,23 @@ workflow run_wf {
               "the same detected ${attr_to_check}. Found: " +
               "$first_attr and $second_attr"
           }
-          // Forward and reverse reads should be designated
-          // by 'R1' and 'R2', and sorted lexographically.
-          assert first.pair_end == "R1", \
-            "State error: expected first item from FASTQ pair to have " +
-             "orientation 'R1', found $first.pair_end"
-          assert second.pair_end == "R2", \
-            "State error: expected second item from FASTQ pair to have " +
-             "orientation 'R2', found $second.pair_end"
         }
-
-        def r1_output = output_pairs.collect{it[0].output}
-        def r2_output = output_pairs.collect{it[1].output}
+        // Forward and reverse reads should be designated
+        // by 'R1' and 'R2', and sorted lexographically.
+        def r1_output = output_pairs.collect{
+          def forward_output = it[0].output
+          assert forward_output.name.endsWith("R1_001.fastq"), \
+             "State error: expected first item from FASTQ pair to have " +
+             "orientation 'R1', found ${forward_output.name}."
+          return it[0].output
+        }
+        def r2_output = output_pairs.collect{
+          def forward_output = it[1].output
+          assert forward_output.name.endsWith("R2_001.fastq"), \
+             "State error: expected first item from FASTQ pair to have " +
+             "orientation 'R2', found ${forward_output.name}."
+          return it[1].output
+        }
         assert r1_output.size() == r2_output.size()
 
         /* The lane sorting represents the order of the FASTQ files
@@ -217,18 +166,19 @@ workflow run_wf {
         assert sorting_is_monotonically_increasing, \
           "State error: expected the order of the FASTQ files after grouping " +
           "the cutadapt output to be the same as the order in the input. " +
-          "Found sorting $lane_sorting, R1 output: $r1_output, R2 output: $r2_output."
+          "Found sorting ${lane_sorting}, R1 output: ${r1_output}, R2 output: ${r2_output}."
 
         // Here we pick the state from the first item in the list of states
         // and overwrite the keys which are different across states
         def first_state = states[0]
-        def new_id = first_state.pool + "__" + first_state.well_id
+        // The id is the sequence name for the barcode (from the FASTA file).
         def new_state = first_state + ["output_r1": r1_output, "output_r2": r2_output]
-        [new_id, new_state]
+        // group_key.target is an attribute from an object created with nextflow's groupKey()
+        // It is the Id by which the events were joined using groupTuple
+        return [group_key.target, new_state]
       }
       // TODO: Expand this into matching a whitelist/blacklist of barcodes
       // ... and turn into separate component
-      | filter{ id, state -> state.well_id != "unknown" }
       | concat_text.run(
         directives: [label: ["lowmem", "lowcpu"]],
         key: "concat_txt_r1",
@@ -261,7 +211,18 @@ workflow run_wf {
           return newState
         }
       )
-      | setState(["pool", "well_id", "n_wells", "barcode", "lane", "_meta", "output_r1", "output_r2"])
+      // Group the concatenated files back on pool level
+      | map {id, state ->
+        def new_event = [state.pool, state]
+        return new_event
+      }
+      | groupTuple(by: 0, sort: {a, b -> a.barcode_id <=> b.barcode_id})
+      | map {id, states ->
+        def output_r1 = states.collect{it.output_r1}.flatten()
+        def output_r2 = states.collect{it.output_r2}.flatten()
+        def output_state = ["output_r1": output_r1, "output_r2": output_r2]
+        return [id, output_state]
+      }
 
   emit:
     output_ch

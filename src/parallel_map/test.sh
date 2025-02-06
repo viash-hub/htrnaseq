@@ -74,6 +74,13 @@ ACACTACTAACCGGCCAACCATAGTGGTG
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
 
+cat > "$TMPDIR/barcodes.fasta" <<'EOF'
+>sample1
+ACAGTCACAG
+>sample2
+CGGGTTTACC
+EOF
+
 # Note that there is a sjdbGTFchrPrefix argument for STAR:
 # prefix for chromosome names in a GTF file (default: '-')
 cat > "$TMPDIR/genome.fasta" <<'EOF'
@@ -109,10 +116,10 @@ pushd "$run_1_dir" > /dev/null
     --input_r1 "$TMPDIR/sample1_R1.fastq;$TMPDIR/sample2_R1.fastq" \
     --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
     --genomeDir "$TMPDIR/index/" \
-    --barcodes "ACAGTCACAG;CGGGTTTACC" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
-    --output "$TMPDIR/output_*" > /dev/null 2>&1 
+    --output "$TMPDIR/output_*"
 popd
 
 echo ">> Check if output directories exists"
@@ -201,7 +208,7 @@ pushd "$run_2_dir" > /dev/null
     --input_r1 "$TMPDIR/sample1_R1.fastq.gz;$TMPDIR/sample2_R1.fastq.gz" \
     --input_r2 "$TMPDIR/sample1_R2.fastq.gz;$TMPDIR/sample2_R2.fastq.gz" \
     --genomeDir "$TMPDIR/index/" \
-    --barcodes "ACAGTCACAG;CGGGTTTACC" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_gz_*" > /dev/null 2>&1
@@ -281,6 +288,11 @@ cat << EOF | cmp -s "$sample2_out/Solo.out/Gene/filtered/matrix.mtx" || { echo "
 EOF
 
 
+cat > "$TMPDIR/wrong_number_of_barcodes.fasta" <<'EOF'
+>A1
+ACAGTCACAG
+EOF
+
 echo "> Check that wrong number of barcodes are detected."
 run_3_dir="$TMPDIR/run_3"
 mkdir -p "$run_3_dir" 
@@ -290,7 +302,7 @@ set +eo pipefail
     --input_r1 "$TMPDIR/sample1_R1.fastq.gz;$TMPDIR/sample2_R1.fastq.gz" \
     --input_r2 "$TMPDIR/sample1_R2.fastq.gz;$TMPDIR/sample2_R2.fastq.gz" \
     --genomeDir "$TMPDIR/index/" \
-    --barcodes "ACAGTCACAG" \
+    --barcodesFasta "$TMPDIR/wrong_number_of_barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_gz_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1
@@ -306,7 +318,7 @@ set +eo pipefail
     --input_r1 "$TMPDIR/sample1_R1.fastq.gz;$TMPDIR/sample2_R1.fastq.gz" \
     --input_r2 "$TMPDIR/sample1_R2.fastq.gz;$TMPDIR/sample2_R2.fastq.gz" \
     --genomeDir "$TMPDIR/index/" \
-    --barcodes "ACAGTCACAG;CGGGTTTACC" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_run4" > /dev/null 2>&1 && echo "Expected non-zero exit code." && exit 1 
@@ -324,7 +336,7 @@ set +eo pipefail
     --input_r1 "$TMPDIR/sample1_R1.fastq;$empty_input_file" \
     --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
     --genomeDir "$TMPDIR/index/" \
-    --barcodes "ACAGTCACAG;CGGGTTTACC" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_run5_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1
@@ -340,11 +352,115 @@ set +eo pipefail
     --input_r1 "$TMPDIR/sample1_R1.fastq" \
     --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
     --genomeDir "$TMPDIR/index/" \
-    --barcodes "ACAGTCACAG;CGGGTTTACC" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
     --output "$TMPDIR/output_run_6_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1
 set -eo pipefail
 popd > /dev/null
 
+
+echo "> Check that wrong FASTQ order is detected."
+run_6_dir="$TMPDIR/run_7"
+mkdir -p "$run_6_dir" 
+pushd "$run_6_dir" > /dev/null
+set +eo pipefail
+"$meta_executable" \
+    --input_r1 "$TMPDIR/sample2_R1.fastq.gz;$TMPDIR/sample1_R1.fastq.gz" \
+    --input_r2 "$TMPDIR/sample1_R2.fastq;$TMPDIR/sample2_R2.fastq" \
+    --genomeDir "$TMPDIR/index/" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
+    --umiLength 10 \
+    --runThreadN 2 \
+    --output "$TMPDIR/output_run_6_*" > /dev/null 2>&1 && echo "Expected non-zero exit code " && exit 1
+set -eo pipefail
+popd > /dev/null
+
+
+echo "> Check that order of input FASTQ files must not match with the order of barcodes"
+run_8_dir="$TMPDIR/run_8"
+mkdir -p "$run_8_dir"
+pushd "$run_8_dir" > /dev/null
+"$meta_executable" \
+    --input_r1 "$TMPDIR/sample2_R1.fastq;$TMPDIR/sample1_R1.fastq" \
+    --input_r2 "$TMPDIR/sample2_R2.fastq;$TMPDIR/sample1_R2.fastq" \
+    --genomeDir "$TMPDIR/index/" \
+    --barcodesFasta "$TMPDIR/barcodes.fasta" \
+    --umiLength 10 \
+    --runThreadN 2 \
+    --output "$TMPDIR/output_*" > /dev/null 2>&1 
+popd
+
+echo ">> Check if output directories exists"
+sample1_out="$TMPDIR/output_ACAGTCACAG"
+sample2_out="$TMPDIR/output_CGGGTTTACC"
+assert_directory_exists "$sample1_out"
+assert_directory_exists "$sample2_out"
+
+echo ">> Check if output files have been created"
+for sample in "$sample1_out" "$sample2_out"; do
+  assert_file_exists "$sample/Aligned.sortedByCoord.out.bam" 
+  assert_file_exists "$sample/Unmapped.out.mate1"
+  assert_file_exists "$sample/Unmapped.out.mate2"
+  assert_file_exists "$sample/Log.out"
+  assert_file_exists "$sample/Log.final.out"
+  assert_file_exists "$sample/ReadsPerGene.out.tab"
+done 
+
+
+echo ">> Check if Solo output is present"
+for sample in "$sample1_out" "$sample2_out"; do
+  assert_directory_exists "$sample1_out/Solo.out"
+  assert_directory_exists "$sample1_out/Solo.out/Gene"
+  assert_file_exists "$sample1_out/Solo.out/Barcodes.stats"
+  assert_file_exists "$sample1_out/Solo.out/Gene/raw/barcodes.tsv"
+  assert_file_exists "$sample1_out/Solo.out/Gene/raw/features.tsv"
+  assert_file_exists "$sample1_out/Solo.out/Gene/raw/matrix.mtx"
+  assert_file_exists "$sample1_out/Solo.out/Gene/filtered/barcodes.tsv"
+  assert_file_exists "$sample1_out/Solo.out/Gene/filtered/features.tsv"
+  assert_file_exists "$sample1_out/Solo.out/Gene/filtered/matrix.mtx"
+done
+
+echo ">> Check contents of output"
+echo ">>> Sample 1"
+assert_file_contains "$sample1_out/Solo.out/Barcodes.stats" "nExactMatch              2"
+assert_file_contains "$sample1_out/Log.final.out" "Uniquely mapped reads number |	2"
+assert_file_contains "$sample1_out/Log.final.out" "Number of input reads |	2"
+
+cat << EOF | cmp -s "$sample1_out/Solo.out/Gene/filtered/barcodes.tsv" || { echo "Barcodes file is different"; exit 1; }
+ACAGTCACAG
+EOF
+
+cat << EOF | cmp -s "$sample1_out/Solo.out/Gene/filtered/features.tsv" || { echo "Features file is different"; exit 1; }
+gene1	gene1	Gene Expression
+gene2	gene2	Gene Expression
+EOF
+
+cat << EOF | cmp -s "$sample1_out/Solo.out/Gene/filtered/matrix.mtx" || { echo "Matrix file is different"; exit 1; }
+%%MatrixMarket matrix coordinate integer general
+%
+2 1 1
+1 1 1
+EOF
+
+echo ">>> Sample 2"
+assert_file_contains "$sample2_out/Solo.out/Barcodes.stats" "nExactMatch              2"
+assert_file_contains "$sample2_out/Log.final.out" "Uniquely mapped reads number |	2"
+assert_file_contains "$sample2_out/Log.final.out" "Number of input reads |	2"
+
+cat << EOF | cmp -s "$sample2_out/Solo.out/Gene/filtered/barcodes.tsv" || { echo "Barcodes file is different"; exit 1; }
+CGGGTTTACC
+EOF
+
+cat << EOF | cmp -s "$sample2_out/Solo.out/Gene/filtered/features.tsv" || { echo "Features file is different"; exit 1; }
+gene1	gene1	Gene Expression
+gene2	gene2	Gene Expression
+EOF
+
+cat << EOF | cmp -s "$sample2_out/Solo.out/Gene/filtered/matrix.mtx" || { echo "Matrix file is different"; exit 1; }
+%%MatrixMarket matrix coordinate integer general
+%
+2 1 1
+2 1 1
+EOF
 

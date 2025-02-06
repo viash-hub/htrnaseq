@@ -33,19 +33,26 @@ workflow test_wf {
     )
     | view { output ->
       assert output.size() == 2 : "outputs should contain two elements; [id, file]"
+      assert output[1].output_r1.size() == 3: "Expected 3 forward fastq files: 2 wells and 1 unknown"
+      assert output[1].output_r2.size() == 3: "Expected 3 reverse fastq files: 2 wells and 1 unknown"
       "Output: $output"
     }
     | toSortedList()
     | view { output ->
-      assert output.size() == 4 : "2 samples, each with 2 barcodes"
+      assert output.size() == 2 : "Should have found two pools!"
     }
     | map {output ->
       def ids = output.collect{it[0]}
       def states = output.collect{it[1]}
+      def output_r1 = states.collect{it.output_r1}.flatten()
+      def output_r2 = states.collect{it.output_r2}.flatten()
+      def ids_pool_1 = states[0].output_r1.collect{ids[0] + "__" + (it.name - ~/_R(1|2)_001.fastq$/) } 
+      def ids_pool_2 = states[1].output_r2.collect{ids[1] + "__" + (it.name - ~/_R(1|2)_001.fastq$/) } 
+
       def new_state = [
-        "ids": ids,
-        "fastq_r1": states.collect{it.output_r1}.flatten(),
-        "fastq_r2": states.collect{it.output_r2}.flatten()
+        "ids": ids_pool_1 + ids_pool_2,
+        "fastq_r1": output_r1,
+        "fastq_r2": output_r2
       ]
       ["integration_test_check", new_state]
     }
@@ -87,10 +94,12 @@ workflow test_wf2 {
     )
     | view { output ->
       assert output.size() == 2 : "outputs should contain two elements; [id, file]"
+      assert output[1].output_r1.size() == 3: "Expected 3 forward fastq files: 2 wells and 1 unknown"
+      assert output[1].output_r2.size() == 3: "Expected 3 reverse fastq files: 2 wells and 1 unknown"
       "Output: $output"
     }
     | toSortedList()
     | view { output ->
-      assert output.size() == 2 : "1 samples, and two barcodes"
+      assert output.size() == 1 : "Should have found 1 pool"
     }
 }
