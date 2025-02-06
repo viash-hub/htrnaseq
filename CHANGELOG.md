@@ -1,5 +1,29 @@
 # htrnaseq v0.x.x
 
+## Breaking changes
+
+An effort has been made to align the inputs for the `htrnaseq` and the mapping and demultiplexing of the wells, in order
+simplify running these steps as seperate steps (PR #37).
+  * Changes to the `parallel_map` component:
+    - The `barcode` argument has been renamed to `barcodesFasta` and the provided 
+      value for this argument must now be single FASTA file instead of a list of barcodes.
+    - The filenames for the provided FASTQ files must now conform to the format `{name}_R(1|2).fasta`,
+      where `{name}` is the well identifiers. The well identifiers correspond to the headers
+      of the FASTA file containing the barcodes (up untill the first whitespace).
+      Forward and reverse FASTQ files must still be provided in pairs, meaning that the order of
+      files provided to `input_r1` and `input_r2` remains important.
+    - The requirement for equal number of barcodes and FASTQ pairs to be provided has been dropped.
+      Instead, the barcodes provided with `barcodesFasta` are matched to the input FASTQ files by comparing
+      the header of the FASTA records to the file names of the provided FASTQ input files. Each barcode must
+      match exactly one FASTQ input pair (forward and reverse reads), but FASTQ files that were not matched to any
+      barcode are not processed. Basically, the barcodes fasta can now act as a filter for the FASTQ files to be mapped.
+  * The `utils/groupWells` workflow has been removed.
+  * The `pool`, `well_id`, `barcode`, `lane`, `pair_end` and `n_wells` output arguments have been dropped from the 
+     `well_demultiplexing` workflow. This workflow now only outputs a list of demultiplexed FASTQ files.
+  * A `well_metadata` workflow has been implemented that extracts the metadata that is no longer output by the `well_demultiplexing`
+    workflow from the demultiplexed files and the barcodes FASTA.
+   
+
 ## New functionality
 
 * Added `umi_length` argument (PR #27).
