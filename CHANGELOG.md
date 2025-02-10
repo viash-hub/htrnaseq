@@ -1,4 +1,4 @@
-# htrnaseq v0.x.x
+# htrnaseq v0.4.0
 
 ## Breaking changes
 
@@ -23,7 +23,14 @@ simplify running these steps as seperate steps (PR #37).
      `well_demultiplexing` workflow. This workflow now only outputs a list of demultiplexed FASTQ files.
   * A `well_metadata` workflow has been implemented that extracts the metadata that is no longer output by the `well_demultiplexing`
     workflow from the demultiplexed files and the barcodes FASTA.
-   
+
+## New functionality
+
+* Multiple input directories can not be provided. The input reads from these from these directories
+  will be joined per barcode before mapping. This is usefull when data has been generated using
+  multiple sequencing runs in order to increase sequencing depth (PR #38).
+
+# htrnaseq v0.3.0
 
 ## New functionality
 
