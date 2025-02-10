@@ -6,6 +6,7 @@ argument_groups:
     arguments:
       - name: --input
         description: Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/<demultiplex_dir>`
+        multiple: true
         type: file
         required: true
       - name: --barcodesFasta

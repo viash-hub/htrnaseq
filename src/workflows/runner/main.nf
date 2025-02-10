@@ -9,10 +9,18 @@ workflow run_wf {
 
   main:
     output_ch = input_ch
-
-      // Pass the original ID in the state to pick it up later
-      | map{ id, state -> [ id, state + [ run_id: id ] ] }
-
+      // Multiple runs can be provided, and the reads  for these runs will
+      // be concatenated. Here, we gather the FASTQ files from each input directory first.
+      | flatMap {id, state ->
+        // Create an input event per input directory
+        def new_state = state.input.withIndex().collect{input_dir, id_index ->
+          def state_item = state + ["input": input_dir, "index": id_index, "run_id": id]
+          return ["${id}_${id_index}".toString(), state_item]
+        }
+        return new_state
+      }
+      // List the FASTQ files per input directory
+      // Be careful: an event per lane is created!
       | listInputDir.run(
         fromState: [ input: "input" ],
         toState: { id, state, result ->
@@ -20,7 +28,27 @@ workflow run_wf {
           clean_state + result
         }
       )
-
+      // Set the pool as ID in order to group the FASTQ files
+      // back on  level. By using the run_id, lanes are also
+      // automatically gathered.
+      | map {id, state ->
+        def new_event = [state.run_id, state]
+      }
+      | groupTuple(by: 0, sort: { state ->
+        state.index <=> state.index
+      })
+      | map {id, states ->
+        def new_r1 = states.collect{it.r1_output}
+        def new_r2 = states.collect{it.r2_output}
+        // This assumes that, except for r1 and r2, 
+        // the keys across the grouped states are the same.
+        // TODO: this can be asserted.
+        def new_state = states[0] + [
+          "r1": new_r1,
+          "r2": new_r2
+        ]
+        return [id, new_state]
+      }
       | htrnaseq.run(
         args: [
           f_data: 'fData/$id.txt',
@@ -42,7 +70,6 @@ workflow run_wf {
         ],
         toState: { id, result, state -> state + result }
       )
-
       // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
       // but for publishing the results, this is not handy because we want to use the $id
       // variable as a pointer to the target data.

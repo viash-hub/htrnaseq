@@ -187,7 +187,7 @@ workflow run_wf {
           [
             input: state.output_r1,
             gzip_output: false,
-            output: "${id}_R1.fastq"
+            output: "${state.pool}/${state.barcode_id}_R1.fastq"
           ]
         },
         toState: { id, result, state ->
@@ -203,7 +203,7 @@ workflow run_wf {
           [
             input: state.output_r2,
             gzip_output: false,
-            output: "${id}_R2.fastq",
+            output: "${state.pool}/${state.barcode_id}_R2.fastq",
           ]
         },
         toState: { id, result, state ->
