@@ -29,6 +29,7 @@ workflow run_wf {
         ]
       )
       | parallel_map.run(
+        directives: ["label": ["highmem", "lowcpu"]],
         fromState: {id, state ->
           [
             "input_r1": state.input_r1,
