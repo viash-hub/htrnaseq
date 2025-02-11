@@ -187,7 +187,8 @@ workflow run_wf {
           [
             input: state.output_r1,
             gzip_output: false,
-            output: "${state.pool}/${state.barcode_id}_R1.fastq"
+            // Remark: the fastq path part may seem superfluous but is necessary for publising later
+            output: "fastq/${state.pool}/${state.barcode_id}_R1.fastq"
           ]
         },
         toState: { id, result, state ->
@@ -203,7 +204,8 @@ workflow run_wf {
           [
             input: state.output_r2,
             gzip_output: false,
-            output: "${state.pool}/${state.barcode_id}_R2.fastq",
+            // Remark: the fastq path part may seem superfluous but is necessary for publising later
+            output: "fastq/${state.pool}/${state.barcode_id}_R2.fastq",
           ]
         },
         toState: { id, result, state ->

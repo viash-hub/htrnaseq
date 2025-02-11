@@ -14,7 +14,7 @@ workflow run_wf {
       | flatMap {id, state ->
         // Create an input event per input directory
         def new_state = state.input.withIndex().collect{input_dir, id_index ->
-          def state_item = state + ["input": input_dir, "index": id_index]
+          def state_item = state + ["input": input_dir, "index": id_index, "run_id": id]
           return ["${id}_${id_index}".toString(), state_item]
         }
         return new_state
