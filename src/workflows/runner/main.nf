@@ -9,12 +9,12 @@ workflow run_wf {
 
   main:
     output_ch = input_ch
-      // Multiple runs can be provided, and the reads  for these runs will
+      // Multiple runs can be provided, and the reads for these runs will
       // be concatenated. Here, we gather the FASTQ files from each input directory first.
       | flatMap {id, state ->
         // Create an input event per input directory
         def new_state = state.input.withIndex().collect{input_dir, id_index ->
-          def state_item = state + ["input": input_dir, "index": id_index, "run_id": id]
+          def state_item = state + ["input": input_dir, "index": id_index]
           return ["${id}_${id_index}".toString(), state_item]
         }
         return new_state
@@ -28,12 +28,13 @@ workflow run_wf {
           clean_state + result
         }
       )
-      // Set the pool as ID in order to group the FASTQ files
-      // back on  level. By using the run_id, lanes are also
-      // automatically gathered.
-      | map {id, state ->
-        def new_event = [state.run_id, state]
-      }
+      // ListInputDir puts the sample_id as the event ID (slot 0 from the tuple).
+      // The sample_id was inferred from the start of the file name,
+      // and it can be used to group the FASTQ files, because an input folder 
+      // can contain input files from multiple samples (pools). Additionally,
+      // there might be multiple FASTQs for a single sample that correspond to the
+      // lanes. So the fastq files must be gathered across lanes and input folders
+      // in order to create an input lists for R1 and R2.
       | groupTuple(by: 0, sort: { state ->
         state.index <=> state.index
       })

@@ -27,7 +27,7 @@ simplify running these steps as seperate steps (PR #37).
 ## New functionality
 
 * Multiple input directories can not be provided. The input reads from these from these directories
-  will be joined per barcode before mapping. This is usefull when data has been generated using
+  will be joined per barcode before mapping. This is useful when data has been generated using
   multiple sequencing runs in order to increase sequencing depth (PR #38).
 
 # htrnaseq v0.3.0
