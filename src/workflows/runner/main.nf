@@ -35,8 +35,11 @@ workflow run_wf {
       // there might be multiple FASTQs for a single sample that correspond to the
       // lanes. So the fastq files must be gathered across lanes and input folders
       // in order to create an input lists for R1 and R2.
-      | groupTuple(by: 0, sort: { state ->
-        state.index <=> state.index
+      | groupTuple(by: 0, sort: { state1, state2 ->
+        if (state1.index == state2.index) {
+          return state1.lane <=> state2.lane
+        }
+        return state1.index <=> state2.index
       })
       | map {id, states ->
         def new_r1 = states.collect{it.r1_output}
