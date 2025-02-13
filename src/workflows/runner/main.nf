@@ -9,10 +9,18 @@ workflow run_wf {
 
   main:
     output_ch = input_ch
-
-      // Pass the original ID in the state to pick it up later
-      | map{ id, state -> [ id, state + [ run_id: id ] ] }
-
+      // Multiple runs can be provided, and the reads for these runs will
+      // be concatenated. Here, we gather the FASTQ files from each input directory first.
+      | flatMap {id, state ->
+        // Create an input event per input directory
+        def new_state = state.input.withIndex().collect{input_dir, id_index ->
+          def state_item = state + ["input": input_dir, "index": id_index, "run_id": id]
+          return ["${id}_${id_index}".toString(), state_item]
+        }
+        return new_state
+      }
+      // List the FASTQ files per input directory
+      // Be careful: an event per lane is created!
       | listInputDir.run(
         fromState: [ input: "input" ],
         toState: { id, state, result ->
@@ -20,7 +28,32 @@ workflow run_wf {
           clean_state + result
         }
       )
-
+      // ListInputDir puts the sample_id as the event ID (slot 0 from the tuple).
+      // The sample_id was inferred from the start of the file name,
+      // and it can be used to group the FASTQ files, because an input folder 
+      // can contain input files from multiple samples (pools). Additionally,
+      // there might be multiple FASTQs for a single sample that correspond to the
+      // lanes. So the fastq files must be gathered across lanes and input folders
+      // in order to create an input lists for R1 and R2.
+      | map {id, state -> [state.sample_id, state]}
+      | groupTuple(by: 0, sort: { state1, state2 ->
+        if (state1.index == state2.index) {
+          return state1.lane <=> state2.lane
+        }
+        return state1.index <=> state2.index
+      })
+      | map {id, states ->
+        def new_r1 = states.collect{it.r1_output}
+        def new_r2 = states.collect{it.r2_output}
+        // This assumes that, except for r1 and r2, 
+        // the keys across the grouped states are the same.
+        // TODO: this can be asserted.
+        def new_state = states[0] + [
+          "r1": new_r1,
+          "r2": new_r2
+        ]
+        return [id, new_state]
+      }
       | htrnaseq.run(
         args: [
           f_data: 'fData/$id.txt',
@@ -42,7 +75,6 @@ workflow run_wf {
         ],
         toState: { id, result, state -> state + result }
       )
-
       // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
       // but for publishing the results, this is not handy because we want to use the $id
       // variable as a pointer to the target data.
