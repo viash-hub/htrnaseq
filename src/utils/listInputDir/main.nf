@@ -18,18 +18,20 @@ workflow run_wf {
 
         println("Extracting information from fastq/fasta filenames")
         def processed_fastqs = allFastqs.collect { f ->
-          def regex = ~/^(\w+)_S(\d+)_(L(\d+))_?R(\d)_(\d+)\.fast[qa](\.gz)?$/
+          def regex = ~/^(\w+)_S(\d+)_(L(\d+)_)?R(\d)_(\d+)\.fast[qa](\.gz)?$/
           def validFastq = f.name ==~ regex
 
           assert validFastq: "${f} does not match the regex ${regex}"
 
           def parsedFastq = f.name =~ regex
-
+          def lane = parsedFastq[0][3]
+          // Remove the trailing '_'
+          def lane_remove_trailing = lane == null ? "" : lane.replaceAll('_$', "")
           return [
             fastq: f,
             sample_id: parsedFastq[0][1],
             sample: parsedFastq[0][2],
-            lane: parsedFastq[0][3],
+            lane: lane_remove_trailing,
             read: parsedFastq[0][5],
           ]
         }
@@ -50,7 +52,8 @@ workflow run_wf {
               def new_state = fastq_state +
                 r1_state.findAll{it.key in ["sample_id", "sample", "lane"]} + 
                 ["_meta": ["join_id": id]]
-              return ["${sample_id}_${lane}".toString(), new_state]
+              def new_id = lane?.trim() ? sample_id : "${sample_id}_${lane}".toString()
+              return [new_id, new_state]
             }
             return result
 
