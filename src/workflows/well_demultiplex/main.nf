@@ -188,7 +188,9 @@ workflow run_wf {
             input: state.output_r1,
             gzip_output: false,
             // Remark: the fastq path part may seem superfluous but is necessary for publising later
-            output: "fastq/${state.pool}/${state.barcode_id}_R1.fastq"
+            // Also: match this with the specified output file names from cutadapt!
+            // Otherwise, the output file names will differ depending on wether concatenation is dones or not
+            output: "fastq/${state.pool}/${state.barcode_id}_R1_001.fastq"
           ]
         },
         toState: { id, result, state ->
@@ -205,7 +207,9 @@ workflow run_wf {
             input: state.output_r2,
             gzip_output: false,
             // Remark: the fastq path part may seem superfluous but is necessary for publising later
-            output: "fastq/${state.pool}/${state.barcode_id}_R2.fastq",
+            // Also: match this with the specified output file names from cutadapt!
+            // Otherwise, the output file names will differ depending on wether concatenation is done or not
+            output: "fastq/${state.pool}/${state.barcode_id}_R2_001.fastq",
           ]
         },
         toState: { id, result, state ->
