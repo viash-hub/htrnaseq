@@ -189,7 +189,7 @@ workflow run_wf {
             gzip_output: false,
             // Remark: the fastq path part may seem superfluous but is necessary for publising later
             // Also: match this with the specified output file names from cutadapt!
-            // Otherwise, the output file names will differ depending on wether concatenation is dones or not
+            // Otherwise, the output file names will differ depending on wether concatenation is done or not
             output: "fastq/${state.pool}/${state.barcode_id}_R1_001.fastq"
           ]
         },
