@@ -18,7 +18,7 @@ workflow run_wf {
 
         println("Extracting information from fastq/fasta filenames")
         def processed_fastqs = allFastqs.collect { f ->
-          def regex = ~/^(\w+)_S(\d+)_(L(\d+)_)?R(\d)_(\d+)\.fast[qa](\.gz)?$/
+          def regex = ~/^(\w+)_S(\d+)_(L(\d+))_?R(\d)_(\d+)\.fast[qa](\.gz)?$/
           def validFastq = f.name ==~ regex
 
           assert validFastq: "${f} does not match the regex ${regex}"
@@ -36,20 +36,27 @@ workflow run_wf {
 
         println("Group paired fastq/fasta files")
         def grouped = processed_fastqs
-          .groupBy({it.sample_id})
-          .collect{ k, vs ->
-            def r1 = vs.find{it.read == "1"}
-            def r2 = vs.find{it.read == "2"}
-            def newState = [
-              r1_output: r1.fastq,
-              r2_output: r2.fastq
-            ]
-            def updtState = newState + vs[0].findAll{ it.key in ["sample", "lane"] }
-            return [k, updtState]
-          }
+          .groupBy({it.sample_id}, {it.lane})
+          .collectMany{ sample_id, states_per_lane ->
+            def result = states_per_lane.collect{lane, lane_states ->
+              assert lane_states.size() == 2, "Expected to find two fastq files per lane! " +
+                "Found ${lane_states.size()}. State: ${states_per_lane}"
+              def r1_state = lane_states.find({it.read == "1"})
+              def r2_state = lane_states.find({it.read == "2"})
+              def fastq_state = [
+                "r1_output": r1_state.fastq,
+                "r2_output": r2_state.fastq
+              ]
+              def new_state = fastq_state +
+                r1_state.findAll{it.key in ["sample_id", "sample", "lane"]} + 
+                ["_meta": ["join_id": id]]
+              return ["${sample_id}_${lane}".toString(), new_state]
+            }
+            return result
 
-        grouped
-          .collect{ [ it[0], it[1] + [ _meta: [ join_id: id ] ] ] }
+          }
+          return grouped
+
       }
 
   emit: out_
