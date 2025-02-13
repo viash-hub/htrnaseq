@@ -24,6 +24,10 @@ arguments:
     type: string
     description: Sample nr
     direction: output
+  - name: "--sample_id"
+    type: string
+    description: Sample name
+    direction: output
 
 resources:
   - type: nextflow_script

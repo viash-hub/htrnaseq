@@ -24,32 +24,42 @@ workflow run_wf {
           assert validFastq: "${f} does not match the regex ${regex}"
 
           def parsedFastq = f.name =~ regex
-
+          def lane = parsedFastq[0][3]
+          // Remove the trailing '_'
+          def lane_remove_trailing = lane == null ? "" : lane.replaceAll('_$', "")
           return [
             fastq: f,
             sample_id: parsedFastq[0][1],
             sample: parsedFastq[0][2],
-            lane: parsedFastq[0][3],
+            lane: lane_remove_trailing,
             read: parsedFastq[0][5],
           ]
         }
 
         println("Group paired fastq/fasta files")
         def grouped = processed_fastqs
-          .groupBy({it.sample_id})
-          .collect{ k, vs ->
-            def r1 = vs.find{it.read == "1"}
-            def r2 = vs.find{it.read == "2"}
-            def newState = [
-              r1_output: r1.fastq,
-              r2_output: r2.fastq
-            ]
-            def updtState = newState + vs[0].findAll{ it.key in ["sample", "lane"] }
-            return [k, updtState]
-          }
+          .groupBy({it.sample_id}, {it.lane})
+          .collectMany{ sample_id, states_per_lane ->
+            def result = states_per_lane.collect{lane, lane_states ->
+              assert lane_states.size() == 2, "Expected to find two fastq files per lane! " +
+                "Found ${lane_states.size()}. State: ${states_per_lane}"
+              def r1_state = lane_states.find({it.read == "1"})
+              def r2_state = lane_states.find({it.read == "2"})
+              def fastq_state = [
+                "r1_output": r1_state.fastq,
+                "r2_output": r2_state.fastq
+              ]
+              def new_state = fastq_state +
+                r1_state.findAll{it.key in ["sample_id", "sample", "lane"]} + 
+                ["_meta": ["join_id": id]]
+              def new_id = lane?.trim() ? sample_id : "${sample_id}_${lane}".toString()
+              return [new_id, new_state]
+            }
+            return result
 
-        grouped
-          .collect{ [ it[0], it[1] + [ _meta: [ join_id: id ] ] ] }
+          }
+          return grouped
+
       }
 
   emit: out_

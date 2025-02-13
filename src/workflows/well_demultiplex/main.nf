@@ -15,6 +15,21 @@ workflow run_wf {
       | flatMap {id, state ->
         assert state.input_r1.size() == state.input_r2.size(), \
           "Expected equal number of inputs for R1 and R2"
+        if (state.input_r1.size() == 1) {
+          // special case where we do not want to adjust the ID to add an index.
+          // If we do add an index, the file paths will contain "_0", which
+          // will not be removed. For the scenarios where we do have multiple lanes,
+          // the files will be concatenated later and a new file path without the index
+          // is created at that point.
+          def newState = state + [
+            "input_r1": state.input_r1[0],
+            "input_r2": state.input_r2[0],
+            "pool": id,
+            "n_lanes": 1,
+            "lane_sorting": 1,
+          ]
+          return [[id, newState]]
+        }
         // Store the number of lanes that were encountered here in order to
         // group them together in an asynchronous manner later by providing
         // the expected number of events to be grouped to groupTuple.
@@ -187,7 +202,10 @@ workflow run_wf {
           [
             input: state.output_r1,
             gzip_output: false,
-            output: "${id}_R1.fastq"
+            // Remark: the fastq path part may seem superfluous but is necessary for publising later
+            // Also: match this with the specified output file names from cutadapt!
+            // Otherwise, the output file names will differ depending on wether concatenation is done or not
+            output: "fastq/${state.pool}/${state.barcode_id}_R1_001.fastq"
           ]
         },
         toState: { id, result, state ->
@@ -203,7 +221,10 @@ workflow run_wf {
           [
             input: state.output_r2,
             gzip_output: false,
-            output: "${id}_R2.fastq",
+            // Remark: the fastq path part may seem superfluous but is necessary for publising later
+            // Also: match this with the specified output file names from cutadapt!
+            // Otherwise, the output file names will differ depending on wether concatenation is done or not
+            output: "fastq/${state.pool}/${state.barcode_id}_R2_001.fastq",
           ]
         },
         toState: { id, result, state ->
