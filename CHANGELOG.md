@@ -3,7 +3,7 @@
 ## New functionality
 
 * Added `ignore` parameter was added to the runner workflow in order to pass over certain input files
-  from the input directory.
+  from the input directory (PR #39).
 
 # htrnaseq v0.4.0
 
