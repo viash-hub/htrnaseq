@@ -27,17 +27,22 @@ workflow run_wf {
           def lane = parsedFastq[0][3]
           // Remove the trailing '_'
           def lane_remove_trailing = lane == null ? "" : lane.replaceAll('_$', "")
+          def sample_id = parsedFastq[0][1]
+          if (sample_id in state.ignore) {
+            return null
+          }
           return [
-            fastq: f,
-            sample_id: parsedFastq[0][1],
-            sample: parsedFastq[0][2],
-            lane: lane_remove_trailing,
-            read: parsedFastq[0][5],
+            "fastq": f,
+            "sample_id": sample_id,
+            "sample": parsedFastq[0][2],
+            "lane": lane_remove_trailing,
+            "read": parsedFastq[0][5],
           ]
         }
 
         println("Group paired fastq/fasta files")
         def grouped = processed_fastqs
+          .findAll{it != null}
           .groupBy({it.sample_id}, {it.lane})
           .collectMany{ sample_id, states_per_lane ->
             def result = states_per_lane.collect{lane, lane_states ->

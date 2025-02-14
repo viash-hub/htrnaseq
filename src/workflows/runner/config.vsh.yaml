@@ -18,6 +18,11 @@ argument_groups:
       - name: --annotation
         type: file
         required: true
+      - name: --ignore
+        description: "Pool names to ignore."
+        type: string
+        multiple: true
+        default: ["Undetermined"]
   - name: Metadata arguments
     arguments:
       - name: --id
