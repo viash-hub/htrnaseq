@@ -22,7 +22,10 @@ workflow run_wf {
       // List the FASTQ files per input directory
       // Be careful: an event per lane is created!
       | listInputDir.run(
-        fromState: [ input: "input" ],
+        fromState: [
+          "input": "input",
+          "ignore": "ignore",
+        ],
         toState: { id, state, result ->
           def clean_state = state.findAll{ it.key != "input" }
           clean_state + result
