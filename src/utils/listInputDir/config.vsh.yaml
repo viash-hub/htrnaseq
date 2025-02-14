@@ -8,6 +8,11 @@ arguments:
     description: Path to the directory containing fastq files
     required: true
     example: fastq_dir
+  - name: --ignore
+    description: "Pool names to ignore."
+    type: string
+    multiple: true
+    default: ["Undetermined"]
   - name: "--r1_output"
     type: file
     description: Path to read 1 fastq/fasta file
