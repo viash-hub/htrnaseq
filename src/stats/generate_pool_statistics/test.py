@@ -69,6 +69,17 @@ def simple_input_file_two(random_tsv_path, request):
         open_file.write(contents)
     return output_file
 
+@pytest.fixture
+def empty_input_file(random_tsv_path):
+    contents = dedent(
+    f"""\
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    """)
+    output_file = random_tsv_path()
+    with output_file.open("w") as open_file:
+        open_file.write(contents)
+    return output_file
+
 
 @pytest.mark.parametrize("simple_input_file_one,simple_input_file_two,expected", [("chr", "chr", "chr"), ("", "", "")], 
                          indirect=["simple_input_file_one", "simple_input_file_two"])
@@ -168,6 +179,43 @@ def test_only_numerical_chromosomes(run_component, random_tsv_path):
     assert output_path.is_file()
     contents = pd.read_csv(output_path, sep="\t", dtype=pd.StringDtype())
     pd.testing.assert_frame_equal(contents, expected_frame, check_like=True)
+
+
+@pytest.mark.parametrize("simple_input_file_one,expected", [("chr", "chr"), ("", "")],
+                         indirect=["simple_input_file_one"])
+def test_one_empty_input(run_component, simple_input_file_one, expected, empty_input_file, random_tsv_path):
+    output_path = random_tsv_path()
+    run_component([
+        "--nrReadsNrGenesPerChrom", simple_input_file_one,
+        "--nrReadsNrGenesPerChrom", empty_input_file,
+        "--nrReadsNrGenesPerChromPool", output_path
+    ])
+    expected_dict = {
+        "WellBC": ["AGG"],
+        "WellID": ["A1"],
+        f"{expected}1": ["2"],
+        f"{expected}2": ["3"],
+        f"{expected}3": ["4"],
+        "ERCC-1": ["1"],
+        "ERCC-2": ["1"],
+        "MT": ["4"],
+        f"{expected}X": ["2"],
+        "pctChrom": ["52.94"],
+        "pctMT": ["23.53"],
+        "pctERCC": ["11.76"],
+        "SumReads": ["17"],
+        "NumberOfGenes": ["12"],
+        "NumberOfERCCReads": ["2"],
+        "NumberOfChromReads": ["9"],
+        "NumberOfMTReads": ["4"],
+    }
+    expected_frame = pd.DataFrame.from_dict(expected_dict,
+                                            dtype=pd.StringDtype())
+
+    assert output_path.is_file()
+    contents = pd.read_csv(output_path, sep="\t", dtype=pd.StringDtype())
+    pd.testing.assert_frame_equal(contents, expected_frame, check_like=True)
+
 
 
 if __name__ == '__main__':

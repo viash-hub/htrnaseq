@@ -10,7 +10,8 @@ par = {
     "nrReadsNrUMIsPerCB": "nrReadsNrUMIsPerCB.txt",
     "umiFreqTop": "umiFreqTop.txt",
     "threads": 1,
-    "barcode": "ACGT"
+    "barcode": "ACGT",
+    "well_id": "A1",
 }
 ### VIASH END
 logger = logging.getLogger()
@@ -32,8 +33,12 @@ if __name__ == "__main__":
         all_tags.append(tags)
         reference_name = aligned_segment.reference_name
         index.append("*" if not reference_name else reference_name)
-    tag_dataframe = pd.DataFrame.from_records(all_tags, index=index,
-                                              columns=tags_selection)
+    if not index:
+        # Workaround for https://github.com/pandas-dev/pandas/issues/58594
+        tag_dataframe = pd.DataFrame([], index=[], columns=tags_selection)
+    else:
+        tag_dataframe = pd.DataFrame.from_records(all_tags, index=index,
+                                                columns=tags_selection)
     tag_dataframe_to_write = tag_dataframe.copy()
     logger.info("Done reading BAM file. Found %i entries", tag_dataframe.shape[0])
     tag_dataframe.assign(WellBC=par["barcode"], WellID=par["well_id"])\
