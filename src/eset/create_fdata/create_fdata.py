@@ -10,7 +10,7 @@ meta = {
 }
 
 par = {
-  "gtf": "src/eset/create_fdata/Homo_sapiens_ERCC.rnaseq_starReference_0.0.3.chr.gtf",
+  "gtf": "src/eset/create_fdata/test_annotation.gtf",
   "output": "fData.tsv"
 }
 
