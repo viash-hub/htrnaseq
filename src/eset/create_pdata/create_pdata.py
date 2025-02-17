@@ -41,13 +41,16 @@ def main(par):
     raise KeyError("When trying to subset the reads per genes and chromosomes file, "
                    "a column was missing. Available columns in the file: "
                    f"{', '.join(reads_and_genes_per_chr_stats.columns)}.") from e
-  combined_stats = pd.concat([reads_and_genes_per_chr_stats, star_log_stats], axis=1)
-  if combined_stats.isna().any(axis=None): # For non-overlapping indices, the values get filled with NA
+  # Each barcode should be present. An alternative approach could be to just
+  # do the concatenation and check for NA values that are filled for non-overlapping
+  # index values, but there are already NA values present in the dataframes
+  if not star_log_stats.index.sort_values().equals(reads_and_genes_per_chr_stats.index.sort_values()):
     raise ValueError("Error while combining two log files. It seems that the entries (barcodes) "
                      f"do not fully overlap. Barcodes in '{par['star_stats_file']}: "
                      f"{', '.join(reads_and_genes_per_chr_stats.index)}. Barcodes in "
                      f"'{par['nrReadsNrGenesPerChromPool']}': "
                      f"{', '.join(star_log_stats.index)}")
+  combined_stats = pd.concat([reads_and_genes_per_chr_stats, star_log_stats], axis=1)
   logger.info("Summary of final output:\n%s\n",
                 "\n".join(repr(combined_stats.loc[:,columns].describe())
                           for columns in batched(combined_stats.columns, 3))) 
