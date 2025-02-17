@@ -1,3 +1,12 @@
+# htrnaseq v0.5.1
+
+## Bug fixes
+
+* `generate_well_statistics`: fix `ValueError` when an empty .bam file is provided as input (PR #40).
+* `create_pdata`: avoid false positive `ValueError` for non-overlapping barcodes when input
+  data contains empty (`NA`) values (PR #40).
+  
+
 # htrnaseq v0.5.0
 
 ## New functionality

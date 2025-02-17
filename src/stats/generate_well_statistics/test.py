@@ -51,6 +51,11 @@ def sam_to_bam(random_bam_path):
     return wrapper
 
 
+@pytest.fixture
+def empty_sam_path():
+    return Path(meta["resources_dir"]) / "empty.sam"
+
+
 def test_generate_well_statistics_simple_bam(run_component, input_sam_path, sam_to_bam, random_path):
     bam_file = sam_to_bam(input_sam_path)
     processed_bam = random_path("tsv")
@@ -106,6 +111,54 @@ def test_generate_well_statistics_simple_bam(run_component, input_sam_path, sam_
     assert_file_content_equals(nr_reads_nr_umis_per_cb, expected_nr_reads_nr_umis_per_cb)
     assert_file_content_equals(top_onehundred_umis, expected_top_onehundred_umis)
 
+
+def test_empty_sam(run_component, empty_sam_path, sam_to_bam, random_path):
+    """
+    Test an empty bam file
+    Ran into issue https://github.com/pandas-dev/pandas/pull/59258
+    """
+    bam_file = sam_to_bam(empty_sam_path)
+    processed_bam = random_path("tsv")
+    reads_per_chromosome = random_path("tsv")
+    nr_reads_nr_umis_per_cb = random_path("tsv")
+    top_onehundred_umis = random_path("tsv")
+    run_component([
+        "--input", bam_file,
+        "--processedBAMFile", processed_bam,
+        "--nrReadsNrGenesPerChrom", reads_per_chromosome,
+        "--nrReadsNrUMIsPerCB", nr_reads_nr_umis_per_cb,
+        "--umiFreqTop", top_onehundred_umis,
+        "--barcode", "ACGT",
+        "--well_id", "A1",
+    ])
+    for file_path in (processed_bam, reads_per_chromosome,
+                      nr_reads_nr_umis_per_cb, top_onehundred_umis):
+        assert file_path.is_file()
+
+    expected_processed_bam = \
+    dedent("""\
+    WellBC	WellID	Chr	CB	UB	GX	GN
+    """)
+
+    expected_reads_per_chromosome = \
+    dedent("""\
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    """)
+
+    expected_nr_reads_nr_umis_per_cb = \
+    dedent("""\
+    WellBC	WellID	CB	NumberOfReads	nrUMIs
+    """)
+
+    expected_top_onehundred_umis = \
+    dedent("""\
+    WellBC	WellID	UB	N
+    """)
+
+    assert_file_content_equals(processed_bam, expected_processed_bam)
+    assert_file_content_equals(reads_per_chromosome, expected_reads_per_chromosome)
+    assert_file_content_equals(nr_reads_nr_umis_per_cb, expected_nr_reads_nr_umis_per_cb)
+    assert_file_content_equals(top_onehundred_umis, expected_top_onehundred_umis)
 
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__]))
