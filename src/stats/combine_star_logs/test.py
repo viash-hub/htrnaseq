@@ -43,6 +43,18 @@ def barcode_2_summary(test_resources_path):
     return test_resources_path / "barcode_2" / "summary.csv"
 
 @pytest.fixture
+def no_reads_mapped_star_log(test_resources_path):
+    return test_resources_path / "empty" / "Log.final.out"
+
+@pytest.fixture
+def no_reads_mapped_reads_per_gene_file(test_resources_path):
+    return test_resources_path / "empty" / "ReadsPerGene.out.tab"
+
+@pytest.fixture
+def no_reads_mapped_summary(test_resources_path):
+    return test_resources_path / "empty" / "summary.csv"
+
+@pytest.fixture
 def random_path(tmp_path):
     def wrapper(extension=None):
         extension = "" if not extension else f".{extension}"
@@ -117,6 +129,51 @@ def test_equal_number_of_argument(run_component,
     assert set(("NumberOfInputReads", "SequencingSaturation",
                 "NumberOfGenes", "NumberOfUMIs", "NumberOfCountedReads",
                 "PctMappedReads")).issubset(set(contents.columns))
+    pd.testing.assert_frame_equal(contents, expected)
+
+def test_empty(run_component, no_reads_mapped_star_log,
+               no_reads_mapped_reads_per_gene_file, no_reads_mapped_summary,
+               random_path):
+    """
+    Sometimes the summary.csv contains '-nan' values, make sure they
+    are properly handled.
+    """
+    output_path = random_path("txt")
+    run_component([
+        "--barcodes", "foo",
+        "--star_logs", no_reads_mapped_star_log,
+        "--reads_per_gene_logs", no_reads_mapped_reads_per_gene_file,
+        "--gene_summary_logs", no_reads_mapped_summary,
+        "--output", output_path,
+    ])
+    expected_dict = {
+        'NumberOfInputReads': ["1327"],
+        'NumberOfMappedReads': ["116"],
+        'PctMappedReads': ["8.74"],
+        'NumberOfReadsMappedToMultipleLoci': ["0"],
+        'PectOfReadsMappedToMultipleLoci': ["0"],
+        'NumberOfReadsMappedToTooManyLoci': ["43"],
+        'PectOfReadsMappedToTooManyLoci': ["3.24"],
+        'NumberOfReadsUnmappedTooManyMismatches': ["0"],
+        'PectOfReadsUnmappedTooManyMismatches': ["0"],
+        'NumberOfReadsUnmappedTooShort': ["1166"],
+        'PectOfReadsUnmappedTooShort': ["87.87"],
+        'NumberOfReadsUnmappedOther': ["2"],
+        'PectOfReadsUnmappedOther': ["0.15"],
+        'ReadsWithValidBarcodes': ["0.023361"],
+        'SequencingSaturation': [pd.NA],
+        'Q30BasesInCB+UMI': ["0.917408"],
+        'ReadsMappedToTranscriptome:Unique+MultipeGenes': ["0"],
+        'EstimatedNumberOfCells': ["0"],
+        'FractionOfReadsInCells': [pd.NA],
+        'MeanReadsPerCell': ["0"],
+        'NumberOfUMIs': ["0"],
+        'NumberOfGenes': ["0"],
+        'NumberOfCountedReads': ["0"],
+    }
+    expected = pd.DataFrame.from_dict(expected_dict, dtype=pd.StringDtype())
+    expected.index = pd.Index(["foo"], name="WellBC", dtype=pd.StringDtype())
+    contents = pd.read_csv(output_path, sep="\t", index_col=0, dtype=pd.StringDtype())
     pd.testing.assert_frame_equal(contents, expected)
 
 
