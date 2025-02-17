@@ -1,3 +1,9 @@
+# htrnaseq v0.5.2
+
+## Bug fixes
+
+* `create_fdata`: remove duplicate entries from feature data (PR #41).
+
 # htrnaseq v0.5.1
 
 ## Bug fixes

@@ -119,10 +119,17 @@ def main(par):
         idx, cols = pd.factorize(column_to_get)
         symbol_values = annotation.reindex(cols, axis=1).to_numpy()[np.arange(len(annotation)), idx]
         annotation["SYMBOL"] = symbol_values
-
-    logger.info("Writing to %s", par["output"])
+    logger.info("Dropping unused columns")
     annotation = annotation.drop(["score", "source", "frame", "feature"], axis=1)
+    logger.info("Looking for duplicate rows and removing them. Starting with %i entries", annotation.shape[0])
+    annotation = annotation.drop_duplicates(keep="first", ignore_index=True)
+    logger.info("After removing duplicates: %i entries", annotation.shape[0])
+    logger.info("Writing to %s", par["output"])
     annotation.to_csv(par["output"], sep="\t", header=True, index=False, na_rep="NA")
+    # Do these checks *after* writing the csv in order to be able to check the data
+    logger.info("Checking for unique gene IDs")
+    if not annotation["gene_id"].is_unique:
+        raise ValueError("Values from the 'gene_id' column are not unique after processing!") 
     logger.info("%s finished", meta['name'])
 
 
