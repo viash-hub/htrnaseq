@@ -71,6 +71,7 @@ test_resources:
   - type: python_script
     path: test.py
   - path: test.sam
+  - path: empty.sam
 
 engines:
   - type: docker
