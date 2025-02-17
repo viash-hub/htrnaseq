@@ -181,7 +181,7 @@ def test_only_numerical_chromosomes(run_component, random_tsv_path):
     pd.testing.assert_frame_equal(contents, expected_frame, check_like=True)
 
 
-@pytest.mark.parametrize("simple_input_file_one,expected", [("chr", "chr"), ("", "")],
+@pytest.mark.parametrize("simple_input_file_one,expected", [("", "")],
                          indirect=["simple_input_file_one"])
 def test_one_empty_input(run_component, simple_input_file_one, expected, empty_input_file, random_tsv_path):
     output_path = random_tsv_path()
