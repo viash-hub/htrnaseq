@@ -1,3 +1,9 @@
+# htrnaseq v0.5.3
+
+## Bug fixes
+
+* Fix `create_eset` component failing to create when one of the input samples has no counts.
+
 # htrnaseq v0.5.2
 
 ## Bug fixes
