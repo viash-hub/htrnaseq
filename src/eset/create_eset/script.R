@@ -209,7 +209,6 @@ create_exprs_matrix <- function(exprs_matrix_path, exprs_file_paths,
                                 output, measure, col_names, cell_barcodes) {
 
   read_matrix <- Read10X(data_dir = exprs_file_paths, gene_column = 1)
-  read_matrix <- read_matrix[, which(colSums(read_matrix) != 0)]
   # keep index of feature names containing "_" because Seurat
   #changes them to "-" and they no longer match with fdata[, "gene_id"]
   idx <- grep("_", rownames(read_matrix))
@@ -378,7 +377,7 @@ create_eset <- function(feature_annotation_path,
                                   featureData = fdata_eset,
                                   annotation = additional_info)
 
-
+  eset <- eset[, colSums(exprs(eset)) != 0]
   saveRDS(eset, file = output_path)
 
   message(paste0("eset created succesfully for ", ncol(eset),
