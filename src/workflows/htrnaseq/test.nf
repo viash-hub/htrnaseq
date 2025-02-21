@@ -43,3 +43,28 @@ workflow test_wf {
         ]
     )
 }
+
+
+workflow test_wf2 {
+  // Test the edge case where one of the barcodes has no reads
+  resources_test_file = file(params.resources_test)
+  input_ch = Channel.fromList([
+      [
+          id: "sample_one",
+          input_r1: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R1_001.fastq"),
+          input_r2: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R2_001.fastq"),
+          genomeDir: resources_test_file.resolve("genomeDir/gencode.v41.star.sparse"),
+          barcodesFasta: resources_test_file.resolve("2-wells-1-no-reads.fasta"),
+          annotation: resources_test_file.resolve("genomeDir/gencode.v41.annotation.gtf.gz")
+      ],
+    ])
+    | map{ state -> [state.id, state] }
+    | view { "Input: $it" }
+    | htrnaseq.run(
+        toState: [
+            "eset": "eset",
+            "star_output": "star_output",
+        ]
+    )
+}
+
