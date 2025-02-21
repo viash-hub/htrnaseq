@@ -96,6 +96,9 @@ test_resources:
   - type: nextflow_script
     path: test.nf
     entrypoint: test_wf
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf2
 dependencies:
   - name: stats/combine_star_logs
     repository: local

@@ -1,8 +1,11 @@
 from uuid import uuid4
 from textwrap import dedent
+from subprocess import CalledProcessError
 import pandas as pd
+import re
 import pytest
 import sys
+from pathlib import Path
 
 ### VIASH START
 meta = {
@@ -16,7 +19,7 @@ meta = {
 def random_path(tmp_path):
     def wrapper(extension=None):
         extension = "" if not extension else f".{extension}"
-        return tmp_path / f"{uuid4()}{extension}"
+        return Path(tmp_path / f"{uuid4()}{extension}")
     return wrapper
 
 
@@ -181,33 +184,77 @@ def test_only_numerical_chromosomes(run_component, random_tsv_path):
     pd.testing.assert_frame_equal(contents, expected_frame, check_like=True)
 
 
-@pytest.mark.parametrize("simple_input_file_one,expected", [("", "")],
+@pytest.mark.parametrize("simple_input_file_one", [("")],
                          indirect=["simple_input_file_one"])
-def test_one_empty_input(run_component, simple_input_file_one, expected, empty_input_file, random_tsv_path):
+def test_empty_input_raises(run_component, simple_input_file_one, empty_input_file, random_tsv_path):
+    """
+    When an input file contains no data, raise an error.
+    """
     output_path = random_tsv_path()
+    with pytest.raises(CalledProcessError) as err:
+        run_component([
+            "--nrReadsNrGenesPerChrom", simple_input_file_one,
+            "--nrReadsNrGenesPerChrom", empty_input_file,
+            "--nrReadsNrGenesPerChromPool", output_path
+        ])
+    assert re.search(
+        rf"{empty_input_file.name} does not seem to contain any information",
+        err.value.stdout.decode("utf-8"),
+    )
+
+def test_remove_chromosomes_with_no_counts(run_component, random_tsv_path):
+    """
+    If a chromosome has no counts across all of the wells, it should
+    not be included in the output
+    """
+    output_path = random_tsv_path()
+    contents1 = dedent(
+    f"""\
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    CCC	B2	2	2	1
+    CCC	B2	3	3	2
+    CCC	B2	5	4	2
+    CCC	B2	1	4	2
+    CCC	B2	empty	0	0
+    """)
+    input_file_1 = random_tsv_path()
+    with input_file_1.open("w") as open_file:
+        open_file.write(contents1)
+
+    contents2 = dedent(
+    f"""\
+    WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    AGG	A1	2	2	1
+    AGG	A1	3	3	2
+    AGG	A1	5	4	2
+    AGG	A1	1	4	2
+    AGG	A1	empty	0	0
+    """)
+    input_file_2 = random_tsv_path()
+    with input_file_2.open("w") as open_file:
+        open_file.write(contents2)
+        output_path = random_tsv_path()
     run_component([
-        "--nrReadsNrGenesPerChrom", simple_input_file_one,
-        "--nrReadsNrGenesPerChrom", empty_input_file,
+        "--nrReadsNrGenesPerChrom", input_file_1,
+        "--nrReadsNrGenesPerChrom", input_file_2,
         "--nrReadsNrGenesPerChromPool", output_path
     ])
+    # Here, the chromosome called "empty" should not be included
     expected_dict = {
-        "WellBC": ["AGG"],
-        "WellID": ["A1"],
-        f"{expected}1": ["2"],
-        f"{expected}2": ["3"],
-        f"{expected}3": ["4"],
-        "ERCC-1": ["1"],
-        "ERCC-2": ["1"],
-        "MT": ["4"],
-        f"{expected}X": ["2"],
-        "pctChrom": ["52.94"],
-        "pctMT": ["23.53"],
-        "pctERCC": ["11.76"],
-        "SumReads": ["17"],
-        "NumberOfGenes": ["12"],
-        "NumberOfERCCReads": ["2"],
-        "NumberOfChromReads": ["9"],
-        "NumberOfMTReads": ["4"],
+        "WellBC": ["AGG", "CCC"],
+        "WellID": ["A1", "B2"],
+        "1": ["4", "4"],
+        "2": ["2", "2"],
+        "3": ["3", "3"],
+        "5": ["4", "4"],
+        "pctChrom": ["100", "100"],
+        "pctMT": ["0", "0"],
+        "pctERCC": ["0", "0"],
+        "SumReads": ["13", "13"],
+        "NumberOfGenes": ["7", "7"],
+        "NumberOfERCCReads": ["0", "0"],
+        "NumberOfChromReads": ["13", "13"],
+        "NumberOfMTReads": ["0", "0"],
     }
     expected_frame = pd.DataFrame.from_dict(expected_dict,
                                             dtype=pd.StringDtype())

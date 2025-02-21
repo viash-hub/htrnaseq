@@ -11,6 +11,8 @@ viash ns build --setup cb --parallel
 
 export NXF_VER=24.04.4
 
+set -eo pipefail
+
 nextflow \
   run . \
   -main-script src/workflows/htrnaseq/test.nf \
@@ -19,3 +21,13 @@ nextflow \
   -resume \
   -profile docker,local \
   --publish_dir output
+
+nextflow \
+  run . \
+  -main-script src/workflows/htrnaseq/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_wf2 \
+  -resume \
+  -profile docker,local \
+  --publish_dir output2
+
