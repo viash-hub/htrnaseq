@@ -53,6 +53,7 @@ if __name__ == "__main__":
         NumberOfReads=pd.NamedAgg("GX", aggfunc="size"),
         NumberOfGenes=pd.NamedAgg(column="GX", aggfunc="nunique")
     )
+    nr_reads_nr_genes = nr_reads_nr_genes.reindex(samfile.header.references, fill_value=0)
     logger.info("Done calculating number of reads per gene and per chromesome. Writing to %s",
                 par['nrReadsNrGenesPerChrom'])
     nr_reads_nr_genes.reset_index(names="Chr").assign(WellBC=par["barcode"], WellID=par["well_id"])\

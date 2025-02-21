@@ -114,8 +114,8 @@ def test_generate_well_statistics_simple_bam(run_component, input_sam_path, sam_
 
 def test_empty_sam(run_component, empty_sam_path, sam_to_bam, random_path):
     """
-    Test an empty bam file
-    Ran into issue https://github.com/pandas-dev/pandas/pull/59258
+    Test an empty bam file. Make sure that chromosomes with mapped reads
+    are still represented. Ran into issue https://github.com/pandas-dev/pandas/pull/59258
     """
     bam_file = sam_to_bam(empty_sam_path)
     processed_bam = random_path("tsv")
@@ -143,6 +143,8 @@ def test_empty_sam(run_component, empty_sam_path, sam_to_bam, random_path):
     expected_reads_per_chromosome = \
     dedent("""\
     WellBC	WellID	Chr	NumberOfReads	NumberOfGenes
+    ACGT	A1	1	0	0
+    ACGT	A1	2	0	0
     """)
 
     expected_nr_reads_nr_umis_per_cb = \

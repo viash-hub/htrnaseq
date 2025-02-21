@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 import re
 
 ### VIASH START
@@ -16,20 +17,25 @@ if __name__ == "__main__":
     # nrReadsNrGenesPerChrom file
     #########
     nr_reads_nr_genes_wells = []
+    par["nrReadsNrGenesPerChrom"] = list(map(Path, par["nrReadsNrGenesPerChrom"]))
     for nr_reads_nr_genes_file in par["nrReadsNrGenesPerChrom"]:
-        nr_reads_nr_genes_wells.append(pd.read_csv(nr_reads_nr_genes_file, 
-                                                   header=0, delimiter="\t",
-                                                   dtype={"WellBC":	pd.StringDtype(),
-                                                          "WellID": pd.StringDtype(),
-                                                          "Chr": pd.StringDtype(),
-                                                          "NumberOfReads": pd.UInt64Dtype(),
-                                                          "NumberOfGenes": pd.UInt64Dtype()}))
+        nr_reads_nr_gene_well = pd.read_csv(nr_reads_nr_genes_file,
+                                            header=0, delimiter="\t",
+                                            dtype={"WellBC": pd.StringDtype(),
+                                                   "WellID": pd.StringDtype(),
+                                                   "Chr": pd.StringDtype(),
+                                                   "NumberOfReads": pd.UInt64Dtype(),
+                                                   "NumberOfGenes": pd.UInt64Dtype()})
+        if nr_reads_nr_gene_well.empty:
+            raise ValueError(f"{nr_reads_nr_genes_file.name} does not seem to contain any information!")
+        nr_reads_nr_genes_wells.append(nr_reads_nr_gene_well)
     nr_reads_nr_genes_pool = pd.concat(nr_reads_nr_genes_wells, ignore_index=True,)
     total_nr_reads_per_chromosome = nr_reads_nr_genes_pool.pivot_table(index=INDEX_COL, columns="Chr",
                                                                        values=["NumberOfReads"], fill_value=0,
                                                                        aggfunc="sum").droplevel(0, axis=1)
     total_nr_reads_per_chromosome.columns.name = None
-
+    # Remove scaffolds/chromosomes with no counts
+    total_nr_reads_per_chromosome = total_nr_reads_per_chromosome.loc[:, (total_nr_reads_per_chromosome != 0).any(axis=0)]
     ##### Total number of genes from all chromosomes
     total_nr_genes = nr_reads_nr_genes_pool.loc[:, INDEX_COL + ['NumberOfGenes']].groupby(["WellBC", "WellID"]).sum()
 
