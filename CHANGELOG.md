@@ -1,3 +1,10 @@
+# htrnaseq v0.5.4
+
+* Fix missing barcodes in the output from `generate_pool_statistics`, which caused an assertion error in `create_pdata`.
+  In order to resolve the issue `generate_well_statistics` now outputs results for all chromosomes/scaffolds presented by
+  the genome annotation, even when no reads were mapped to the regions in question. `generate_pool_statistics` will now
+  remove regions from the output that have not at least one counts across all barcodes (PR #44).
+
 # htrnaseq v0.5.3
 
 ## Bug fixes
