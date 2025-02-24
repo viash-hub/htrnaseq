@@ -3,7 +3,7 @@
 ## Breaking changes
 
 * `runner`: a subdirectory `data_processed` is now added to the output structure, in between
-  the experiment ID and the directory with the workflow date and version (PR #).
+  the experiment ID and the directory with the workflow date and version (PR #45).
 
 # htrnaseq v0.5.4
 
