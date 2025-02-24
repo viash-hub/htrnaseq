@@ -1,3 +1,10 @@
+# htrnaseq v0.6.0
+
+## Breaking changes
+
+* `runner`: a subdirectory `data_processed` is now added to the output structure, in between
+  the experiment ID and the directory with the workflow date and version (PR #).
+
 # htrnaseq v0.5.4
 
 * Fix missing barcodes in the output from `generate_pool_statistics`, which caused an assertion error in `create_pdata`.
