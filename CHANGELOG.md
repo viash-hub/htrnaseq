@@ -2,7 +2,7 @@
 
 ## New functionality
 
-* Add `umi_length` parameter to the `runner` workflow (PR #)
+* Add `umi_length` parameter to the `runner` workflow (PR #46)
 
 # htrnaseq v0.5.4
 
