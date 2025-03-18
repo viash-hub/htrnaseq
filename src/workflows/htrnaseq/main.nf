@@ -6,6 +6,36 @@ workflow run_wf {
     // The featureData only has one requirement: the genome annotation.
     // It can be generated straight away.
     f_data_ch = input_ch
+
+      | save_params.run(
+        fromState: {id, state -> 
+          // Convert state to list of key=value parameters
+          def params_list = []
+
+          // Add each parameter as key=value
+          state.each { key, value ->
+            if (value != null) {
+              // Handle different types of values
+              if (value instanceof Collection) {
+                // For collections, add multiple entries with array notation
+                value.eachWithIndex { item, index ->
+                  params_list.add("${key}[${index}]=${item}")
+                }
+              } else {
+                // For simple values, just add key=value
+                params_list.add("${key}=${value}")
+              }
+            }
+          }
+          return [
+            "id": id,
+            "params": params_list,
+            "output": "${id}_parameters.yaml"
+          ]
+        },
+        toState: ["parameters": "output"]
+      )
+
       | create_fdata.run(
         directives: [label: ["lowmem", "lowcpu"]],
         fromState: [
@@ -242,6 +272,7 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
+        "parameters": "parameters"
       ])
 
 
