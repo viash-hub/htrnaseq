@@ -1,3 +1,9 @@
+# htrnaseq v0.x.y
+
+## Under the hood
+
+- Bumped the version of Viash to v0.9.2
+- Moved the test resources to their new location
 # htrnaseq v0.5.5
 
 ## New functionality
