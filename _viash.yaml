@@ -11,7 +11,7 @@ viash_version: 0.9.2
 
 info:
   test_resources:
-    - path: gs://viash-hub-resources/htrnaseq/v1/
+    - path: gs://viash-hub-resources/htrnaseq/v1
       dest: resources_test
 
 config_mods: |
