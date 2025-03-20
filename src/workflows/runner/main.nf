@@ -75,6 +75,7 @@ workflow run_wf {
           barcodesFasta: "barcodesFasta",
           genomeDir: "genomeDir",
           annotation: "annotation",
+          umi_length: "umi_length",
         ],
         toState: { id, result, state -> state + result }
       )

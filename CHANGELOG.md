@@ -5,6 +5,12 @@
 * `runner`: a subdirectory `data_processed` is now added to the output structure, in between
   the experiment ID and the directory with the workflow date and version (PR #45).
 
+# htrnaseq v0.5.5
+
+## New functionality
+
+* Add `umi_length` parameter to the `runner` workflow (PR #46)
+
 # htrnaseq v0.5.4
 
 * Fix missing barcodes in the output from `generate_pool_statistics`, which caused an assertion error in `create_pdata`.
