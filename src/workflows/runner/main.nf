@@ -85,7 +85,7 @@ workflow run_wf {
       //
       // So, we should combine everything together
       //
-      // project_id / experiment_id / date_workflow
+      // project_id / experiment_id / "data_processed" / date_workflow
 
       | toSortedList
 
@@ -115,7 +115,7 @@ workflow run_wf {
           def project = (state.plain_output) ? id : "${state.project_id}"
           def experiment = (state.plain_output) ? id : "${state.experiment_id}"
           def id0 = "${project}/${experiment}"
-          def id1 = (state.plain_output) ? id : "${id0}/${date}"
+          def id1 = (state.plain_output) ? id : "${id0}/data_processed/${date}"
           def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
 
           if (id == id2) {
