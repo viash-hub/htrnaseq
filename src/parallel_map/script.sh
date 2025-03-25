@@ -114,7 +114,8 @@ for barcode_index in "${!barcodes[@]}"; do
     fi
   done
   echo "Did not find FASTQ files files for well ${well_id}! "\
-    "Make sure that the input files have the correct file name format."
+    "Make sure that the input files have the correct file name format."\
+    "Input files: ${input_r1[@]}"
   exit 1
 done
 

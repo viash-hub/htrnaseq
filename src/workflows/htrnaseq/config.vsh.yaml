@@ -8,14 +8,14 @@ argument_groups:
     arguments:
       - name: --input_r1
         description: |
-          Forward reads in FASTQ format. Multiple files can be provided which will
+          Forward reads in FASTQ format. Multiple files corresponding to different lanes can be provided which will
           be demultiplexed separately before joining the results for each individual well.
         type: file
         required: true
         multiple: true
       - name: --input_r2
         description: |
-          Reverse reads in FASTQ format. Multiple files can be provided which will
+          Reverse reads in FASTQ format. Multiple files corresponding to different lanes can be provided which will
           be demultiplexed separately before joining the results for each individual well.
         type: file
         required: true
@@ -35,22 +35,22 @@ argument_groups:
       - name: --annotation
         type: file
         required: true
+      - name: --sample_id
+        type: string
+        required: false
+        description: |
+          Sample ID for the provided input files. If not provided, the value of --id
+          will be used. Input files will allways be demultiplexed separately,
+          but the FASTQs for wells with matching sample IDs will be concatenated before mapping.
   - name: Output arguments
     arguments:
-      - name: --fastq_output_r1
-        description: List of demultiplexed fastq files
+      - name: "--fastq_output"
+        description: "Directory containing output fastq files"
         type: file
-        direction: output
         multiple: true
         required: true
-        default: "fastq/*_R1_001.fastq"
-      - name: --fastq_output_r2
-        description: List of demultiplexed fastq files
-        type: file
+        default: "fastq/*"
         direction: output
-        multiple: true
-        required: true
-        default: "fastq/*_R2_001.fastq"
       - name: --star_output
         description: Output from mapping with STAR
         type: file
@@ -119,6 +119,8 @@ dependencies:
   - name: eset/create_pdata
     repository: local
   - name: report/create_report
+    repository: local
+  - name: utils/concatRuns
     repository: local
 repositories:
   - name: local
