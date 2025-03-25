@@ -16,11 +16,11 @@ par = {
               'p_data=pData.$id.tsv',
               'html_report=report.$id.html',
               'input_r1[0]=/home/jakubmajercik/Data_Intuitive/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R1_001.fastq',
-              'input_r2[0]=/home/jakubmajercik/Data_Intuitive/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R2_001.fastq',
+              'input_r1[1]=/home/jakubmajercik/Data_Intuitive/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R2_001.fastq',
               'barcodesFasta=/home/jakubmajercik/Data_Intuitive/htrnaseq/v1/360-wells-with-ids.fasta',
               'genomeDir=/home/jakubmajercik/Data_Intuitive/htrnaseq/v1/genomeDir/gencode.v41.star.sparse',
               'annotation=/home/jakubmajercik/Data_Intuitive/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf.gz'],
-    "output": 'params.yaml'
+    "output": 'params_out.yaml'
 }
 ## VIASH END
 
