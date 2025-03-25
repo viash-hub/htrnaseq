@@ -26,10 +26,11 @@ workflow run_wf {
           def new_state = old_state + [(annotation_file): (old_state.getOrDefault(annotation_file, []) + [id])]
           return new_state
         }
-        def is_unique_files = annotation_files.values().any({it.size() > 1})
+        def file_names = annotation_files.keySet().collect{it.name}
+        assert (file_names.toSet().size() == file_names.size()), 
+          "Please make sure that the annotation files have unique file names."
         def new_states = annotation_files.collect{annotation_file, value ->
-          def new_id = is_unique_files ? annotation_file.name : "${annotation_file.name}.${value}".toString()
-          def new_state = [new_id, ["annotation": annotation_file, "event_ids": value]]
+          def new_state = [annotation_file.name , ["annotation": annotation_file, "event_ids": value]]
           return new_state
         }
         return new_states 
