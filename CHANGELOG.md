@@ -1,3 +1,50 @@
+# htrnaseq v0.7.0
+
+## Breaking changes
+
+The `runner` and `htrnaseq` workflow now output FASTQ files corresponding to the barcodes per input ID (per sequencing run). 
+Previously, when multiple input folders or multiple input FASTQ files were provided
+(for the `runner` and `htrnaseq` workflows respectively), the demultiplexed FASTQ files for these inputs were concatenated
+and provided as output. For the `htrnaseq` workflow, reads can still be combined by using a newly added `sampleID` argument.
+This means that two lists of FASTQ files can be provided for a single sample, and by assigning the same `sampleID`,
+these reads will be joined. For example, with other arguments are left out for brevity:
+
+```yaml
+- id: sample1_run1
+  input_r1: [sample_1_L001_1_R1.fastq, sample_1_L002_1_R1.fastq]
+  input_r2: [sample_1_L001_1_R2.fastq, sample_1_L002_1_R2.fastq]
+  sampleID: "sample_1"
+- id: sample1_run2
+  input_r1: [sample_1_L001_1_R1.fastq, sample_1_L002_1_R1.fastq]
+  input_r2: [sample_1_L001_1_R2.fastq, sample_1_L002_1_R2.fastq]
+  sampleID: "sample_1"
+- id: sample_2
+  input_r1: [sample_2_L001_1_R1.fastq, sample_2_L002_1_R1.fastq]
+  input_r2: [sample_2_L001_1_R2.fastq, sample_2_L002_1_R2.fastq]
+```
+
+For the runner, concatenation of data across samples is automatically inferred. Previously, multiple IDs (events) could be
+provided which were processed in parallel. This is no longer possible, as providing multiple will cause the matching
+samples for these runs to be concatenated.
+
+
+For example, the following old parameter yaml
+```yaml
+- id: run1
+  input: ["run_folder_1/", run_folder_2/]
+```
+should now be provided as: 
+```yaml
+- id: run1
+  input: "run_folder_1/"
+- id: run2
+  input: run_folder_2/
+```
+
+## Minor changes
+
+* Updated viash to `0.9.2` (PR #49)
+
 # htrnaseq v0.6.0
 
 ## Breaking changes
