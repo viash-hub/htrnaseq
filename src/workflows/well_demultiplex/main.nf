@@ -60,6 +60,8 @@ workflow run_wf {
             output: new_output,
             error_rate: 0.10,
             demultiplex_mode: "single",
+            output_r1: state.output_r1,
+            output_r2: state.output_r2,
           ]
         },
         toState: { id, result, state ->
