@@ -1,33 +1,116 @@
 workflow run_wf {
   take:
-    input_ch
+    raw_ch
 
   main:
+    input_ch = raw_ch
+      // Use the event ID as the default for the sample ID
+      | map {id, state ->
+        def sample_id = state.sample_id ?: id 
+        def newState = state + ["sample_id": sample_id, "run_id": id]
+        return [id, newState]
+      }
+
     // The featureData only has one requirement: the genome annotation.
-    // It can be generated straight away.
+    // It can be generated straight away. Most of the time, there is one shared 
+    // annotation for all of the inputs and the fData should only be calculated once.
+    // The state is manpulated in such a way that there is one event created per unique
+    // input annotation file. In turn, the featureData file can joined into the original input
+    // channel which allows it to be shared across events if required.
     f_data_ch = input_ch
+      | toSortedList()
+      | flatMap {ids_and_states ->
+        def annotation_files = ids_and_states.inject([:]){ old_state, id_and_state ->
+          def (id, state) = id_and_state
+          def annotation_file = state.annotation
+          def new_state = old_state + [(annotation_file): (old_state.getOrDefault(annotation_file, []) + [id])]
+          return new_state
+        }
+        def file_names = annotation_files.keySet().collect{it.name}
+        assert (file_names.toSet().size() == file_names.size()), 
+          "Please make sure that the annotation files have unique file names."
+        def new_states = annotation_files.collect{annotation_file, value ->
+          def new_state = [annotation_file.name , ["annotation": annotation_file, "event_ids": value]]
+          return new_state
+        }
+        return new_states 
+      }
       | create_fdata.run(
         directives: [label: ["lowmem", "lowcpu"]],
         fromState: [
           "gtf": "annotation",
           "output": "f_data"
         ],
-        toState: {id, result, state -> ["f_data": result.output]}
+        toState: ["f_data": "output"]
       )
+      | flatMap {_, state -> 
+          def new_states = state.event_ids.collect{event_id ->
+            [event_id, ["f_data": state.f_data]]
+          }
+          return new_states
+      }
 
     // Perform mapping of each well.
-    mapping_ch = input_ch
+    demultiplex_ch = input_ch
       | well_demultiplex.run(
         fromState: [
             "input_r1": "input_r1",
             "input_r2": "input_r2",
             "barcodesFasta": "barcodesFasta",
         ],
-        toState: [
-          "input_r1": "output_r1",
-          "input_r2": "output_r2",
-        ]
+        toState: {id, result, state ->
+          def all_fastq = result.output_r1 + result.output_r2
+          def output_dir = all_fastq.collect{it.parent}.unique()
+          assert output_dir.size() == 1, "Expected output from well demultiplexing to reside into one directory."
+          def new_state = state + [
+            "input_r1": result.output_r1,
+            "input_r2": result.output_r2,
+            "fastq_output_directory": output_dir[0],
+          ]
+          return new_state
+        }
       )
+
+    fastq_output_directory_ch = demultiplex_ch
+      | map {id, state ->
+        def new_event = [state.sample_id, state]
+        return new_event
+      }
+      | groupTuple(by: 0, sort: "hash")
+      | map {id, states ->
+        def fastq_output_dirs = states.collect{it.fastq_output_directory}
+        def new_state = ["fastq_output_directory": fastq_output_dirs]
+        def new_event = [id, new_state]
+        return [id, new_state]
+      }
+
+
+    concat_samples_ch = demultiplex_ch.join(f_data_ch)
+      | map {id, demutliplex_state, f_data_state ->
+        def newState = demutliplex_state + ["f_data": f_data_state["f_data"]]
+        [id, newState]
+      }
+      | concatRuns.run(
+        fromState: [
+          "input_r1": "input_r1",
+          "input_r2": "input_r2",
+          "sample_id": "sample_id",
+        ],
+        toState: {id, result, state ->
+          def state_overwite = [
+            "input_r1": result.output_r1,
+            "input_r2": result.output_r2,
+            "_meta": ["join_id": state.run_id]
+          ]
+          return state + state_overwite
+        }
+      )
+
+    pool_ch = concat_samples_ch.join(fastq_output_directory_ch)
+      | map {id, demux_state, fastq_output_directory_state ->
+        def new_state = demux_state + fastq_output_directory_state
+        return [id, new_state]
+      } 
       | parallel_map.run(
         directives: ["label": ["highmem", "lowcpu"]],
         fromState: {id, state ->
@@ -44,9 +127,6 @@ workflow run_wf {
           "star_output": "output",
         ]
       )
-
-    // From the mapped wells, create statistics based on the BAM files.
-    pool_ch = mapping_ch
       // Split the events from 1 event per pool into events per well
       // and add extra metadata about the wells to the state.
       | well_metadata.run(
@@ -167,7 +247,7 @@ workflow run_wf {
         ]
       )
     
-    p_data_ch = star_logs_ch.join(pool_statistics_ch, remainder: true)
+    eset_ch = star_logs_ch.join(pool_statistics_ch, remainder: true)
       | map {id, star_logs_state, pool_statistics_state ->
         def newState = star_logs_state + ["nrReadsNrGenesPerChromPool": pool_statistics_state.nrReadsNrGenesPerChromPool]
         return [id, newState]
@@ -181,12 +261,6 @@ workflow run_wf {
         ],
         toState: ["p_data": "output"],
       )
-
-    eset_ch = p_data_ch.join(f_data_ch, remainder: true)
-      | map {id, p_data_state, f_data_state ->
-        def newState = p_data_state + ["f_data": f_data_state["f_data"]]
-        [id, newState]
-      }
       | create_eset.run(
         directives: [label: ["lowmem", "lowcpu"]],
         fromState: [
@@ -228,13 +302,14 @@ workflow run_wf {
 
     output_ch = eset_ch.join(report_channel)
       | map {id, state_eset, state_report ->
-        def new_state = state_eset + ["html_report": state_report.html_report]
+        def new_state = state_eset + [
+          "html_report": state_report.html_report,
+        ]
         [id, new_state]
       }
       | setState([
-        "star_output": "star_output", 
-        "fastq_output_r1": "input_r1",
-        "fastq_output_r2": "input_r2",
+        "star_output": "star_output",
+        "fastq_output": "fastq_output_directory",
         "star_output": "star_output",
         "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromPool",
         "star_qc_metrics": "star_qc_metrics",
@@ -242,6 +317,7 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
+        "_meta": "_meta",
       ])
 
 
