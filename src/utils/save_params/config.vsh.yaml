@@ -11,11 +11,10 @@ argument_groups:
           The id of the job
         type: string
         required: true
-      - name: "--params"
+      - name: "--params_yaml"
         description: |
-          The state to save
+          base64 encoded yaml file containing the state
         type: string
-        multiple: true
         required: true
     
   - name: Outputs

@@ -8,28 +8,28 @@ workflow run_wf {
     f_data_ch = input_ch
 
       | save_params.run(
-        fromState: {id, state -> 
-          // Convert state to list of key=value parameters
-          def params_list = []
-
-          // Add each parameter as key=value
-          state.each { key, value ->
-            if (value != null) {
-              // Handle different types of values
-              if (value instanceof Collection) {
-                // For collections, add multiple entries with array notation
-                value.eachWithIndex { item, index ->
-                  params_list.add("${key}[${index}]=${item}")
-                }
-              } else {
-                // For simple values, just add key=value
-                params_list.add("${key}=${value}")
-              }
-            }
+        fromState: {id, state ->
+          // Define the function before using it
+          def convertPaths
+          convertPaths = { value ->
+            if (value instanceof java.nio.file.Path)
+              return value.toString()
+            else if (value instanceof Collection)
+              return value.collect { convertPaths(it) }
+            else
+              return value
           }
+          
+          // Apply conversion to all state values
+          def convertedState = state.collectEntries { k, v -> [(k): convertPaths(v)] }
+          
+          def yaml = new org.yaml.snakeyaml.Yaml()
+          def yamlString = yaml.dump(convertedState)
+          def encodedYaml = yamlString.bytes.encodeBase64().toString()
+          
           return [
             "id": id,
-            "params": params_list,
+            "params_yaml": encodedYaml,
             "output": "${id}_parameters.yaml"
           ]
         },
