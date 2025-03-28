@@ -1,0 +1,43 @@
+name: concatRuns
+namespace: utils
+description: |
+  Concatenate well FASTQ files from different runs in order to increase sequencing depth.
+arguments:
+  - name: "--input_r1"
+    type: file
+    required: true
+    multiple: true
+  - name: "--input_r2"
+    type: file
+    required: true
+    multiple: true
+  - name: "--sample_id"
+    type: string
+    required: true
+  - name: "--output_r1"
+    type: file
+    multiple: true
+    description: Path to read 1 fastq/fasta file
+    direction: output
+  - name: "--output_r2"
+    type: file
+    multiple: true
+    description: Path to read 2 fastq/fasta file
+    direction: output
+resources:
+  - type: nextflow_script
+    path: main.nf
+    entrypoint: run_wf
+dependencies:
+    - name: concat_text
+      repository: cb
+repositories:
+  - name: cb
+    type: vsh
+    repo: craftbox
+    tag: v0.1.0
+runners:
+  - type: nextflow
+
+engines:
+  - type: native

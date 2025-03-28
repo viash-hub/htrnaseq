@@ -8,19 +8,13 @@ workflow run_wf {
     input_ch
 
   main:
-    output_ch = input_ch
-      // Multiple runs can be provided, and the reads for these runs will
-      // be concatenated. Here, we gather the FASTQ files from each input directory first.
-      | flatMap {id, state ->
-        // Create an input event per input directory
-        def new_state = state.input.withIndex().collect{input_dir, id_index ->
-          def state_item = state + ["input": input_dir, "index": id_index, "run_id": id]
-          return ["${id}_${id_index}".toString(), state_item]
-        }
-        return new_state
-      }
+    htrnaseq_ch = input_ch
       // List the FASTQ files per input directory
       // Be careful: an event per lane is created!
+      | map {id, state ->
+        def new_state = state + ["run_id": id]
+        return [id, new_state]
+      }
       | listInputDir.run(
         fromState: [
           "input": "input",
@@ -38,13 +32,11 @@ workflow run_wf {
       // there might be multiple FASTQs for a single sample that correspond to the
       // lanes. So the fastq files must be gathered across lanes and input folders
       // in order to create an input lists for R1 and R2.
-      | map {id, state -> [state.sample_id, state]}
-      | groupTuple(by: 0, sort: { state1, state2 ->
-        if (state1.index == state2.index) {
-          return state1.lane <=> state2.lane
-        }
-        return state1.index <=> state2.index
-      })
+      // The ID of the event here is important! It determines the name of the output
+      // folders for the FASTQ files and these folders are published as-is later.
+      // The folder where the FASTQ files are stored in should be named after the run ID.
+      | map {id, state -> ["${state.sample_id}/${state.run_id}".toString(), state]}
+      | groupTuple(by: 0, sort: "hash")
       | map {id, states ->
         def new_r1 = states.collect{it.r1_output}
         def new_r2 = states.collect{it.r2_output}
@@ -53,7 +45,7 @@ workflow run_wf {
         // TODO: this can be asserted.
         def new_state = states[0] + [
           "r1": new_r1,
-          "r2": new_r2
+          "r2": new_r2,
         ]
         return [id, new_state]
       }
@@ -62,8 +54,7 @@ workflow run_wf {
           f_data: 'fData/$id.txt',
           p_data: 'pData/$id.txt',
           star_output: 'star_output/$id/*',
-          fastq_output_r1: 'fastq/*_R1_001.fastq',
-          fastq_output_r2: 'fastq/*_R1_001.fastq',
+          fastq_output: 'fastq/*',
           eset: 'esets/$id.rds',
           nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
           star_qc_metrics: 'starLogs/$id.txt',
@@ -76,32 +67,32 @@ workflow run_wf {
           genomeDir: "genomeDir",
           annotation: "annotation",
           umi_length: "umi_length",
+          sample_id: "sample_id",
         ],
         toState: { id, result, state -> state + result }
       )
+
       // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
       // but for publishing the results, this is not handy because we want to use the $id
       // variable as a pointer to the target data.
       //
       // So, we should combine everything together
       //
-      // project_id / experiment_id / date_workflow
-
+      // project_id / experiment_id / "data_processed" / date_workflow
+    grouped_ch = htrnaseq_ch
       | toSortedList
-
       | map{ vs ->
           def all_fastqs
           [
             vs[0][1].run_id, // The original ID
             [
               star_output: reduce_paths(vs.collect{ it[1].star_output }.flatten()),
-              fastq_output_r1: reduce_paths(vs.collect{ it[1].fastq_output_r1 }.flatten(), 1),
-              fastq_output_r2: reduce_paths(vs.collect{ it[1].fastq_output_r2 }.flatten(), 1),
               nrReadsNrGenesPerChrom: reduce_paths(vs.collect{ it[1].nrReadsNrGenesPerChrom }),
               star_qc_metrics: reduce_paths(vs.collect{ it[1].star_qc_metrics }),
               eset: reduce_paths(vs.collect{ it[1].eset }),
               f_data: reduce_paths(vs.collect{ it[1].f_data }),
               p_data: reduce_paths(vs.collect{ it[1].p_data }),
+              fastq_output: vs.collect{ it[1].fastq_output }.flatten().unique(),
               html_report: vs.collect{ it[1].html_report }[0],  // The report is for all pools
               plain_output: vs.collect{ it[1].plain_output }[0],
               project_id: vs.collect{ it[1].project_id }[0],
@@ -110,12 +101,13 @@ workflow run_wf {
           ]
         }
 
+    results_publish_ch = grouped_ch
       | publish_results.run(
         fromState: { id, state ->
           def project = (state.plain_output) ? id : "${state.project_id}"
           def experiment = (state.plain_output) ? id : "${state.experiment_id}"
           def id0 = "${project}/${experiment}"
-          def id1 = (state.plain_output) ? id : "${id0}/${date}"
+          def id1 = (state.plain_output) ? id : "${id0}/data_processed/${date}"
           def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
 
           if (id == id2) {
@@ -146,13 +138,23 @@ workflow run_wf {
         ]
       )
 
+    fastq_publish_ch = grouped_ch
+      | flatMap{id, state ->
+        def new_states = state.fastq_output.collect{fastq_dir -> 
+          def new_id = fastq_dir.name // The folder name corresponds to the run
+          def fastq_files = fastq_dir.listFiles()
+          def new_state = [
+            "fastq_output": fastq_files
+          ]
+          return [new_id, new_state]
+        }
+        return new_states
+      }
       | publish_fastqs.run(
         fromState: { id, state ->
           def id0 = "${id}"
           def id1 = (state.plain_output) ? id : "${id0}/${date}"
           def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
-
-          println(state.plain_output)
 
           if (id == id2) {
             println("Publising fastqs to ${params.fastq_publish_dir}")
@@ -161,8 +163,7 @@ workflow run_wf {
           }
 
           [
-            input_r1: state.fastq_output_r1,
-            input_r2: state.fastq_output_r2,
+            input: state.fastq_output,
             output: "${id2}",
           ]
         },
@@ -177,7 +178,7 @@ workflow run_wf {
       )
 
   emit:
-    output_ch
+    grouped_ch
       | map{ id, state -> [ id, [ _meta: [ join_id: state.run_id ] ] ] }
 }
 

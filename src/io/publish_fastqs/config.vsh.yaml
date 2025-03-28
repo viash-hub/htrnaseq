@@ -4,13 +4,8 @@ description: "Publish the fastq files per well"
 argument_groups:
   - name: Input arguments
     arguments:
-      - name: --input_r1
-        description: Directory to write R1 fastq data to
-        type: file
-        multiple: true
-        required: true
-      - name: --input_r2
-        description: Directory to write R2 fastq data to
+      - name: --input
+        description: Directory to write fastq data to
         type: file
         multiple: true
         required: true
