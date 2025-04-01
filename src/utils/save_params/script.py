@@ -43,6 +43,8 @@ def replace_id(value, sample_id):
         return [replace_id(item, sample_id) for item in value]
     return value
 
+print(par['params_yaml'])
+
 params = decode_params_yaml(par['params_yaml'])
 for key, value in params.items():
     params[key] = replace_id(value, par["id"])

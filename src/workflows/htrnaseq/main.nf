@@ -25,7 +25,7 @@ workflow run_wf {
           def convertPaths
           convertPaths = { value ->
             if (value instanceof java.nio.file.Path)
-              return value.toString()
+              return value.toUriString()
             else if (value instanceof Collection)
               return value.collect { convertPaths(it) }
             else
@@ -57,7 +57,7 @@ workflow run_wf {
           return new_state
         }
         def file_names = annotation_files.keySet().collect{it.name}
-        assert (file_names.toSet().size() == file_names.size()), 
+        assert (file_names.toSet().size() == file_names.size()):
           "Please make sure that the annotation files have unique file names."
         def new_states = annotation_files.collect{annotation_file, value ->
           def new_state = [annotation_file.name , ["annotation": annotation_file, "event_ids": value]]
@@ -91,7 +91,7 @@ workflow run_wf {
         toState: {id, result, state ->
           def all_fastq = result.output_r1 + result.output_r2
           def output_dir = all_fastq.collect{it.parent}.unique()
-          assert output_dir.size() == 1, "Expected output from well demultiplexing to reside into one directory."
+          assert output_dir.size() == 1: "Expected output from well demultiplexing to reside into one directory."
           def new_state = state + [
             "input_r1": result.output_r1,
             "input_r2": result.output_r2,
@@ -210,10 +210,10 @@ workflow run_wf {
         // Gather the keys from all states. for some state items,
         // we need gather all the different items from across the states
         def barcodes = states.collect{it.barcode}
-        assert barcodes.clone().unique().size() == barcodes.size(), \
+        assert barcodes.clone().unique().size() == barcodes.size(): \
           "Error when gathering information for pool ${id}, barcodes are not unique!"
         def well_ids = states.collect{it.well_id}
-        assert well_ids.clone().unique().size() == well_ids.size(), \
+        assert well_ids.clone().unique().size() == well_ids.size(): \
           "Error when gathering information for pool ${id}, well IDs are not unique!"
         def custom_state = [
           "input_r1": states.collect{it.input_r1},
@@ -234,7 +234,7 @@ workflow run_wf {
         // All other state should have a unique value
         def old_state_items = other_state_keys.inject([:]){ old_state, argument_name ->
             argument_values = states.collect{it.get(argument_name)}.unique()
-            assert argument_values.size() == 1, "Arguments should be the same across modalities. Please report this \
+            assert argument_values.size() == 1: "Arguments should be the same across modalities. Please report this \
                                                  as a bug. Argument name: $argument_name, \
                                                  argument value: $argument_values"
             def argument_value
@@ -347,7 +347,7 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
-        "parameters": "parameters"
+        "parameters": "parameters",
         "_meta": "_meta",
       ])
 
