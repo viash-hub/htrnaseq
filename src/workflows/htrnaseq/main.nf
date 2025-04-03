@@ -11,14 +11,6 @@ workflow run_wf {
         return [id, newState]
       }
 
-    // The featureData only has one requirement: the genome annotation.
-    // It can be generated straight away. Most of the time, there is one shared 
-    // annotation for all of the inputs and the fData should only be calculated once.
-    // The state is manpulated in such a way that there is one event created per unique
-    // input annotation file. In turn, the featureData file can joined into the original input
-    // channel which allows it to be shared across events if required.
-    f_data_ch = input_ch
-
       | save_params.run(
         fromState: {id, state ->
           // Define the function before using it
@@ -26,8 +18,10 @@ workflow run_wf {
           convertPaths = { value ->
             if (value instanceof java.nio.file.Path)
               return value.toUriString()
-            else if (value instanceof Collection)
+            else if (value instanceof List)
               return value.collect { convertPaths(it) }
+            else if (value instanceof Collection)
+              throw new UnsupportedOperationException("Collections other than Lists are not supported")
             else
               return value
           }
@@ -42,11 +36,20 @@ workflow run_wf {
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "output": "${id}_parameters.yaml"
+            "output": "params"
           ]
         },
-        toState: ["parameters": "output"]
+        toState: ["params": "output"]
       )
+
+    // The featureData only has one requirement: the genome annotation.
+    // It can be generated straight away. Most of the time, there is one shared 
+    // annotation for all of the inputs and the fData should only be calculated once.
+    // The state is manpulated in such a way that there is one event created per unique
+    // input annotation file. In turn, the featureData file can joined into the original input
+    // channel which allows it to be shared across events if required.
+    f_data_ch = input_ch
+
 
       | toSortedList()
       | flatMap {ids_and_states ->
@@ -347,7 +350,7 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
-        "parameters": "parameters",
+        "params": "params",
         "_meta": "_meta",
       ])
 

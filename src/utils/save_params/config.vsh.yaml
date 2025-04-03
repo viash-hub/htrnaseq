@@ -1,7 +1,7 @@
 name: save_params
 namespace: utils
 description: |
-  Save parameters to a file
+  Save parameters to a YAML file
 
 argument_groups:
   - name: Inputs
@@ -13,7 +13,7 @@ argument_groups:
         required: true
       - name: "--params_yaml"
         description: |
-          base64 encoded yaml file containing the state
+          base64 encoded yaml containing the state
         type: string
         required: true
     
@@ -21,9 +21,10 @@ argument_groups:
     arguments:
       - name: "--output"
         description: |
-          The output file
+          The output YAML file
         type: string
         required: true
+        example: "output.yaml"
 
 resources:
   - type: python_script

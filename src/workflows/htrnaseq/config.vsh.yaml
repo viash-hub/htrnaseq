@@ -88,6 +88,11 @@ argument_groups:
         direction: output
         required: true
         default: report.$id.html
+      - name: "--params"
+        type: file
+        direction: output
+        required: true
+        default: params.$id.yaml
 resources:
   - type: nextflow_script
     path: main.nf
