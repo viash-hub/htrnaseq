@@ -283,7 +283,7 @@ plateLayout <- function(
 
   if (is.null(colours)) {
     colours <- tryCatch({
-      colorRamp2(
+      circlize::colorRamp2(
         breaks = breaks,
         colors = brewer.pal(length(breaks), "Purples")
       )
