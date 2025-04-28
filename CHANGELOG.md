@@ -3,7 +3,7 @@
 ## Bug fixes
 
 * Bump viash version to `0.9.4`. This adds support for nextflow versions starting major version 25.01 and 
-fixes an issue where an integer being passed to a argument with `type: double` resulted in an error (PR #)
+fixes an issue where an integer being passed to a argument with `type: double` resulted in an error (PR #51).
 
 # htrnaseq v0.7.0
 
