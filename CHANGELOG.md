@@ -1,3 +1,9 @@
+# htrnaseq v0.7.1
+
+## Bug fixes
+
+* `reporting`: updated default colour mapping (PR #50).
+
 # htrnaseq v0.7.0
 
 ## Breaking changes
