@@ -28,8 +28,6 @@ resources:
     path: plateLayouts.R
   - path: OutputSTARsolo.png 
     type: file
-  - path: BiocVersion_3.21.1.tar.gz
-    type: file    
 test_resources:
   - type: r_script
     path: test.R
@@ -42,11 +40,10 @@ engines:
         packages:
           - procps
           - pandoc
-      - type: docker
-        copy:
-          - BiocVersion_3.21.1.tar.gz .
-        run:
-          - R CMD INSTALL BiocVersion_3.21.1.tar.gz
+      - type: r
+        script:
+          - install.packages("BiocManager")
+          - BiocManager::install(version = "3.21", type = "source", checkBuilt = TRUE)
       - type: r
         bioc:
           - Biobase
@@ -76,5 +73,3 @@ engines:
 runners:
   - type: executable
   - type: nextflow
-
-     

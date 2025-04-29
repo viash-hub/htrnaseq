@@ -1,5 +1,9 @@
 # htrnaseq v0.7.1
 
+## Minor changes
+
+* `create_report`: bump bioconductor version to 3.21 in order to accommodate R version 4.5 (PR #52).
+
 ## Bug fixes
 
 * `reporting`: updated default colour mapping (PR #50).
