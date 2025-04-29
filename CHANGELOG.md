@@ -1,5 +1,10 @@
 # htrnaseq v0.7.1
 
+## Bug fixes
+
+* Bump viash version to `0.9.4`. This adds support for nextflow versions starting major version 25.01 and 
+fixes an issue where an integer being passed to a argument with `type: double` resulted in an error (PR #51).
+
 ## Minor changes
 
 * `create_report`: bump bioconductor version to 3.21 in order to accommodate R version 4.5 (PR #52).
