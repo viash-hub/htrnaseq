@@ -283,15 +283,31 @@ plateLayout <- function(
 
   if (is.null(colours)) {
     colours <- tryCatch({
-      colorRamp2(
+      circlize::colorRamp2(
         breaks = breaks,
         colors = brewer.pal(length(breaks), "Purples")
       )
     },
-    error = function(cond) {
-      return(c("#9370DB", "white"))
+    error = function(cond){
+      
+      message("Recomputed breaks for proper colour mapping")
+      
+      breakValues <- plateValues$values
+      breakValues[which(is.na(breakValues))] <- 0
+      if (all(breakValues >= 0)) {
+        breaks <- computeBreaks(7, max(plateValues$values, na.rm = TRUE))
+      } else {
+        breaks <- quantile(plateValues$values,  probs = seq(0, 1, 0.125))
+      }
+      
+      circlize::colorRamp2(
+        breaks = breaks,
+        colors = brewer.pal(length(breaks), "Purples")
+      )
+      
     })
   }
+  
   ht <- Heatmap(
     plateValues$values,
     column_title = mainTitle, column_title_side = "top",
@@ -425,6 +441,7 @@ computeBreaks <- function(nBreaks, variable) {
     )
     coefExp <- c(exp(coefSystem[1]), coefSystem[2])
     breaks <- coefExp[1] * exp((1:(nBreaks - 1)) * coefExp[2])
+    breaks <- unique(c(0, breaks))
   }
-  return(c(0, breaks))
+  return(breaks)
 }
