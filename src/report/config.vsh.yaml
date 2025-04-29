@@ -41,6 +41,10 @@ engines:
           - procps
           - pandoc
       - type: r
+        script:
+          - install.packages("BiocManager")
+          - BiocManager::install(version = "3.21", type = "source", checkBuilt = TRUE)
+      - type: r
         bioc:
           - Biobase
           - ComplexHeatmap
