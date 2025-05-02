@@ -22,7 +22,7 @@ contributing <- paste0(project$links$repository, "/blob/main/CONTRIBUTING.md")
 
 ## Example usage
 
-## Test and example data
+### Test and example data
 
 If you want to explore this workflow, it's possible to the use data we use as test data: [a DRUGseq dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE176150) from the [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra). For the unit and integration tests, this data has been (partly) subsampled to reduce the test runtime. We used [seqtk](https://github.com/lh3/seqtk) for this with a seed of 1, e.g.:
 
@@ -32,7 +32,7 @@ seqtk sample -s1 orig/SRR14730302/VH02001614_S8_R1_001.fastq.gz 10000 > 10k/SRR1
 
 This data is available at: `gs://viash-hub-test-data/htrnaseq/v1/`.
 
-## Run from Viash Hub
+### Run from Viash Hub
 
 Open [Viash Hub](https://www.viash-hub.com) and browse to the [htrnaseq component](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/htrnaseq). Press the 'Launch' button and follow the instructions.
 
@@ -61,7 +61,7 @@ Please note that both `input_r1` and `input_r2` can take multiple values. This m
 Press the 'Launch' button at the end to get the instructions on how to run the workflow from the CLI.
 
 
-## Run using NF-Tower / Seqera Cloud
+### Run using NF-Tower / Seqera Cloud
 
 It's possible to run the workflow directly from [Seqera Cloud](https://cloud.seqera.io). The necessary [Nextflow schema file](https://nextflow-io.github.io/nf-schema/latest/nextflow_schema/nextflow_schema_specification/) has been built and provided with the workflows in order to use the form-based input. However, Seqera Cloud can not deal with multiple-value parameters when using the form-based input. Therefore, it's better to use Viash Hub also here:
 
@@ -77,7 +77,7 @@ In the next screen, pressing the 'Launch' button will actually start the workflo
 
 ![](assets/launch-parameters-5-small.png)
 
-## Run from the CLI
+### Run from the CLI
 
 Running from the CLI directly without using Viash hub is possible. The easiest is to just use the integrated help functionality, for instance using the following:
 
@@ -88,8 +88,7 @@ Running from the CLI directly without using Viash hub is possible. The easiest i
   --help
 ```
 
-
-# Contributions
+## Contributions
 
 Developed in collaboration with Data Intuitive and Open Analytics.
 

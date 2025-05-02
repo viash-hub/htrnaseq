@@ -48,7 +48,7 @@ or other formats, please consider running
 
 ## Example usage
 
-## Test and example data
+### Test and example data
 
 If you want to explore this workflow, it’s possible to the use data we
 use as test data: [a DRUGseq
@@ -64,7 +64,7 @@ seqtk sample -s1 orig/SRR14730302/VH02001614_S8_R1_001.fastq.gz 10000 > 10k/SRR1
 
 This data is available at: `gs://viash-hub-test-data/htrnaseq/v1/`.
 
-## Run from Viash Hub
+### Run from Viash Hub
 
 Open [Viash Hub](https://www.viash-hub.com) and browse to the [htrnaseq
 component](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/htrnaseq).
@@ -102,7 +102,7 @@ path.
 Press the ‘Launch’ button at the end to get the instructions on how to
 run the workflow from the CLI.
 
-## Run using NF-Tower / Seqera Cloud
+### Run using NF-Tower / Seqera Cloud
 
 It’s possible to run the workflow directly from [Seqera
 Cloud](https://cloud.seqera.io). The necessary [Nextflow schema
@@ -130,7 +130,7 @@ successful.
 
 ![](assets/launch-parameters-5-small.png)
 
-## Run from the CLI
+### Run from the CLI
 
 Running from the CLI directly without using Viash hub is possible. The
 easiest is to just use the integrated help functionality, for instance
@@ -143,7 +143,7 @@ using the following:
   --help
 ```
 
-# Contributions
+## Contributions
 
 Developed in collaboration with Data Intuitive and Open Analytics.
 
