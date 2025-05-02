@@ -143,6 +143,33 @@ using the following:
   --help
 ```
 
+### (Optional) Resource usage tuning
+
+Nextflow’s labels can be used to specify the amount of resources a
+process can use. This workflow uses the following labels for CPU and
+memory: \* `verylowmem`, `lowmem`, `midmem`, `highmem` \* `verylowcpu`,
+`lowcpu`, `midcpu`, `highcpu`
+
+The defaults for these labels can be found at
+`src/config/labels.config`. Nextflow checks that the specified resources
+for a process do not exceed what is available on the machine and will
+not start if it does. Create your own config file to tune the labels to
+your needs, for example:
+
+    // Resource labels
+    withLabel: verylowcpu { cpus = 2 }
+    withLabel: lowcpu { cpus = 8 }
+    withLabel: midcpu { cpus = 16 }
+    withLabel: highcpu { cpus = 32 }
+
+    withLabel: verylowmem { memory = { get_memory( 4.GB * task.attempt ) } }
+    withLabel: lowmem { memory = { get_memory( 8.GB * task.attempt ) } }
+    withLabel: midmem { memory = { get_memory( 16.GB * task.attempt ) } }
+    withLabel: highmem { memory = { get_memory( 64.GB * task.attempt ) } }
+
+When starting nextflow using the CLI, you can use `-c` to provide the
+file to nextflow and overwrite the defaults.
+
 ## Contributions
 
 Developed in collaboration with Data Intuitive and Open Analytics.
