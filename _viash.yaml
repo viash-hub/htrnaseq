@@ -10,7 +10,7 @@ description: |
   is provided by components from [`biobox`](https://www.viash-hub.com/packages/biobox/latest)
   supplemented by custom base components and workflow components in this package.
 
-  The full workflow can be split in two major subworkflows:
+  The full workflow is split in two major subworkflows that can be run independently:
 
   * **Well-demultiplexing:** Split the input (plate/pool level) fastq files per well.
   * **Mapping, counting and QC:** Run per-well mapping, counting and generate QC reports.
@@ -21,6 +21,9 @@ description: |
   containing the main functionality.
   2. Run the [(opinianated) `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner) where a
   number of choices (input/output structure and location) have been made.
+
+  Input for the workflow has to be `fastq` files (zipped or not). For bcl or other formats, please consider running
+  [demultiplex](https://www.viash-hub.com/packages/demultiplex) first.
 
 license: MIT
 keywords:
