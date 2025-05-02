@@ -1,6 +1,6 @@
 
 
-# HT-RNAseq - A pipeline for processing high-throughput RNA-seq data
+# HT-RNAseq
 
 [![ViashHub](https://img.shields.io/badge/ViashHub-htrnaseq-7a4baa.png)](https://www.viash-hub.com/packages/htrnaseq)
 [![GitHub](https://img.shields.io/badge/GitHub-viash--hub%2Fhtrnaseq-blue.png)](https://github.com/viash-hub/htrnaseq)
@@ -36,14 +36,14 @@ run in two ways:
 1.  Run the [main
     workflow](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/htrnaseq)
     containing the main functionality.
-2.  Run the [(opinition)
+2.  Run the [(opinianated)
     `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner)
     where a number of choices (input/output structure and location) have
     been made.
 
 ## Example usage
 
-## Test data
+## Test and example data
 
 If you want to explore this workflow, it’s possible to the use data we
 use as test data: [a DRUGseq
@@ -125,5 +125,6 @@ successful.
 
 # Contributions
 
-Developed in collaboration with Data Intuitive and Open Analytics. s
+Developed in collaboration with Data Intuitive and Open Analytics.
+
 Other contributions are welcome.

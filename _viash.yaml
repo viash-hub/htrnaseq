@@ -19,7 +19,7 @@ description: |
 
   1. Run the [main workflow](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/htrnaseq) 
   containing the main functionality.
-  2. Run the [(opinition) `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner) where a
+  2. Run the [(opinianated) `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner) where a
   number of choices (input/output structure and location) have been made.
 
 license: MIT

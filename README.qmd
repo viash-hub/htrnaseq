@@ -8,7 +8,7 @@ license <- paste0(project$links$repository, "/blob/main/LICENSE")
 contributing <- paste0(project$links$repository, "/blob/main/CONTRIBUTING.md")
 ```
 
-# HT-RNAseq - A pipeline for processing high-throughput RNA-seq data
+# HT-RNAseq
 
 [![ViashHub](https://img.shields.io/badge/ViashHub-`r project$name`-7a4baa)](https://www.viash-hub.com/packages/`r project$name`) 
 [![GitHub](https://img.shields.io/badge/GitHub-viash--hub%2F`r project$name`-blue)](`r project$links$repository`) 
@@ -22,7 +22,7 @@ contributing <- paste0(project$links$repository, "/blob/main/CONTRIBUTING.md")
 
 ## Example usage
 
-## Test data
+## Test and example data
 
 If you want to explore this workflow, it's possible to the use data we use as test data: [a DRUGseq dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE176150) from the [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra). For the unit and integration tests, this data has been (partly) subsampled to reduce the test runtime. We used [seqtk](https://github.com/lh3/seqtk) for this with a seed of 1, e.g.:
 
@@ -81,5 +81,5 @@ In the next screen, pressing the 'Launch' button will actually start the workflo
 # Contributions
 
 Developed in collaboration with Data Intuitive and Open Analytics.
-                              s
+
 Other contributions are welcome.
