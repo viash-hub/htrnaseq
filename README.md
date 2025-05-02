@@ -78,8 +78,9 @@ fasta file containing only 2 wells.
 In the first step, we add the `local` profile to the list of profiles in
 order to limit the cpu and memory requirements of the workflow steps:
 
-![](assets/launch-parameters-1-small.png) In the next step, we provide
-the paramters as follows:
+![](assets/launch-parameters-1-small.png)
+
+In the next step, we provide the paramters as follows:
 
 - `input_r1`:
   `gs://viash-hub-test-data/htrnaseq/v1/100k/SRR14730301/VH02001612_S9_R1_001.fastq`
