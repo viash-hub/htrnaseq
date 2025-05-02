@@ -39,9 +39,9 @@ Open [Viash Hub](https://www.viash-hub.com) and browse to the [htrnaseq componen
 
 ![](assets/htrnaseq-launch-small.png)
 
-We will start an example run loading just one input and using a barcodes fast file containing only 2 wells.
+We will start an example run loading just one input and using a barcodes fasta file containing only 2 wells.
 
-In the first step, we add the `local` profile to the list of profiles in order to the cpu and memory requirements of the workflow steps:
+In the first step, we add the `local` profile to the list of profiles in order to limit the cpu and memory requirements of the workflow steps:
 
 
 ![](assets/launch-parameters-1-small.png)
@@ -53,7 +53,7 @@ In the next step, we provide the paramters as follows:
 - `barcodesFasta`: `gs://viash-hub-test-data/htrnaseq/v1/2-wells-with-ids.fasta`
 - `annotation`: `gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf.gz`
 
-Please not the following: Both `input_r1` and `input_r2` take multiple values. This means that one has to press ENTER after pasting the input path.
+Please note that both `input_r1` and `input_r2` can take multiple values. This means that one has to press ENTER after pasting the input path.
 
 ![](assets/launch-parameters-2-small.png)
 
@@ -62,7 +62,7 @@ Press the 'Launch' button at the end to get the instructions on how to run the w
 
 ## Run using NF-Tower / Seqera Cloud
 
-It's possible to run the workflow directly from Seqera Cloud. The necessary schema file has been built and provided with the workflows in order to use the form-based input. However, Seqera Cloud can not deal with multiple-value parameters when using  the form -based input.
+It's possible to run the workflow directly from [Seqera Cloud](https://cloud.seqera.io). The necessary schema file has been built and provided with the workflows in order to use the form-based input. However, Seqera Cloud can not deal with multiple-value parameters when using  the form -based input.
 
 It's better to use Viash Hub also here:
 
@@ -77,6 +77,17 @@ Next, we need to fill in the paramters for the run. This is similar to before:
 In the next screen, pressing the 'Launch' button will actually start the workflow on Seqera Cloud. A message is shown when the submit was successful.
 
 ![](assets/launch-parameters-5-small.png)
+## Run from the CLI
+
+Running from the CLI directly without using Viash hub is possible. The easiest is to just use the integrated help functionality, for instance using the following:
+
+```bash
+ nextflow run https://packages.viash-hub.com/vsh/htrnaseq.git \
+  -revision v0.3.0 \
+  -main-script target/nextflow/workflows/runner/main.nf \
+  --help
+```
+
 
 # Contributions
 

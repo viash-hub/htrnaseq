@@ -3,7 +3,7 @@ summary: |
   A workflow for high-throughput RNA-seq data analyses.
 description: |
   This workflow is designed to process high-throughput RNA-seq data, where every
-  well in a microarray plate is a sample. A fasta file provided as input
+  well of a microarray plate is a sample. A fasta file provided as input
   defines the mapping between sample barcodes and wells.
 
   The workflow is built in a modular fashion, where most of the base functionality

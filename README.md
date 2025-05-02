@@ -14,7 +14,7 @@ version](https://img.shields.io/badge/Viash-v0.9.2-blue)](https://viash.io)
 ## Introduction
 
 This workflow is designed to process high-throughput RNA-seq data, where
-every well in a microarray plate is a sample. A fasta file provided as
+every well of a microarray plate is a sample. A fasta file provided as
 input defines the mapping between sample barcodes and wells.
 
 The workflow is built in a modular fashion, where most of the base
@@ -23,7 +23,8 @@ functionality is provided by components from
 supplemented by custom base components and workflow components in this
 package.
 
-The full workflow can be split in two major subworkflows:
+The full workflow is split in two major subworkflows that can be run
+independently:
 
 - **Well-demultiplexing:** Split the input (plate/pool level) fastq
   files per well.
@@ -40,6 +41,10 @@ run in two ways:
     `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner)
     where a number of choices (input/output structure and location) have
     been made.
+
+Input for the workflow has to be `fastq` files (zipped or not). For bcl
+or other formats, please consider running
+[demultiplex](https://www.viash-hub.com/packages/demultiplex) first.
 
 ## Example usage
 
@@ -68,10 +73,10 @@ Press the ‘Launch’ button and follow the instructions.
 ![](assets/htrnaseq-launch-small.png)
 
 We will start an example run loading just one input and using a barcodes
-fast file containing only 2 wells.
+fasta file containing only 2 wells.
 
 In the first step, we add the `local` profile to the list of profiles in
-order to the cpu and memory requirements of the workflow steps:
+order to limit the cpu and memory requirements of the workflow steps:
 
 ![](assets/launch-parameters-1-small.png) In the next step, we provide
 the paramters as follows:
@@ -87,7 +92,7 @@ the paramters as follows:
 - `annotation`:
   `gs://viash-hub-test-data/htrnaseq/v1/genomeDir/gencode.v41.annotation.gtf.gz`
 
-Please not the following: Both `input_r1` and `input_r2` take multiple
+Please note that both `input_r1` and `input_r2` can take multiple
 values. This means that one has to press ENTER after pasting the input
 path.
 
@@ -98,10 +103,11 @@ run the workflow from the CLI.
 
 ## Run using NF-Tower / Seqera Cloud
 
-It’s possible to run the workflow directly from Seqera Cloud. The
-necessary schema file has been built and provided with the workflows in
-order to use the form-based input. However, Seqera Cloud can not deal
-with multiple-value parameters when using the form -based input.
+It’s possible to run the workflow directly from [Seqera
+Cloud](https://cloud.seqera.io). The necessary schema file has been
+built and provided with the workflows in order to use the form-based
+input. However, Seqera Cloud can not deal with multiple-value parameters
+when using the form -based input.
 
 It’s better to use Viash Hub also here:
 
@@ -121,7 +127,18 @@ In the next screen, pressing the ‘Launch’ button will actually start the
 workflow on Seqera Cloud. A message is shown when the submit was
 successful.
 
-![](assets/launch-parameters-5-small.png)
+![](assets/launch-parameters-5-small.png) \## Run from the CLI
+
+Running from the CLI directly without using Viash hub is possible. The
+easiest is to just use the integrated help functionality, for instance
+using the following:
+
+``` bash
+ nextflow run https://packages.viash-hub.com/vsh/htrnaseq.git \
+  -revision v0.3.0 \
+  -main-script target/nextflow/workflows/runner/main.nf \
+  --help
+```
 
 # Contributions
 
