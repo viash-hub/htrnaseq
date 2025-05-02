@@ -1,8 +1,39 @@
 name: htrnaseq
+summary: |
+  A workflow for high-throughput RNA-seq data analyses.
 description: |
-  High-throughput pipeline [WIP]
+  This workflow is designed to process high-throughput RNA-seq data, where every
+  well in a microarray plate is a sample. A fasta file provided as input
+  defines the mapping between sample barcodes and wells.
+
+  The workflow is built in a modular fashion, where most of the base functionality
+  is provided by components from [`biobox`](https://www.viash-hub.com/packages/biobox/latest)
+  supplemented by custom base components and workflow components in this package.
+
+  The full workflow can be split in two major subworkflows:
+
+  * **Well-demultiplexing:** Split the input (plate/pool level) fastq files per well.
+  * **Mapping, counting and QC:** Run per-well mapping, counting and generate QC reports.
+
+  Each of those can be started individually, or the full workflow can be run in two ways:
+
+  1. Run the [main workflow](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/htrnaseq) 
+  containing the main functionality.
+  2. Run the [(opinition) `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner) where a
+  number of choices (input/output structure and location) have been made.
+
 license: MIT
-keywords: [bioinformatics, sequence, high-throughput, mapping, counting, pipeline]
+keywords:
+  [
+    bioinformatics,
+    sequencing,
+    high-throughput,
+    RNAseq,
+    mapping,
+    counting,
+    pipeline,
+    workflow,
+  ]
 links:
   issue_tracker: https://github.com/viash-hub/htrnaseq/issues
   repository: https://github.com/viash-hub/htrnaseq
