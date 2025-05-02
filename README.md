@@ -104,12 +104,12 @@ run the workflow from the CLI.
 ## Run using NF-Tower / Seqera Cloud
 
 It’s possible to run the workflow directly from [Seqera
-Cloud](https://cloud.seqera.io). The necessary schema file has been
-built and provided with the workflows in order to use the form-based
-input. However, Seqera Cloud can not deal with multiple-value parameters
-when using the form -based input.
-
-It’s better to use Viash Hub also here:
+Cloud](https://cloud.seqera.io). The necessary [Nextflow schema
+file](https://nextflow-io.github.io/nf-schema/latest/nextflow_schema/nextflow_schema_specification/)
+has been built and provided with the workflows in order to use the
+form-based input. However, Seqera Cloud can not deal with multiple-value
+parameters when using the form-based input. Therefore, it’s better to
+use Viash Hub also here:
 
 First, select the option to run the workflow using Seqera Cloud. You
 will need to create an API token for your account. Once this token is
@@ -118,7 +118,7 @@ a ‘Workspace’ and a ‘Compute environment’.
 
 ![](assets/launch-parameters-3-small.png)
 
-Next, we need to fill in the paramters for the run. This is similar to
+Next, we need to fill in the parameters for the run. This is similar to
 before:
 
 ![](assets/launch-parameters-4-small.png)
@@ -127,7 +127,9 @@ In the next screen, pressing the ‘Launch’ button will actually start the
 workflow on Seqera Cloud. A message is shown when the submit was
 successful.
 
-![](assets/launch-parameters-5-small.png) \## Run from the CLI
+![](assets/launch-parameters-5-small.png)
+
+## Run from the CLI
 
 Running from the CLI directly without using Viash hub is possible. The
 easiest is to just use the integrated help functionality, for instance
