@@ -1,3 +1,4 @@
+# test
 
 
 # HT-RNAseq
@@ -45,6 +46,38 @@ run in two ways:
 Input for the workflow has to be `fastq` files (zipped or not). For bcl
 or other formats, please consider running
 [demultiplex](https://www.viash-hub.com/packages/demultiplex) first.
+
+<div class="mermaid-workflow">
+
+``` mermaid
+flowchart TB
+  subgraph runner [runner]
+    direction TB
+    subgraph htrnaseq [HT-RNAseq]
+      direction LR
+      demultiplex
+      map
+      report
+      eset
+    end
+  end
+
+  demultiplex --> map --> report --> eset
+
+  class runner container
+  class htrnaseq container
+  class demultiplex container-inner
+  class map container-inner
+  class report container-inner
+  class eset container-inner
+
+  class demultiplex node
+  class map node
+  class report node
+  class eset node
+```
+
+</div>
 
 ## Example usage
 
