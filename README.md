@@ -2,14 +2,14 @@
 
 # HT-RNAseq
 
-[![ViashHub](https://img.shields.io/badge/ViashHub-htrnaseq-7a4baa.png)](https://www.viash-hub.com/packages/htrnaseq)
-[![GitHub](https://img.shields.io/badge/GitHub-viash--hub%2Fhtrnaseq-blue.png)](https://github.com/viash-hub/htrnaseq)
+[![ViashHub](https://img.shields.io/badge/ViashHub-htrnaseq-7a4baa.svg)](https://www.viash-hub.com/packages/htrnaseq)
+[![GitHub](https://img.shields.io/badge/GitHub-viash--hub%2Fhtrnaseq-blue.svg)](https://github.com/viash-hub/htrnaseq)
 [![GitHub
-License](https://img.shields.io/github/license/viash-hub/htrnaseq.png)](https://github.com/viash-hub/htrnaseq/blob/main/LICENSE)
+License](https://img.shields.io/github/license/viash-hub/htrnaseq.svg)](https://github.com/viash-hub/htrnaseq/blob/main/LICENSE)
 [![GitHub
-Issues](https://img.shields.io/github/issues/viash-hub/htrnaseq.png)](https://github.com/viash-hub/htrnaseq/issues)
+Issues](https://img.shields.io/github/issues/viash-hub/htrnaseq.svg)](https://github.com/viash-hub/htrnaseq/issues)
 [![Viash
-version](https://img.shields.io/badge/Viash-v0.9.2-blue)](https://viash.io)
+version](https://img.shields.io/badge/Viash-v0.9.2-blue.svg)](https://viash.io)
 
 ## Introduction
 
@@ -48,13 +48,13 @@ or other formats, please consider running
 
 <div class="mermaid-workflow">
 
-``` mermaid lang='mermaid'
+``` mermaid
 flowchart TB
   subgraph runner [runner]
     direction TB
     subgraph htrnaseq [HT-RNAseq]
       direction LR
-      demultiplex
+      demultiplex ["Well demultiplexing"]
       map
       report
       eset
@@ -141,7 +141,8 @@ Cloud](https://cloud.seqera.io). The necessary [Nextflow schema
 file](https://nextflow-io.github.io/nf-schema/latest/nextflow_schema/nextflow_schema_specification/)
 has been built and provided with the workflows in order to use the
 form-based input. However, Seqera Cloud can not deal with multiple-value
-parameters when using the form-based input. Therefore using Viash Hub is also recommended in this case.
+parameters when using the form-based input. Therefore, it’s better to
+use Viash Hub also here:
 
 First, select the option to run the workflow using Seqera Cloud. You
 will need to create an API token for your account. Once this token is
@@ -178,8 +179,10 @@ using the following:
 
 Nextflow’s labels can be used to specify the amount of resources a
 process can use. This workflow uses the following labels for CPU and
-memory: \* `verylowmem`, `lowmem`, `midmem`, `highmem` \* `verylowcpu`,
-`lowcpu`, `midcpu`, `highcpu`
+memory:
+
+- `verylowmem`, `lowmem`, `midmem`, `highmem`
+- `verylowcpu`, `lowcpu`, `midcpu`, `highcpu`
 
 The defaults for these labels can be found at
 `src/config/labels.config`. Nextflow checks that the specified resources

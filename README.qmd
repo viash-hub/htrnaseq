@@ -123,6 +123,7 @@ Running from the CLI directly without using Viash hub is possible. The easiest i
 ### (Optional) Resource usage tuning
 
 Nextflow's labels can be used to specify the amount of resources a process can use. This workflow uses the following labels for CPU and memory:
+
 * `verylowmem`, `lowmem`, `midmem`, `highmem`
 * `verylowcpu`, `lowcpu`, `midcpu`, `highcpu`
 
