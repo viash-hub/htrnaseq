@@ -37,7 +37,7 @@ run in two ways:
 1.  Run the [main
     workflow](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/htrnaseq)
     containing the main functionality.
-2.  Run the [(opinianated)
+2.  Run the [(opinionated)
     `runner`](https://www.viash-hub.com/packages/htrnaseq/v0.3.0/components/workflows/runner)
     where a number of choices (input/output structure and location) have
     been made.
@@ -48,7 +48,7 @@ or other formats, please consider running
 
 <div class="mermaid-workflow">
 
-``` mermaid
+``` mermaid lang='mermaid'
 flowchart TB
   subgraph runner [runner]
     direction TB
@@ -141,8 +141,7 @@ Cloud](https://cloud.seqera.io). The necessary [Nextflow schema
 file](https://nextflow-io.github.io/nf-schema/latest/nextflow_schema/nextflow_schema_specification/)
 has been built and provided with the workflows in order to use the
 form-based input. However, Seqera Cloud can not deal with multiple-value
-parameters when using the form-based input. Therefore, it’s better to
-use Viash Hub also here:
+parameters when using the form-based input. Therefore using Viash Hub is also recommended in this case.
 
 First, select the option to run the workflow using Seqera Cloud. You
 will need to create an API token for your account. Once this token is

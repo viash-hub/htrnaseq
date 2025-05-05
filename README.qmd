@@ -10,11 +10,11 @@ contributing <- paste0(project$links$repository, "/blob/main/CONTRIBUTING.md")
 
 # HT-RNAseq
 
-[![ViashHub](https://img.shields.io/badge/ViashHub-`r project$name`-7a4baa)](https://www.viash-hub.com/packages/`r project$name`) 
-[![GitHub](https://img.shields.io/badge/GitHub-viash--hub%2F`r project$name`-blue)](`r project$links$repository`) 
-[![GitHub License](https://img.shields.io/github/license/viash-hub/`r project$name`)](`r license`) 
-[![GitHub Issues](https://img.shields.io/github/issues/viash-hub/`r project$name`)](`r project$links$issue_tracker`) 
-[![Viash version](https://img.shields.io/badge/Viash-v`r gsub("-", "--", project$viash_version)`-blue)](https://viash.io)
+[![ViashHub](https://img.shields.io/badge/ViashHub-`r project$name`-7a4baa.svg)](https://www.viash-hub.com/packages/`r project$name`) 
+[![GitHub](https://img.shields.io/badge/GitHub-viash--hub%2F`r project$name`-blue.svg)](`r project$links$repository`) 
+[![GitHub License](https://img.shields.io/github/license/viash-hub/`r project$name`.svg)](`r license`) 
+[![GitHub Issues](https://img.shields.io/github/issues/viash-hub/`r project$name`.svg)](`r project$links$issue_tracker`) 
+[![Viash version](https://img.shields.io/badge/Viash-v`r gsub("-", "--", project$viash_version)`-blue.svg)](https://viash.io)
 
 ## Introduction
 
@@ -28,7 +28,7 @@ flowchart TB
     direction TB
     subgraph htrnaseq [HT-RNAseq]
       direction LR
-      demultiplex
+      demultiplex ["Well demultiplexing"]
       map
       report
       eset
