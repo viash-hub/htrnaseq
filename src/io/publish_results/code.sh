@@ -40,3 +40,5 @@ for i in "${p_data[@]}"; do
 done
 
 cp -rL "$par_html_report" "$par_output/"
+
+cp -rL "$par_params" "$par_output/"

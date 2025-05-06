@@ -23,6 +23,7 @@ argument_groups:
         description: |
           The output YAML file
         type: file
+        direction: output
         required: true
         example: "output.yaml"
 

@@ -15,6 +15,40 @@ workflow run_wf {
         def new_state = state + ["run_id": id]
         return [id, new_state]
       }
+
+      | view
+
+      | save_params.run(
+        fromState: {id, state ->
+          // Define the function before using it
+          def convertPaths
+          convertPaths = { value ->
+            if (value instanceof java.nio.file.Path)
+              return value.toUriString()
+            else if (value instanceof List)
+              return value.collect { convertPaths(it) }
+            else if (value instanceof Collection)
+              throw new UnsupportedOperationException("Collections other than Lists are not supported")
+            else
+              return value
+          }
+          
+          // Apply conversion to all state values
+          def convertedState = state.collectEntries { k, v -> [(k): convertPaths(v)] }
+          
+          def yaml = new org.yaml.snakeyaml.Yaml()
+          def yamlString = yaml.dump(convertedState)
+          def encodedYaml = yamlString.bytes.encodeBase64().toString()
+          
+          return [
+            "id": id,
+            "params_yaml": encodedYaml,
+            "output": state.params
+          ]
+        },
+        toState: ["params": "output"]
+      )
+
       | listInputDir.run(
         fromState: [
           "input": "input",
@@ -58,7 +92,8 @@ workflow run_wf {
           eset: 'esets/$id.rds',
           nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
           star_qc_metrics: 'starLogs/$id.txt',
-          html_report: "report.html"
+          html_report: "report.html",
+          params: null
         ],
         fromState: [
           input_r1: "r1",
@@ -94,6 +129,7 @@ workflow run_wf {
               p_data: reduce_paths(vs.collect{ it[1].p_data }),
               fastq_output: vs.collect{ it[1].fastq_output }.flatten().unique(),
               html_report: vs.collect{ it[1].html_report }[0],  // The report is for all pools
+              params: vs.collect{ it[1].params }[0],
               plain_output: vs.collect{ it[1].plain_output }[0],
               project_id: vs.collect{ it[1].project_id }[0],
               experiment_id: vs.collect{ it[1].experiment_id }[0]
@@ -125,6 +161,7 @@ workflow run_wf {
             f_data: state.f_data,
             p_data: state.p_data,
             html_report: state.html_report,
+            params: state.params,
             output: "${id2}"
           ]
         },

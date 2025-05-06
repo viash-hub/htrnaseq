@@ -28,6 +28,10 @@ argument_groups:
         type: integer
         min: 1
         default: 10
+      - name: "--params"
+        type: file
+        required: false
+        default: params.$id.yaml
   - name: Metadata arguments
     arguments:
       - name: --id
@@ -70,6 +74,8 @@ dependencies:
   - name: io/publish_fastqs
     repository: local
   - name: io/publish_results
+    repository: local
+  - name: utils/save_params
     repository: local
 
 runners:
