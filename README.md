@@ -46,7 +46,7 @@ Input for the workflow has to be `fastq` files (zipped or not). For bcl
 or other formats, please consider running
 [demultiplex](https://www.viash-hub.com/packages/demultiplex) first.
 
-```mermaid lang='mermaid'
+``` mermaid lang="mermaid"
 flowchart TB
   subgraph runner [runner]
     direction TB
