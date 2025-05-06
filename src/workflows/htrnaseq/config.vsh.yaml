@@ -91,7 +91,7 @@ argument_groups:
       - name: "--params"
         type: file
         direction: output
-        required: true
+        required: false
         default: params.$id.yaml
 resources:
   - type: nextflow_script

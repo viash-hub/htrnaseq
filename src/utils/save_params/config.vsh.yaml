@@ -22,7 +22,7 @@ argument_groups:
       - name: "--output"
         description: |
           The output YAML file
-        type: string
+        type: file
         required: true
         example: "output.yaml"
 

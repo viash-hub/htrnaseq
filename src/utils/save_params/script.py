@@ -21,8 +21,6 @@ def decode_params_yaml(encoded_yaml):
     
     return yaml_data
 
-print(par['params_yaml'])
-
 params = decode_params_yaml(par['params_yaml'])
 
 with open(par["output"], 'w') as f:
