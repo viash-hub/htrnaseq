@@ -20,7 +20,8 @@ contributing <- paste0(project$links$repository, "/blob/main/CONTRIBUTING.md")
 
 `r project$description`
 
-```mermaid lang='mermaid'
+
+```{mermaid lang='mermaid'}
 flowchart TB
   subgraph runner [runner]
     direction TB
@@ -47,6 +48,7 @@ flowchart TB
   class report node
   class eset node
 ```
+
 
 ## Example usage
 
