@@ -36,7 +36,7 @@ workflow run_wf {
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "output": "params"
+            "output": state.params
           ]
         },
         toState: ["params": "output"]
@@ -119,8 +119,8 @@ workflow run_wf {
 
 
     concat_samples_ch = demultiplex_ch.join(f_data_ch)
-      | map {id, demutliplex_state, f_data_state ->
-        def newState = demutliplex_state + ["f_data": f_data_state["f_data"]]
+      | map {id, demultiplex_state, f_data_state ->
+        def newState = demultiplex_state + ["f_data": f_data_state["f_data"]]
         [id, newState]
       }
       | concatRuns.run(
@@ -140,8 +140,8 @@ workflow run_wf {
       )
 
     pool_ch = concat_samples_ch.join(fastq_output_directory_ch)
-      | map {id, demux_state, fastq_output_directory_state ->
-        def new_state = demux_state + fastq_output_directory_state
+      | map {id, concat_state, fastq_output_directory_state ->
+        def new_state = concat_state + fastq_output_directory_state
         return [id, new_state]
       } 
       | parallel_map.run(
@@ -354,6 +354,7 @@ workflow run_wf {
         "_meta": "_meta",
       ])
 
+      | view
 
   emit:
     output_ch
