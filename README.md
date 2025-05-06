@@ -46,53 +46,27 @@ Input for the workflow has to be `fastq` files (zipped or not). For bcl
 or other formats, please consider running
 [demultiplex](https://www.viash-hub.com/packages/demultiplex) first.
 
-<div class="mermaid-workflow">
+\`\`\`mermaid lang=‘mermaid’ flowchart TB subgraph runner \[runner\]
+direction TB subgraph htrnaseq [HT-RNAseq](#ht-rnaseq) direction LR
+demultiplex \[“Well demultiplexing”\] map report eset end end
 
-``` mermaid
-flowchart TB
-  subgraph runner [runner]
-    direction TB
-    subgraph htrnaseq [HT-RNAseq]
-      direction LR
-      demultiplex ["Well demultiplexing"]
-      map
-      report
-      eset
-    end
-  end
+demultiplex –\> map –\> report –\> eset
 
-  demultiplex --> map --> report --> eset
+class runner container class htrnaseq container class demultiplex
+container-inner class map container-inner class report container-inner
+class eset container-inner
 
-  class runner container
-  class htrnaseq container
-  class demultiplex container-inner
-  class map container-inner
-  class report container-inner
-  class eset container-inner
+class demultiplex node class map node class report node class eset node
 
-  class demultiplex node
-  class map node
-  class report node
-  class eset node
-```
 
-</div>
+    ## Example usage
 
-## Example usage
+    ### Test and example data
 
-### Test and example data
+    If you want to explore this workflow, it's possible to the use data we use as test data: [a DRUGseq dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE176150) from the [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra). For the unit and integration tests, this data has been (partly) subsampled to reduce the test runtime. We used [seqtk](https://github.com/lh3/seqtk) for this with a seed of 1, e.g.:
 
-If you want to explore this workflow, it’s possible to the use data we
-use as test data: [a DRUGseq
-dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE176150)
-from the [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra).
-For the unit and integration tests, this data has been (partly)
-subsampled to reduce the test runtime. We used
-[seqtk](https://github.com/lh3/seqtk) for this with a seed of 1, e.g.:
-
-``` bash
-seqtk sample -s1 orig/SRR14730302/VH02001614_S8_R1_001.fastq.gz 10000 > 10k/SRR14730302/VH02001614_S8_R1_001.fastq.gz
-```
+    ```bash
+    seqtk sample -s1 orig/SRR14730302/VH02001614_S8_R1_001.fastq.gz 10000 > 10k/SRR14730302/VH02001614_S8_R1_001.fastq.gz
 
 This data is available at: `gs://viash-hub-test-data/htrnaseq/v1/`.
 
