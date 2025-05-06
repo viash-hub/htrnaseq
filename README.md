@@ -90,7 +90,7 @@ subsampled to reduce the test runtime. We used
 seqtk sample -s1 orig/SRR14730302/VH02001614_S8_R1_001.fastq.gz 10000 > 10k/SRR14730302/VH02001614_S8_R1_001.fastq.gz
 ```
 
-This data is available at: `gs://viash-hub-test-data/htrnaseq/v1/`.
+This data is available at: `gs://viash-hub-resources/htrnaseq/v1/`.
 
 ### Run from Viash Hub
 
