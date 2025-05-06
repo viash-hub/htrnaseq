@@ -52,7 +52,7 @@ flowchart TB
     direction TB
     subgraph htrnaseq [HT-RNAseq]
       direction LR
-      demultiplex ["Well demultiplexing"]
+      demultiplex[Well demultiplexing]
       map
       report
       eset
