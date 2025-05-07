@@ -5,7 +5,7 @@ include { htrnaseq } from targetDir + "/workflows/htrnaseq/main.nf"
 include { check_eset } from targetDir + "/integration_test_components/htrnaseq/check_eset/main.nf"
 
 
-params.resources_test =  "gs://viash-hub-test-data/htrnaseq/v1/"
+params.resources_test =  "v1/"
 
 workflow test_wf {
   resources_test_file = file(params.resources_test)
@@ -15,7 +15,7 @@ workflow test_wf {
           input_r1: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R1_001.fastq"),
           input_r2: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R2_001.fastq"),
           genomeDir: resources_test_file.resolve("genomeDir/gencode.v41.star.sparse"),
-          barcodesFasta: resources_test_file.resolve("360-wells-with-ids.fasta"),
+          barcodesFasta: resources_test_file.resolve("2-wells-with-ids.fasta"),
           annotation: resources_test_file.resolve("genomeDir/gencode.v41.annotation.gtf.gz")
       ],
       [
@@ -23,7 +23,7 @@ workflow test_wf {
           input_r1: resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R1_001.fastq"),
           input_r2: resources_test_file.resolve("100k/SRR14730302/VH02001614_S8_R2_001.fastq"),
           genomeDir: resources_test_file.resolve("genomeDir/gencode.v41.star.sparse"),
-          barcodesFasta: resources_test_file.resolve("360-wells-with-ids.fasta"),
+          barcodesFasta: resources_test_file.resolve("2-wells-with-ids.fasta"),
           annotation: resources_test_file.resolve("genomeDir/gencode.v41.annotation.gtf.gz")
       ]
     ])

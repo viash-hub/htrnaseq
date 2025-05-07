@@ -5,10 +5,10 @@ def version = get_version(viash_config)
 
 workflow run_wf {
   take:
-    input_ch
+    raw_ch
 
   main:
-    htrnaseq_ch = input_ch
+    input_ch = raw_ch
       // List the FASTQ files per input directory
       // Be careful: an event per lane is created!
       | map {id, state ->
@@ -18,9 +18,23 @@ workflow run_wf {
 
       | view
 
+    save_params_ch = input_ch
+      | toSortedList()
+      | map { states ->
+        def new_id = "save_params"
+        def all_states = states.collect{it[1]}
+        def run_params_output_templates = all_states.collect{it.run_params}
+        assert run_params_output_templates.unique().size() == 1: "The value for the 'run_params' parameter is not the same across runs."
+        def new_state = ["run_params": run_params_output_templates[0], "all_states": all_states]
+        return [new_id, new_state]
+      }
+
+      | view
+
       | save_params.run(
+        key: "save_params_runner",
         fromState: {id, state ->
-          // Define the function before using it
+
           def convertPaths
           convertPaths = { value ->
             if (value instanceof java.nio.file.Path)
@@ -34,7 +48,7 @@ workflow run_wf {
           }
           
           // Apply conversion to all state values
-          def convertedState = state.collectEntries { k, v -> [(k): convertPaths(v)] }
+          def convertedState = state.all_states.collect{it.collectEntries { k, v -> [(k): convertPaths(v)] }}
           
           def yaml = new org.yaml.snakeyaml.Yaml()
           def yamlString = yaml.dump(convertedState)
@@ -43,12 +57,13 @@ workflow run_wf {
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "output": state.params
+            "output": state.run_params
           ]
         },
-        toState: ["params": "output"]
+        toState: ["run_params": "output"]
       )
-
+    
+    htrnaseq_ch = input_ch
       | listInputDir.run(
         fromState: [
           "input": "input",
@@ -93,7 +108,7 @@ workflow run_wf {
           nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
           star_qc_metrics: 'starLogs/$id.txt',
           html_report: "report.html",
-          params: null
+          run_params: null
         ],
         fromState: [
           input_r1: "r1",
@@ -129,7 +144,6 @@ workflow run_wf {
               p_data: reduce_paths(vs.collect{ it[1].p_data }),
               fastq_output: vs.collect{ it[1].fastq_output }.flatten().unique(),
               html_report: vs.collect{ it[1].html_report }[0],  // The report is for all pools
-              params: vs.collect{ it[1].params }[0],
               plain_output: vs.collect{ it[1].plain_output }[0],
               project_id: vs.collect{ it[1].project_id }[0],
               experiment_id: vs.collect{ it[1].experiment_id }[0]
@@ -137,7 +151,15 @@ workflow run_wf {
           ]
         }
 
-    results_publish_ch = grouped_ch
+    grouped_with_params_list_ch = grouped_ch.combine(save_params_ch)
+      | view
+      | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
+        def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
+        return [new_id, new_state]
+      
+      }
+
+    results_publish_ch = grouped_with_params_list_ch
       | publish_results.run(
         fromState: { id, state ->
           def project = (state.plain_output) ? id : "${state.project_id}"
@@ -161,7 +183,7 @@ workflow run_wf {
             f_data: state.f_data,
             p_data: state.p_data,
             html_report: state.html_report,
-            params: state.params,
+            run_params: state.run_params,
             output: "${id2}"
           ]
         },

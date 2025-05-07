@@ -12,6 +12,9 @@ workflow run_wf {
       }
 
       | save_params.run(
+        runIf: { id, state ->
+          state.run_params != null
+        },
         fromState: {id, state ->
           // Define the function before using it
           def convertPaths
@@ -36,10 +39,10 @@ workflow run_wf {
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "output": state.params
+            "output": state.run_params
           ]
         },
-        toState: ["params": "output"]
+        toState: ["run_params": "output"]
       )
 
     // The featureData only has one requirement: the genome annotation.
@@ -350,7 +353,7 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
-        "params": "params",
+        "run_params": "run_params",
         "_meta": "_meta",
       ])
 

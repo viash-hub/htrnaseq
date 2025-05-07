@@ -41,4 +41,4 @@ done
 
 cp -rL "$par_html_report" "$par_output/"
 
-cp -rL "$par_params" "$par_output/"
+cp -rL "$par_run_params" "$par_output/"

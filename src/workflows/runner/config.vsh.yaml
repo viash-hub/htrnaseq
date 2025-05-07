@@ -28,10 +28,11 @@ argument_groups:
         type: integer
         min: 1
         default: 10
-      - name: "--params"
+      - name: "--run_params"
         type: file
         required: false
-        default: params.$id.yaml
+        direction: output
+        default: params.yaml
   - name: Metadata arguments
     arguments:
       - name: --id
