@@ -1,3 +1,9 @@
+# htrnaseq v0.7.2
+
+## Documentation
+
+* Update README (PR #54)
+
 # htrnaseq v0.8.0
 
 ## New functionality
