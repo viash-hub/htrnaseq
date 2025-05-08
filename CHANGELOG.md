@@ -1,3 +1,9 @@
+# htrnaseq v0.8.0
+
+## Under the hood
+
+* Moved the test resources to their new location (PR 47)
+
 # htrnaseq v0.7.2
 
 ## Documentation
