@@ -54,7 +54,7 @@ workflow test_wf2 {
           input_r1: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R1_001.fastq"),
           input_r2: resources_test_file.resolve("100k/SRR14730301/VH02001612_S9_R2_001.fastq"),
           genomeDir: resources_test_file.resolve("genomeDir/gencode.v41.star.sparse"),
-          barcodesFasta: resources_test_file.resolve("360-wells-1-no-reads.fasta"),
+          barcodesFasta: resources_test_file.resolve("2-wells-1-no-reads.fasta"),
           annotation: resources_test_file.resolve("genomeDir/gencode.v41.annotation.gtf.gz")
       ],
     ])
