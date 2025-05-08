@@ -16,8 +16,6 @@ workflow run_wf {
         return [id, new_state]
       }
 
-      | view
-
     save_params_ch = input_ch
       | toSortedList()
       | map { states ->
@@ -28,8 +26,6 @@ workflow run_wf {
         def new_state = ["run_params": run_params_output_templates[0], "all_states": all_states]
         return [new_id, new_state]
       }
-
-      | view
 
       | save_params.run(
         key: "save_params_runner",
