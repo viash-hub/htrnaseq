@@ -5,16 +5,61 @@ def version = get_version(viash_config)
 
 workflow run_wf {
   take:
-    input_ch
+    raw_ch
 
   main:
-    htrnaseq_ch = input_ch
+    input_ch = raw_ch
       // List the FASTQ files per input directory
       // Be careful: an event per lane is created!
       | map {id, state ->
         def new_state = state + ["run_id": id]
         return [id, new_state]
       }
+
+    save_params_ch = input_ch
+      | toSortedList()
+      | map { states ->
+        def new_id = "save_params"
+        def all_states = states.collect{it[1]}
+        def run_params_output_templates = all_states.collect{it.run_params}
+        assert run_params_output_templates.unique().size() == 1: "The value for the 'run_params' parameter is not the same across runs."
+        def new_state = ["run_params": run_params_output_templates[0], "all_states": all_states]
+        return [new_id, new_state]
+      }
+
+      | save_params.run(
+        key: "save_params_runner",
+        fromState: {id, state ->
+
+          def convertPaths
+          convertPaths = { value ->
+            if (value instanceof java.nio.file.Path)
+              return value.toUriString()
+            else if (value instanceof List)
+              return value.collect { convertPaths(it) }
+            else if (value instanceof Collection)
+              throw new UnsupportedOperationException("Collections other than Lists are not supported")
+            else
+              return value
+          }
+          
+          // Apply conversion to all state values
+          def convertedState = state.all_states.collect{it.collectEntries { k, v -> [(k): convertPaths(v)] }}
+          
+          def yaml = new org.yaml.snakeyaml.Yaml()
+          def yamlString = yaml.dump(convertedState)
+          def encodedYaml = yamlString.bytes.encodeBase64().toString()
+          
+          return [
+            "id": id,
+            "params_yaml": encodedYaml,
+            "output": state.run_params
+          ]
+        },
+        toState: ["run_params": "output"]
+      )
+    
+    htrnaseq_ch = input_ch
       | listInputDir.run(
         fromState: [
           "input": "input",
@@ -58,7 +103,8 @@ workflow run_wf {
           eset: 'esets/$id.rds',
           nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
           star_qc_metrics: 'starLogs/$id.txt',
-          html_report: "report.html"
+          html_report: "report.html",
+          run_params: null
         ],
         fromState: [
           input_r1: "r1",
@@ -101,7 +147,14 @@ workflow run_wf {
           ]
         }
 
-    results_publish_ch = grouped_ch
+    grouped_with_params_list_ch = grouped_ch.combine(save_params_ch)
+      | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
+        def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
+        return [new_id, new_state]
+      
+      }
+
+    results_publish_ch = grouped_with_params_list_ch
       | publish_results.run(
         fromState: { id, state ->
           def project = (state.plain_output) ? id : "${state.project_id}"
@@ -125,6 +178,7 @@ workflow run_wf {
             f_data: state.f_data,
             p_data: state.p_data,
             html_report: state.html_report,
+            run_params: state.run_params,
             output: "${id2}"
           ]
         },

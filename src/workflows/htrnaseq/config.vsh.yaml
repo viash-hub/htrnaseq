@@ -88,6 +88,11 @@ argument_groups:
         direction: output
         required: true
         default: report.$id.html
+      - name: "--run_params"
+        type: file
+        direction: output
+        required: false
+        default: params.$id.yaml
 resources:
   - type: nextflow_script
     path: main.nf
@@ -121,6 +126,8 @@ dependencies:
   - name: report/create_report
     repository: local
   - name: utils/concatRuns
+    repository: local
+  - name: utils/save_params
     repository: local
 repositories:
   - name: local
