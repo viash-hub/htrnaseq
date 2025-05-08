@@ -52,7 +52,6 @@ workflow run_wf {
     // input annotation file. In turn, the featureData file can joined into the original input
     // channel which allows it to be shared across events if required.
     f_data_ch = input_ch
-
       | toSortedList()
       | flatMap {ids_and_states ->
         def annotation_files = ids_and_states.inject([:]){ old_state, id_and_state ->
@@ -62,7 +61,7 @@ workflow run_wf {
           return new_state
         }
         def file_names = annotation_files.keySet().collect{it.name}
-        assert (file_names.toSet().size() == file_names.size()),
+        assert (file_names.toSet().size() == file_names.size()), 
           "Please make sure that the annotation files have unique file names."
         def new_states = annotation_files.collect{annotation_file, value ->
           def new_state = [annotation_file.name , ["annotation": annotation_file, "event_ids": value]]

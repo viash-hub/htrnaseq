@@ -148,7 +148,6 @@ workflow run_wf {
         }
 
     grouped_with_params_list_ch = grouped_ch.combine(save_params_ch)
-      | view
       | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
         def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         return [new_id, new_state]
