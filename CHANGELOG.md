@@ -1,3 +1,12 @@
+# htrnaseq v0.8.0
+
+## New functionality
+
+* `save_params`: added a component to save workflow input parameters as yaml (PR #48).
+
+* Added `run_params` parameter to `htrnaseq` and `runner` workflows in order to save the input parameters
+  used for the workflow run (PR #48).
+
 # htrnaseq v0.7.1
 
 ## Bug fixes
@@ -10,11 +19,6 @@ fixes an issue where an integer being passed to a argument with `type: double` r
 ## Minor changes
 
 * `create_report`: bump bioconductor version to 3.21 in order to accommodate R version 4.5 (PR #52).
-
-* `save_params`: added a component to save workflow input parameters as yaml (PR #48).
-
-* Added `run_params` parameter to `htrnaseq` and `runner` workflows in order to save the input parameters
-  used for the workflow run (PR #48).
 
 # htrnaseq v0.7.0
 
