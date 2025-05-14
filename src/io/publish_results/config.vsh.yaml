@@ -32,6 +32,9 @@ argument_groups:
       - name: "--html_report"
         type: file
         required: true
+      - name: "--run_params"
+        type: file
+        required: true
   - name: Output arguments
     arguments:
       - name: --output

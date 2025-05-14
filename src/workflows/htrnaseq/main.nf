@@ -11,6 +11,40 @@ workflow run_wf {
         return [id, newState]
       }
 
+      | save_params.run(
+        runIf: { id, state ->
+          state.run_params != null
+        },
+        fromState: {id, state ->
+          // Define the function before using it
+          def convertPaths
+          convertPaths = { value ->
+            if (value instanceof java.nio.file.Path)
+              return value.toUriString()
+            else if (value instanceof List)
+              return value.collect { convertPaths(it) }
+            else if (value instanceof Collection)
+              throw new UnsupportedOperationException("Collections other than Lists are not supported")
+            else
+              return value
+          }
+          
+          // Apply conversion to all state values
+          def convertedState = state.collectEntries { k, v -> [(k): convertPaths(v)] }
+          
+          def yaml = new org.yaml.snakeyaml.Yaml()
+          def yamlString = yaml.dump(convertedState)
+          def encodedYaml = yamlString.bytes.encodeBase64().toString()
+          
+          return [
+            "id": id,
+            "params_yaml": encodedYaml,
+            "output": state.run_params
+          ]
+        },
+        toState: ["run_params": "output"]
+      )
+
     // The featureData only has one requirement: the genome annotation.
     // It can be generated straight away. Most of the time, there is one shared 
     // annotation for all of the inputs and the fData should only be calculated once.
@@ -86,8 +120,8 @@ workflow run_wf {
 
 
     concat_samples_ch = demultiplex_ch.join(f_data_ch)
-      | map {id, demutliplex_state, f_data_state ->
-        def newState = demutliplex_state + ["f_data": f_data_state["f_data"]]
+      | map {id, demultiplex_state, f_data_state ->
+        def newState = demultiplex_state + ["f_data": f_data_state["f_data"]]
         [id, newState]
       }
       | concatRuns.run(
@@ -107,8 +141,8 @@ workflow run_wf {
       )
 
     pool_ch = concat_samples_ch.join(fastq_output_directory_ch)
-      | map {id, demux_state, fastq_output_directory_state ->
-        def new_state = demux_state + fastq_output_directory_state
+      | map {id, concat_state, fastq_output_directory_state ->
+        def new_state = concat_state + fastq_output_directory_state
         return [id, new_state]
       } 
       | parallel_map.run(
@@ -317,9 +351,9 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
+        "run_params": "run_params",
         "_meta": "_meta",
       ])
-
 
   emit:
     output_ch

@@ -1,9 +1,18 @@
-# htrnaseq v0.8.0
+# htrnaseq v0.x.x
 
 ## Under the hood
 
-* Moved the test resources to their new location (PR 47)
+* Moved the test resources to their new location (PR #47).
 
+# htrnaseq v0.8.0
+
+## New functionality
+
+* `save_params`: added a component to save workflow input parameters as yaml (PR #48).
+
+* Added `run_params` parameter to `htrnaseq` and `runner` workflows in order to save the input parameters
+  used for the workflow run (PR #48).
+  
 # htrnaseq v0.7.2
 
 ## Documentation
