@@ -4,6 +4,10 @@
 
 * Fix an issue where the FASTQ files from different samples on the same sequencing run would overwrite each other (PR #56).
 
+## Under the hood
+
+* Moved the test resources to their new location (PR #47).
+
 # htrnaseq v0.8.0
 
 ## New functionality
