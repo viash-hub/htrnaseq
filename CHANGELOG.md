@@ -1,3 +1,9 @@
+# htrnaseq v0.8.1
+
+## Bug fixes
+
+* Fix an issue where the FASTQ files from different samples on the same sequencing run would overwrite each other (PR #)
+
 # htrnaseq v0.8.0
 
 ## New functionality
