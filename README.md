@@ -9,7 +9,7 @@ License](https://img.shields.io/github/license/viash-hub/htrnaseq.svg)](https://
 [![GitHub
 Issues](https://img.shields.io/github/issues/viash-hub/htrnaseq.svg)](https://github.com/viash-hub/htrnaseq/issues)
 [![Viash
-version](https://img.shields.io/badge/Viash-v0.9.2-blue.svg)](https://viash.io)
+version](https://img.shields.io/badge/Viash-v0.9.4-blue.svg)](https://viash.io)
 
 ## Introduction
 
@@ -90,7 +90,7 @@ subsampled to reduce the test runtime. We used
 seqtk sample -s1 orig/SRR14730302/VH02001614_S8_R1_001.fastq.gz 10000 > 10k/SRR14730302/VH02001614_S8_R1_001.fastq.gz
 ```
 
-This data is available at: `gs://viash-hub-resources/htrnaseq/v1/`.
+This data is available at: `gs://viash-hub-test-data/htrnaseq/v1/`.
 
 ### Run from Viash Hub
 
@@ -166,7 +166,7 @@ using the following:
 
 ``` bash
  nextflow run https://packages.viash-hub.com/vsh/htrnaseq.git \
-  -revision v0.3.0 \
+  -revision v0.8.1 \
   -main-script target/nextflow/workflows/runner/main.nf \
   --help
 ```

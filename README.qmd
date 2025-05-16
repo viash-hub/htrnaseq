@@ -113,7 +113,7 @@ Running from the CLI directly without using Viash hub is possible. The easiest i
 
 ```bash
  nextflow run https://packages.viash-hub.com/vsh/htrnaseq.git \
-  -revision v0.3.0 \
+  -revision v0.8.1 \
   -main-script target/nextflow/workflows/runner/main.nf \
   --help
 ```
