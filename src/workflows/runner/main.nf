@@ -195,10 +195,14 @@ workflow run_wf {
     fastq_publish_ch = grouped_ch
       | flatMap{id, state ->
         def new_states = state.fastq_output.collect{fastq_dir -> 
-          def new_id = fastq_dir.name // The folder name corresponds to the run
+          def run_id = fastq_dir.name // The folder name corresponds to the run
+          def sample = fastq_dir.parent.name // The parent folder name should be the sample
+          def new_id = "${run_id}/${sample}"
           def fastq_files = fastq_dir.listFiles()
           def new_state = [
-            "fastq_output": fastq_files
+            "fastq_output": fastq_files,
+            "sample_id": sample,
+            "run_id": run_id 
           ]
           return [new_id, new_state]
         }
@@ -206,9 +210,9 @@ workflow run_wf {
       }
       | publish_fastqs.run(
         fromState: { id, state ->
-          def id0 = "${id}"
+          def id0 = state.run_id
           def id1 = (state.plain_output) ? id : "${id0}/${date}"
-          def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
+          def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}/${state.sample_id}"
 
           if (id == id2) {
             println("Publising fastqs to ${params.fastq_publish_dir}")
