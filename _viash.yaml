@@ -1,5 +1,5 @@
 name: htrnaseq
-version: v0.8.0
+version: v0.8.1
 summary: |
   A workflow for high-throughput RNA-seq data analyses.
 description: |
@@ -46,7 +46,7 @@ viash_version: 0.9.4
 
 info:
   test_resources:
-    - path: gs://viash-hub-test-data/htrnaseq/v1/
+    - path: gs://viash-hub-resources/htrnaseq/v1
       dest: resources_test
 
 config_mods: |
