@@ -122,39 +122,7 @@ workflow run_wf {
         return [new_id, new_state]
       }
 
-    // Publish parameters and metadata
-    // results_publish_ch = grouped_with_params_ch
-      // | publish_results.run(
-      //   fromState: { id, state ->
-      //     def project = (state.plain_output) ? id : "${state.project_id}"
-      //     def experiment = (state.plain_output) ? id : "${state.experiment_id}"
-      //     def id0 = "${project}/${experiment}"
-      //     def id1 = (state.plain_output) ? id : "${id0}/data_processed/${date}"
-      //     def id2 = (state.plain_output) ? id : "${id1}_well_demultiplex_${version}"
-
-      //     if (id == id2) {
-      //       println("Publishing results to ${params.results_publish_dir}")
-      //     } else {
-      //       println("Publishing results to ${params.results_publish_dir}/${id2}")
-      //     }
-
-      //     [
-      //       run_params: state.run_params,
-      //       output: "${id2}"
-      //     ]
-      //   },
-      //   toState: { id, result, state -> state },
-      //   directives: [
-      //     publishDir: [
-      //       path: "${params.results_publish_dir}", 
-      //       overwrite: false,
-      //       mode: "copy"
-      //     ]
-      //   ]
-      // )
-
     // Publish demultiplexed FASTQ files
-    // | view
     fastq_publish_ch = grouped_ch
       | flatMap{id, state ->
       // Extract unique sample IDs from the output files
