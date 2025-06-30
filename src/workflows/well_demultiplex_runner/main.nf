@@ -184,10 +184,15 @@ workflow run_wf {
       | map{ id, state -> [ id, [ _meta: [ join_id: state.run_id ] ] ] }
 }
 
-def get_version(inputFile) {
+def get_version(input) {
+  def inputFile = file(input)
+  if (!inputFile.exists()) {
+    // When executing tests
+    return "unknown_version"
+  }
   def yamlSlurper = new groovy.yaml.YamlSlurper()
-  def loaded_viash_config = yamlSlurper.parse(file(inputFile))
+  def loaded_viash_config = yamlSlurper.parse(inputFile)
   def version = (loaded_viash_config.version) ? loaded_viash_config.version : "unknown_version"
-  println("Well demultiplex version to be used: ${version}")
+  println("Version to be used: ${version}")
   return version
 }

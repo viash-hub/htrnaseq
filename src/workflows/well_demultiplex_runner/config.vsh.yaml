@@ -44,7 +44,7 @@ argument_groups:
   - name: Publish arguments
     arguments:
       - name: --fastq_publish_dir
-        type: string
+        type: file
         required: true
 
 resources:
