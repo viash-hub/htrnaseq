@@ -8,6 +8,10 @@
 
 * Moved the test resources to their new location (PR #47).
 
+## Minor changes
+
+* Bump `biobox` and `craftbox` dependencies to versions `0.3.1` and `0.2.0`, respectively (PR #60).
+
 # htrnaseq v0.8.0
 
 ## New functionality
