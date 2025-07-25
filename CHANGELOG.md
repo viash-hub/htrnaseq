@@ -7,6 +7,7 @@
 ## Under the hood
 
 * Moved the test resources to their new location (PR #47).
+* Split off part of the workflow logic (`detect_demultiplexer`) from the main workflow to a dedicated subworkflow (PR #61)
 
 # htrnaseq v0.8.0
 
