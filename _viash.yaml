@@ -1,5 +1,5 @@
 name: htrnaseq
-version: v0.8.2
+version: v0.8.3
 summary: |
   A workflow for high-throughput RNA-seq data analyses.
 description: |
