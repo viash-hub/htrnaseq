@@ -1,4 +1,4 @@
-# htrnaseq v0.8.2
+# htrnaseq v0.8.3
 
 ## Minor changes
 
