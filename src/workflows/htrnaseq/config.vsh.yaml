@@ -132,6 +132,10 @@ dependencies:
 repositories:
   - name: local
     type: local
+  - name: bb
+    type: vsh
+    repo: biobox
+    tag: v0.3.1
 
 runners:
   - type: nextflow

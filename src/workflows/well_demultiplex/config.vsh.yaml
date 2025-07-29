@@ -65,7 +65,7 @@ repositories:
   - name: bb
     type: vsh
     repo: biobox
-    tag: v0.3.0
+    tag: v0.3.1
   - name: cb
     type: vsh
     repo: craftbox

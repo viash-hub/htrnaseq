@@ -4,6 +4,12 @@
 
 * Bump craftbox to v0.2.0 (PR #62).
 
+# htrnaseq v0.8.2
+
+## Under the hood
+
+* Add the package config (`_viash.yaml`) to every component's target dir. This makes introspection from, e.g. a `runner` workflow much more robust (PR #61)
+
 # htrnaseq v0.8.1
 
 ## Bug fixes
@@ -13,6 +19,10 @@
 ## Under the hood
 
 * Moved the test resources to their new location (PR #47).
+
+## Minor changes
+
+* Bump `biobox` and `craftbox` dependencies to versions `0.3.1` and `0.2.0`, respectively (PR #60).
 
 # htrnaseq v0.8.0
 
