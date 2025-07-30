@@ -191,7 +191,7 @@ workflow run_wf {
             p_data: state.p_data,
             html_report: state.html_report,
             run_params: state.run_params,
-            output: "${output_dir}"
+            output: output_dir.toString()
           ]
         },
         toState: { id, result, state -> state },
@@ -223,7 +223,6 @@ workflow run_wf {
 
     fastq_publish_ch = fastq_publish_split_ch.combine(set_publish_dirs_channel)
       | map{event -> [event[0], event[1]]}
-      | view {"HERE: $it"}
       | publish_fastqs.run(
         fromState: { id, state ->
           def output_dir = "${state.run_id}/${date}_htrnaseq_${version}/${state.sample_id}"
