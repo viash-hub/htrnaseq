@@ -16,6 +16,24 @@ workflow run_wf {
         return [id, new_state]
       }
 
+
+    // When this workflow is being used as a subworkflow, the publish directories might be defined
+    // in the state and not in params. The following snippets make sure the values are copied from state to params.
+    set_publish_dirs_channel = raw_ch
+      | toSortedList()
+      | map {ids_and_states ->
+        def publish_dir_arguments = ["results_publish_dir", "fastq_publish_dir"]
+        for (publish_dir_arg in publish_dir_arguments) {
+          if (!params.containsKey(publish_dir_arg)) {
+              def state_items = ids_and_states.collect{it[1].get(publish_dir_arg)}
+              assert state_items.toSet().size() == state_items.size(), "Items for '${publish_dir_arg}' must be unique! Found ${state_items}"
+              params[publish_dir_arg] = state_items[0]
+          }
+        }
+        ids_and_states
+      }
+
+
     save_params_ch = input_ch
       | toSortedList()
       | map { states ->
@@ -154,23 +172,17 @@ workflow run_wf {
       
       }
 
-    results_publish_ch = grouped_with_params_list_ch
+    // Use combine here in order to be sure tha the publish dirs are set in params
+    // set_publish_dirs_channel should contain 1 event; so the result of the combine
+    // contains the events from grouped_with_params_list_ch
+    results_publish_ch = grouped_with_params_list_ch.combine(set_publish_dirs_channel)
+      | map {event -> [event[0], event[1]]}
       | publish_results.run(
         fromState: { id, state ->
-          def project = (state.plain_output) ? id : "${state.project_id}"
-          def experiment = (state.plain_output) ? id : "${state.experiment_id}"
-          def id0 = "${project}/${experiment}"
-          def id1 = (state.plain_output) ? id : "${id0}/data_processed/${date}"
-          def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}"
-
-          if (id == id2) {
-            println("Publising results to ${params.results_publish_dir}")
-          } else {
-            println("Publising results to ${params.results_publish_dir}/${id2}")
-          }
+          def output_dir = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
+          println("Publising results to ${params.results_publish_dir}/${output_dir}")
 
           [
-            star_output: state.star_output,
             star_output: state.star_output,
             nrReadsNrGenesPerChrom: state.nrReadsNrGenesPerChrom,
             star_qc_metrics: state.star_qc_metrics,
@@ -179,7 +191,7 @@ workflow run_wf {
             p_data: state.p_data,
             html_report: state.html_report,
             run_params: state.run_params,
-            output: "${id2}"
+            output: "${output_dir}"
           ]
         },
         toState: { id, result, state -> state },
@@ -192,7 +204,7 @@ workflow run_wf {
         ]
       )
 
-    fastq_publish_ch = grouped_ch
+    fastq_publish_split_ch = grouped_ch
       | flatMap{id, state ->
         def new_states = state.fastq_output.collect{fastq_dir -> 
           def run_id = fastq_dir.name // The folder name corresponds to the run
@@ -208,21 +220,18 @@ workflow run_wf {
         }
         return new_states
       }
+
+    fastq_publish_ch = fastq_publish_split_ch.combine(set_publish_dirs_channel)
+      | map{event -> [event[0], event[1]]}
+      | view {"HERE: $it"}
       | publish_fastqs.run(
         fromState: { id, state ->
-          def id0 = state.run_id
-          def id1 = (state.plain_output) ? id : "${id0}/${date}"
-          def id2 = (state.plain_output) ? id : "${id1}_htrnaseq_${version}/${state.sample_id}"
-
-          if (id == id2) {
-            println("Publising fastqs to ${params.fastq_publish_dir}")
-          } else {
-            println("Publising fastqs to ${params.fastq_publish_dir}/${id2}")
-          }
+          def output_dir = "${state.run_id}/${date}_htrnaseq_${version}/${state.sample_id}"
+          println("Publising fastqs to ${params.fastq_publish_dir}/${output_dir}")
 
           [
             input: state.fastq_output,
-            output: "${id2}",
+            output: output_dir.toString(),
           ]
         },
         toState: { id, result, state -> state },
