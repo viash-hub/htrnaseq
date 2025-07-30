@@ -1,3 +1,13 @@
+# htrnaseq v0.9.0
+
+## Breaking changes
+
+* `runner`: removed `plain_output` argument (PR #63).
+
+## Minor changes
+
+* `runner`: the `fastq_publish_dir` and `results_publish_dir` can now be set using `fromState` when using the workflow as subworkflow (PR #63).
+
 # htrnaseq v0.8.3
 
 ## Minor changes
