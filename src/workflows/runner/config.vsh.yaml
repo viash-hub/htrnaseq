@@ -46,13 +46,6 @@ argument_groups:
         description: Experiment ID
         type: string
         required: true
-  - name: Annotation flags
-    arguments:
-      - name: --plain_output
-        description: |
-          Flag to indicate that the output should be stored directly under $publish_dir rather than
-          under a subdirectory structure runID/<date_time>_demultiplex_<version>/.
-        type: boolean_true
   - name: Publish arguments
     arguments:
       - name: --fastq_publish_dir
