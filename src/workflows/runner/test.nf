@@ -1,6 +1,16 @@
 import java.nio.file.Files
 import nextflow.exception.WorkflowScriptErrorException
 
+def viash_config = java.nio.file.Paths.get("${params.rootDir}/target/nextflow/workflows/runner/_viash.yaml")
+
+def get_version(inputFile) {
+  def yamlSlurper = new groovy.yaml.YamlSlurper()
+  def loaded_viash_config = yamlSlurper.parse(file(inputFile))
+  def version = (loaded_viash_config.version) ? loaded_viash_config.version : "unknown_version"
+  println("HT-RNAseq version to be used: ${version}")
+  return version
+}
+
 // Create temporary directory for the publish_dir if it is not defined
 if (!params.containsKey("publish_dir") && params.containsKey("publishDir")) {
     params.publish_dir = params.publishDir
@@ -35,7 +45,7 @@ include { runner } from params.rootDir + "/target/nextflow/workflows/runner/main
 params.resources_test = params.rootDir + "/resources_test"
 
 workflow test_wf {
-
+  pipeline_version = get_version(viash_config)
   resources_test = file(params.resources_test)
 
   // results_publish_dir and results_publish_dir are inherited using params
@@ -104,9 +114,9 @@ workflow test_wf {
             def expected_run_folders = ["run_1", "run_2", "run_3"].toSet()
             assert found_fastq_folders == expected_run_folders, "Expected correct run folders to be present. Found: ${found_fastq_folders}"
             unique_dirs = [
-                "run1": files("${fastq_subdir.toUriString()}/run_1/*_htrnaseq_unknown_version", type: 'any'),
-                "run2": files("${fastq_subdir.toUriString()}/run_2/*_htrnaseq_unknown_version", type: 'any'), 
-                "run3": files("${fastq_subdir.toUriString()}/run_3/*_htrnaseq_unknown_version", type: 'any'),  
+                "run1": files("${fastq_subdir.toUriString()}/run_1/*_htrnaseq_${pipeline_version}", type: 'any'),
+                "run2": files("${fastq_subdir.toUriString()}/run_2/*_htrnaseq_${pipeline_version}", type: 'any'), 
+                "run3": files("${fastq_subdir.toUriString()}/run_3/*_htrnaseq_${pipeline_version}", type: 'any'),  
             ]
             assert unique_dirs.every{it.value.size() == 1}
             unique_dirs = unique_dirs.collectEntries{k, v -> [k, v[0]]}
@@ -136,7 +146,7 @@ workflow test_wf {
             assert fastq_subdir.isDirectory()
             def expected_subdir = file("${results_subdir}/foo/bar/data_processed", type: 'any')
             assert expected_subdir.isDirectory()
-            def expected_result_dir = files("${expected_subdir}/*_htrnaseq_unknown_version", type: 'any')
+            def expected_result_dir = files("${expected_subdir}/*_htrnaseq_${pipeline_version}", type: 'any')
             assert expected_result_dir.size() == 1
             expected_result_dir = expected_result_dir[0]
             assert expected_result_dir.isDirectory()
