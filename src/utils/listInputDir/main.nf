@@ -18,7 +18,7 @@ workflow run_wf {
 
         println("Extracting information from fastq/fasta filenames")
         def processed_fastqs = allFastqs.collect { f ->
-          def regex = ~/^(\w+)_S(\d+)_(L(\d+)_)?R(\d)_(\d+)\.fast[qa](\.gz)?$/
+          def regex = ~/^(\S+)_S(\d+)_(L(\d+)_)?R(\d)_(\d+)\.fast[qa](\.gz)?$/
           def validFastq = f.name ==~ regex
 
           assert validFastq: "${f} does not match the regex ${regex}"
