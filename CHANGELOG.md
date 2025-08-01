@@ -1,3 +1,9 @@
+# htrnaseq v0.9.1
+
+## Bug fixes
+
+* Reverted functionality to set `fastq_publish_dir` and `results_publish_dir` using fromState (PR #64).
+
 # htrnaseq v0.9.0
 
 ## Breaking changes
