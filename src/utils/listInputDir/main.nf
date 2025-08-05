@@ -28,7 +28,7 @@ workflow run_wf {
           // Remove the trailing '_'
           def lane_remove_trailing = lane == null ? "" : lane.replaceAll('_$', "")
           def sample_id = parsedFastq[0][1]
-          if (sample_id in state.ignore) {
+          if (sample_id in ["Undetermined"] || (state.pools && !state.pools.isEmpty() && !state.pools.contains(sample_id))) {
             return null
           }
           return [
