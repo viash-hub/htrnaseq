@@ -9,7 +9,7 @@ arguments:
     required: true
     example: fastq_dir
   - name: --pools
-    description: "Pool names to include. By default include all pools are included."
+    description: "Pool names to include. By default all pools are selected for analysis."
     type: string
     multiple: true
   - name: "--r1_output"
