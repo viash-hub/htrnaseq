@@ -1,3 +1,10 @@
+# htrnaseq v0.10.0
+
+## Breaking changes
+
+* `runner`: Replaced `ignore` parameter with `pools` paremeter. When set, only the selected pools are included for analysis.
+  By default all pools are selected (PR #66)
+
 # htrnaseq v0.9.1
 
 ## Bug fixes

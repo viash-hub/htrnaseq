@@ -63,7 +63,7 @@ workflow run_wf {
       | listInputDir.run(
         fromState: [
           "input": "input",
-          "ignore": "ignore",
+          "pools": "pools",
         ],
         toState: { id, state, result ->
           def clean_state = state.findAll{ it.key != "input" }
