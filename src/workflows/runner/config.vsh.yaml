@@ -8,7 +8,7 @@ argument_groups:
         description: |
           Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/<demultiplex_dir>`.
           Must contains FASTQ files in the format `PoolName_S*_L*_R1_001.fastq.gz` where
-            * PooName is a unique ID for the microwell plates or combination thereof.
+            * PoolName is a unique ID for the microwell plates or combination thereof.
             * S followed by a running number: the sample number based on the order
               that samples are listed in the sample sheet (that was used to demultiplex the pools)
               starting with 1 (e.g. S1)
