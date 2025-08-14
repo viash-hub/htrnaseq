@@ -61,6 +61,8 @@ dependencies:
     repository: bb
   - name: concat_text
     repository: cb
+  - name: move_files_to_directory
+    repository: cb
 repositories:
   - name: bb
     type: vsh

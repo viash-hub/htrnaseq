@@ -5,6 +5,11 @@
 * `runner`: Replaced `ignore` parameter with `pools` paremeter. When set, only the selected pools are included for analysis.
   By default all pools are selected (PR #66)
 
+## Bug fixes
+
+* Fix an error where processing FASTQ files from multiple lanes would cause an assertion error requesting the well demultiplexing
+  output to reside in one directory.
+
 # htrnaseq v0.9.1
 
 ## Bug fixes

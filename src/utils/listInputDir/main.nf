@@ -57,7 +57,7 @@ workflow run_wf {
               def new_state = fastq_state +
                 r1_state.findAll{it.key in ["sample_id", "sample", "lane"]} + 
                 ["_meta": ["join_id": id]]
-              def new_id = lane?.trim() ? sample_id : "${sample_id}_${lane}".toString()
+              def new_id = lane?.trim() ? "${sample_id}_${lane}".toString() : sample_id
               return [new_id, new_state]
             }
             return result

@@ -11,3 +11,12 @@ nextflow \
   -entry test_wf \
   -resume \
   -profile docker,local
+
+nextflow \
+  run . \
+  -main-script src/workflows/runner/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_wf_with_lanes \
+  -resume \
+  -profile docker,local
+
