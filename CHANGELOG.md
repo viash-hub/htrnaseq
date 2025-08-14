@@ -8,7 +8,7 @@
 ## Bug fixes
 
 * Fix an error where processing FASTQ files from multiple lanes would cause an assertion error requesting the well demultiplexing
-  output to reside in one directory.
+  output to reside in one directory (PR #67).
 
 # htrnaseq v0.9.1
 
