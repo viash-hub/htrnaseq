@@ -5,6 +5,15 @@
 * `runner`: Replaced `ignore` parameter with `pools` paremeter. When set, only the selected pools are included for analysis.
   By default all pools are selected (PR #66)
 
+## Bug fixes
+
+* Fix an error where processing FASTQ files from multiple lanes would cause an assertion error requesting the well demultiplexing
+  output to reside in one directory (PR #67).
+
+# Minor changes
+
+* `generate_well_statistics`: update base image to `python:3.13-trixie` (PR #67).
+
 # htrnaseq v0.9.1
 
 ## Bug fixes

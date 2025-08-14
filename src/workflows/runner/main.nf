@@ -94,6 +94,7 @@ workflow run_wf {
         ]
         return [id, new_state]
       }
+      | view {"Pool inputs after listing directory: $it"}
       | htrnaseq.run(
         args: [
           f_data: 'fData/$id.txt',
