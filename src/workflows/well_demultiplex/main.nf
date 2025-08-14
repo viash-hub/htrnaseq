@@ -248,8 +248,10 @@ workflow run_wf {
         def output_state = ["output_r1": output_r1, "output_r2": output_r2, "pool_and_run_id": pools[0]]
         return [id, output_state]
       }
-      // The concatenation of lanes 
-      // 
+      // The concatenation of lanes happens in different work directories (each well is processed a different 
+      // concat_text process). Here we make sure that the FASTQ files are gathered in a single directory. 
+      // This could be skipped when no concatenation was done since cutadapt will output in a directory already.
+      // But since we are copying symlinks most of the time there is almost no performance penalty here.
       | move_files_to_directory.run(
         fromState: { id, state ->
           [
