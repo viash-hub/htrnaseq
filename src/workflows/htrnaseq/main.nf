@@ -95,7 +95,7 @@ workflow run_wf {
         toState: {id, result, state ->
           def all_fastq = result.output_r1 + result.output_r2
           def output_dir = all_fastq.collect{it.parent}.unique()
-          assert output_dir.size() == 1, "Expected output from well demultiplexing to reside into one directory."
+          assert output_dir.size() == 1, "Expected output from well demultiplexing (id $id) to reside into one directory. Found: $output_dir"
           def new_state = state + [
             "input_r1": result.output_r1,
             "input_r2": result.output_r2,

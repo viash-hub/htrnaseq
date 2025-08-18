@@ -11,6 +11,10 @@ workflow run_wf {
       must be started multiple times and we need an event per lane. The events are
       created by taking the R1 and R2 pairs from the input lists. The index of the elements
       in these lists are added to the ID in order to make them unique.
+
+      The same pools may be present in multiple sequencing runs. Here, the events must be unique
+      across boths runs and samples. When called from the htrnaseq workflow; the events have the
+      format '{pool_id}/{run_id}'
       */
       | flatMap {id, state ->
         assert state.input_r1.size() == state.input_r2.size(), \
@@ -24,7 +28,7 @@ workflow run_wf {
           def newState = state + [
             "input_r1": state.input_r1[0],
             "input_r2": state.input_r2[0],
-            "pool": id,
+            "pool_and_run_id": id,
             "n_lanes": 1,
             "lane_sorting": 1,
           ]
@@ -39,7 +43,7 @@ workflow run_wf {
           def single_input_r2 = input_pair[1]
           def newState = state + ["input_r1": single_input_r1,
                                   "input_r2": single_input_r2,
-                                  "pool": id,
+                                  "pool_and_run_id": id,
                                   "n_lanes": state.input_r1.size(),
                                   "lane_sorting": index]
           def newId = id + "_" + index
@@ -49,15 +53,13 @@ workflow run_wf {
       | cutadapt.run(
         directives: [label: ["highmem", "midcpu"]],
         fromState: { id, state ->
-          // Remark: the fastq path part may seem superfluous but is necessary for publising later
-          def new_output = ("fastq/${id}/*_001.fastq")
           [
             input: state.input_r1,
             input_r2: state.input_r2,
             no_indels: true,
             action: "none",
             front_fasta: state.barcodesFasta,
-            output: new_output,
+            output: "*_001.fastq",
             error_rate: 0.10,
             demultiplex_mode: "single",
             output_r1: state.output_r1,
@@ -66,7 +68,7 @@ workflow run_wf {
         },
         toState: { id, result, state ->
           def newState = [
-            "pool": state.pool,
+            "pool_and_run_id": state.pool_and_run_id,
             "n_lanes": state.n_lanes,
             "output": result.output,
             "lane_sorting": state.lane_sorting,
@@ -87,11 +89,11 @@ workflow run_wf {
           def pair_end = path_as_string.endsWith("_R1_001.fastq") ? "R1" : "R2"
           // Use the start of the file
           def barcode_id = p.name - ~/_R(1|2)_001\.fastq$/
-          def new_id = state.pool + "__" + barcode_id
+          def new_id = state.pool_and_run_id + "__" + barcode_id
           [
             new_id,
             [
-              "pool": state.pool,
+              "pool_and_run_id": state.pool_and_run_id,
               "barcode_id": barcode_id,
               "output": p,
               "pair_end": pair_end,
@@ -140,7 +142,7 @@ workflow run_wf {
           def (first, second) = pair
           def should_be_the_same = [
             "barcode_id",
-            "pool",
+            "pool_and_run_id",
             "lane_sorting",
           ]
           should_be_the_same.each { attr_to_check ->
@@ -194,8 +196,12 @@ workflow run_wf {
         // It is the Id by which the events were joined using groupTuple
         return [group_key.target, new_state]
       }
+      | view {"State after running cutadapt: $it"}
       // TODO: Expand this into matching a whitelist/blacklist of barcodes
       // ... and turn into separate component
+
+      // This is contatenation of the FASTQ files from different lanes
+      // Concatenation of FASTQ files from the different runs is done later.
       | concat_text.run(
         directives: [label: ["lowmem", "lowcpu"]],
         key: "concat_txt_r1",
@@ -204,10 +210,7 @@ workflow run_wf {
           [
             input: state.output_r1,
             gzip_output: false,
-            // Remark: the fastq path part may seem superfluous but is necessary for publising later
-            // Also: match this with the specified output file names from cutadapt!
-            // Otherwise, the output file names will differ depending on wether concatenation is done or not
-            output: "fastq/${state.pool}/${state.barcode_id}_R1_001.fastq"
+            output: "${state.barcode_id}_R1_001.fastq"
           ]
         },
         toState: { id, result, state ->
@@ -223,10 +226,7 @@ workflow run_wf {
           [
             input: state.output_r2,
             gzip_output: false,
-            // Remark: the fastq path part may seem superfluous but is necessary for publising later
-            // Also: match this with the specified output file names from cutadapt!
-            // Otherwise, the output file names will differ depending on wether concatenation is done or not
-            output: "fastq/${state.pool}/${state.barcode_id}_R2_001.fastq",
+            output: "${state.barcode_id}_R2_001.fastq",
           ]
         },
         toState: { id, result, state ->
@@ -236,16 +236,39 @@ workflow run_wf {
       )
       // Group the concatenated files back on pool level
       | map {id, state ->
-        def new_event = [state.pool, state]
+        def new_event = [state.pool_and_run_id, state]
         return new_event
       }
       | groupTuple(by: 0, sort: {a, b -> a.barcode_id <=> b.barcode_id})
       | map {id, states ->
         def output_r1 = states.collect{it.output_r1}.flatten()
         def output_r2 = states.collect{it.output_r2}.flatten()
-        def output_state = ["output_r1": output_r1, "output_r2": output_r2]
+        def pools = states.collect{it.pool_and_run_id}
+        assert pools.toSet().size() == 1, "Unexpected state: pool ID to be unique. Found: ${pools}."
+        def output_state = ["output_r1": output_r1, "output_r2": output_r2, "pool_and_run_id": pools[0]]
         return [id, output_state]
       }
+      // The concatenation of lanes happens in different work directories (each well is processed a different 
+      // concat_text process). Here we make sure that the FASTQ files are gathered in a single directory. 
+      // This could be skipped when no concatenation was done since cutadapt will output in a directory already.
+      // But since we are copying symlinks most of the time there is almost no performance penalty here.
+      | move_files_to_directory.run(
+        fromState: { id, state ->
+          [
+            "input": state.output_r1 + state.output_r2,
+            // Remark: the fastq path part may seem superfluous but is necessary for publising later
+            "output": "fastq/${state.pool_and_run_id}/",
+            "keep_symbolic_links": true
+          ]
+        },
+        toState: {id, result, state ->
+          def new_state = [
+            "output_r1": state.output_r1.collect{result.output.resolve(it.name)},
+            "output_r2": state.output_r2.collect{result.output.resolve(it.name)},
+          ]
+          new_state
+        }
+      )
 
   emit:
     output_ch
