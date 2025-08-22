@@ -66,10 +66,26 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-    - name: "--eset_output"
-      type: file
-      direction: output
-      default: esets
+      - name: "--star_output_dir"
+        type: file
+        direction: output
+        default: "star_output"
+      - name: "--qc_metrics_dir"
+        type: file
+        direction: output
+        default: "qc_metrics"
+      - name: "--eset_dir"
+        type: file
+        direction: output
+        default: "esets"
+      - name: "--data_dir"
+        type: file
+        direction: output
+        default: "data"
+      - name: "--reports_dir"
+        type: file
+        direction: output
+        default: "reports"
 
 resources:
   - type: nextflow_script

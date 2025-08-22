@@ -158,8 +158,14 @@ workflow run_wf {
     results_publish_ch = grouped_with_params_list_ch
       | publish_results.run(
         fromState: { id, state ->
-          def output_dir = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
-          println("Publising results to ${params.results_publish_dir}/${output_dir}")
+          def prefix = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
+          def star_output_dir_out = "${prefix}/${state.star_output_dir}"
+          def qc_metrics_dir_out = "${prefix}/${state.qc_metrics_dir}"
+          def eset_dir_out = "${prefix}/${state.eset_dir}"
+          def data_dir_out = "${prefix}/${state.data_dir}"
+          def reports_dir_out = "${prefix}/${state.reports_dir}"
+
+          println("Publising results to ${params.results_publish_dir}/${prefix}")
 
           [
             star_output: state.star_output,
@@ -170,10 +176,14 @@ workflow run_wf {
             p_data: state.p_data,
             html_report: state.html_report,
             run_params: state.run_params,
-            output: output_dir.toString()
+            star_output_dir: star_output_dir_out,
+            qc_metrics_dir: qc_metrics_dir_out,
+            eset_dir: eset_dir_out,
+            data_dir: data_dir_out,
+            reports_dir: reports_dir_out
           ]
         },
-        toState: { id, result, state -> state + ["eset_output": state.eset] },
+        toState: { id, result, state -> result },
         directives: [
           publishDir: [
             path: "${params.results_publish_dir}", 
@@ -220,7 +230,9 @@ workflow run_wf {
       )
 
     output_ch = results_publish_ch
-      | setState(["eset_output"])
+      | view
+      | setState(["eset_dir"])
+      | view
 
   emit:
     grouped_ch
