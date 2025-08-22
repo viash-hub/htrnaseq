@@ -173,7 +173,7 @@ workflow run_wf {
             output: output_dir.toString()
           ]
         },
-        toState: { id, result, state -> state },
+        toState: { id, result, state -> state + ["eset_output": state.eset] },
         directives: [
           publishDir: [
             path: "${params.results_publish_dir}", 
@@ -218,6 +218,9 @@ workflow run_wf {
           ]
         ]
       )
+
+    output_ch = results_publish_ch
+      | setState(["eset_output"])
 
   emit:
     grouped_ch

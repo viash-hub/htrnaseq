@@ -64,6 +64,12 @@ argument_groups:
       - name: --results_publish_dir
         type: string
         required: true
+  - name: Output arguments
+    arguments:
+    - name: "--eset_output"
+      type: file
+      direction: output
+      default: esets
 
 resources:
   - type: nextflow_script
