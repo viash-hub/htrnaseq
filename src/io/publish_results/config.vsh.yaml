@@ -37,11 +37,34 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-      - name: --output
+      - name: --output_dir
         type: file
         direction: output
-        # ID is the well barcode
-        default: "$id/"
+        description: "Base output directory for single files"
+      - name: --star_output_dir
+        type: file
+        direction: output
+        default: "star_output"
+      - name: --nrReadsNrGenesPerChrom_dir
+        type: file
+        direction: output
+        default: "nrReadsNrGenesPerChrom"
+      - name: --star_qc_metrics_dir
+        type: file
+        direction: output
+        default: "starLogs"
+      - name: --eset_dir
+        type: file
+        direction: output
+        default: "esets"
+      - name: --f_data_dir
+        type: file
+        direction: output
+        default: "fData"
+      - name: --p_data_dir
+        type: file
+        direction: output
+        default: "pData"
 
 resources:
   - type: bash_script

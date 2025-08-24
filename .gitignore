@@ -1,5 +1,6 @@
 target
 testData
+resources_test
 
 # Nextflow related files
 .nextflow
