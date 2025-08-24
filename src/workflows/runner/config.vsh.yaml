@@ -66,26 +66,34 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
+      - name: "--output_dir"
+        type: file
+        direction: output
+        description: "Base output directory for single files"
       - name: "--star_output_dir"
         type: file
         direction: output
         default: "star_output"
-      - name: "--qc_metrics_dir"
+      - name: "--nrReadsNrGenesPerChrom_dir"
         type: file
         direction: output
-        default: "qc_metrics"
+        default: "nrReadsNrGenesPerChrom"
+      - name: "--star_qc_metrics_dir"
+        type: file
+        direction: output
+        default: "starLogs"
       - name: "--eset_dir"
         type: file
         direction: output
         default: "esets"
-      - name: "--data_dir"
+      - name: "--f_data_dir"
         type: file
         direction: output
-        default: "data"
-      - name: "--reports_dir"
+        default: "fData"
+      - name: "--p_data_dir"
         type: file
         direction: output
-        default: "reports"
+        default: "pData"
 
 resources:
   - type: nextflow_script
