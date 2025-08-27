@@ -18,6 +18,5 @@ nextflow \
   -config ./src/config/labels.config \
   -entry test_wf_with_lanes \
   -resume \
-  -profile docker,local \
-  --publishDir foo
+  -profile docker,local
 
