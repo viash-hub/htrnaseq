@@ -66,10 +66,6 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-      - name: "--output_dir"
-        type: file
-        direction: output
-        description: "Base output directory for single files"
       - name: "--star_output_dir"
         type: file
         direction: output
@@ -89,7 +85,7 @@ argument_groups:
       - name: "--f_data_dir"
         type: file
         direction: output
-        default: "fData"
+        default: "./"
       - name: "--p_data_dir"
         type: file
         direction: output
@@ -99,6 +95,7 @@ resources:
   - type: nextflow_script
     path: main.nf
     entrypoint: run_wf
+  - path: disable_publishfiles_process.config
 
 test_resources:
   - type: nextflow_script
@@ -119,6 +116,9 @@ dependencies:
 
 runners:
   - type: nextflow
+    config: 
+      script: 
+        - includeConfig("disable_publishfiles_process.config")
 
 engines:
   - type: native

@@ -36,7 +36,8 @@ if (!params.containsKey("publish_dir")) {
 
 params.fastq_publish_dir = (file(params.publish_dir) / "fastq").toUriString()
 params.results_publish_dir = (file(params.publish_dir) / "results").toUriString()
-
+assert file(params.fastq_publish_dir).isEmpty()
+assert file(params.results_publish_dir).isEmpty()
 
 // The module inherits the parameters defined before the include statement, 
 // therefore any parameters set afterwards will not be used by the module.

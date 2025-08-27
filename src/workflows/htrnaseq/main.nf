@@ -344,7 +344,6 @@ workflow run_wf {
       | setState([
         "star_output": "star_output",
         "fastq_output": "fastq_output_directory",
-        "star_output": "star_output",
         "nrReadsNrGenesPerChrom": "nrReadsNrGenesPerChromPool",
         "star_qc_metrics": "star_qc_metrics",
         "eset": "eset",

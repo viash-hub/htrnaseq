@@ -6,7 +6,24 @@ echo "Publishing results to multiple output directories"
 
 # Create output directories for multiple files
 echo "Creating output directories..."
-mkdir -p "$par_output_dir" && echo "$par_output_dir created"
+
+path_pars=(
+  par_star_output_dir
+  par_nrReadsNrGenesPerChrom_dir
+  par_star_qc_metrics_dir
+  par_eset_dir
+  par_f_data_dir
+  par_p_data_dir
+  par_html_report_output
+  par_run_params_output
+)
+
+for par in ${unset_if_false[@]}; do
+    curr_val="${!par}"
+    new_value=$(realpath --canonicalize-missing "$curr_val")
+    local -g "$unset_if_false=$new_value"
+done
+
 mkdir -p "$par_star_output_dir" && echo "$par_star_output_dir created"
 mkdir -p "$par_nrReadsNrGenesPerChrom_dir" && echo "$par_nrReadsNrGenesPerChrom_dir created"  
 mkdir -p "$par_star_qc_metrics_dir" && echo "$par_star_qc_metrics_dir created"
@@ -64,11 +81,13 @@ done
 
 echo
 echo "Copying single files directly..."
-echo "Copying $par_html_report to $par_output_dir/"
-cp -rL "$par_html_report" "$par_output_dir/"
+mkdir -p $(dirname "$par_html_report_output")
+echo "Copying $par_html_report to $par_html_report_output"
+cp -L "$par_html_report" "$par_html_report_output"
 
-echo "Copying $par_run_params to $par_output_dir/"
-cp -rL "$par_run_params" "$par_output_dir/"
+echo "Copying $par_run_params to $par_run_params_output"
+mkdir -p $(dirname "$par_run_params_output")
+cp -L "$par_run_params" "$par_run_params_output"
 
 echo
 echo "Publishing completed successfully!"

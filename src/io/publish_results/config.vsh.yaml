@@ -35,12 +35,10 @@ argument_groups:
       - name: "--run_params"
         type: file
         required: true
-  - name: Output arguments
+  - name: Output directory
+    description: |
+      Determines the name of output directories
     arguments:
-      - name: --output_dir
-        type: file
-        direction: output
-        description: "Base output directory for single files"
       - name: --star_output_dir
         type: file
         direction: output
@@ -60,11 +58,21 @@ argument_groups:
       - name: --f_data_dir
         type: file
         direction: output
-        default: "fData"
+        default: "./"
       - name: --p_data_dir
         type: file
         direction: output
         default: "pData"
+  - name: "Output file arguments"
+    description: Determines the name of output files
+    arguments:
+      - name: "--run_params_output"
+        type: file
+        direction: output
+      - name: "--html_report_output"
+        type: file
+        direction: output
+
 
 resources:
   - type: bash_script
