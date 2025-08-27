@@ -100,6 +100,17 @@ workflow test_wf {
     | toSortedList()
     | map {events ->
         assert events.size() == 1, "Expected one events to be output, found ${events.size()}"
+        events
+    }
+    | map {states -> 
+        def output_state = states[0]
+        assert output_state.eset_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.rds", "VH02001614.rds"].toSet()
+        assert output_state.star_output_dir.listFiles().collect{it.name}.toSet() == ["VH02001612", "VH02001614"].toSet()
+        ["VH02001612", "VH02001614"].each{it ->
+           assert output_state.star_output_dir.resolve(it).listFiles().collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
+        }
+        assert output_state.star_qc_metrics_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
+        assert output_state.nrReadsNrGenesPerChrom_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
     }
 
 
