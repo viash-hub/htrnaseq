@@ -141,7 +141,6 @@ workflow run_wf {
         def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         return [new_id, new_state]
       }
-      | view {"HERE: $it"}
       | toSortedList
       | map{ vs ->
           def states = vs.collect{it[1]}
@@ -199,7 +198,6 @@ workflow run_wf {
           new_state = new_state + state_unique_keys + state_collect
           [states[0].run_id, new_state]  
       }
-      | view {"RESULTS_PUB: $it"}
       | publish_results.run(
         fromState: { id, state ->
           def prefix = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
