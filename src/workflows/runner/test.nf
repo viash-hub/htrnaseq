@@ -36,7 +36,8 @@ if (!params.containsKey("publish_dir")) {
 
 params.fastq_publish_dir = (file(params.publish_dir) / "fastq").toUriString()
 params.results_publish_dir = (file(params.publish_dir) / "results").toUriString()
-
+assert file(params.fastq_publish_dir).isEmpty()
+assert file(params.results_publish_dir).isEmpty()
 
 // The module inherits the parameters defined before the include statement, 
 // therefore any parameters set afterwards will not be used by the module.
@@ -99,6 +100,17 @@ workflow test_wf {
     | toSortedList()
     | map {events ->
         assert events.size() == 1, "Expected one events to be output, found ${events.size()}"
+        events
+    }
+    | map {states -> 
+        def output_state = states[0][1]
+        assert output_state.eset_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.rds", "VH02001614.rds"].toSet()
+        assert output_state.star_output_dir.listFiles().collect{it.name}.toSet() == ["VH02001612", "VH02001614"].toSet()
+        ["VH02001612", "VH02001614"].each{it ->
+           assert output_state.star_output_dir.resolve(it).listFiles().collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
+        }
+        assert output_state.star_qc_metrics_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
+        assert output_state.nrReadsNrGenesPerChrom_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
     }
 
 
@@ -172,7 +184,7 @@ workflow test_wf {
             assert files("${star_output}/VH02001614/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
             assert file("${expected_result_dir}/report.html").isFile()
             assert file("${expected_result_dir}/params.yaml").isFile()
-            assert file("${expected_result_dir}/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
+            assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
 
         } catch (Exception e) {
             throw new WorkflowScriptErrorException("Integration test failed!", e)
@@ -309,7 +321,7 @@ workflow test_wf_with_lanes {
             assert files("${star_output}/VH02001614/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
             assert file("${expected_result_dir}/report.html").isFile()
             assert file("${expected_result_dir}/params.yaml").isFile()
-            assert file("${expected_result_dir}/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
+            assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
 
         } catch (Exception e) {
             throw new WorkflowScriptErrorException("Integration test failed!", e)

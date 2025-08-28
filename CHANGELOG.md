@@ -1,5 +1,17 @@
 # htrnaseq v0.11.0
 
+## Breaking changes
+
+* `runner`: feature annotation data (fData) is now output to a subfolder `fData` (PR #68).
+
+## New features
+
+* `runner`: add output results to state in order for the workflow to be used as subworkflow (PR #68).
+
+## Bug fixes
+
+* `runner`: disable `publishFilesProc` because this workflow handles publishing itself (PR #68).
+
 ## Minor changes
 
 * Bump craftbox to v0.3.0 (PR #69).
