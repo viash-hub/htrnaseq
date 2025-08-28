@@ -64,11 +64,38 @@ argument_groups:
       - name: --results_publish_dir
         type: string
         required: true
+  - name: Output arguments
+    arguments:
+      - name: "--star_output_dir"
+        type: file
+        direction: output
+        default: "star_output"
+      - name: "--nrReadsNrGenesPerChrom_dir"
+        type: file
+        direction: output
+        default: "nrReadsNrGenesPerChrom"
+      - name: "--star_qc_metrics_dir"
+        type: file
+        direction: output
+        default: "starLogs"
+      - name: "--eset_dir"
+        type: file
+        direction: output
+        default: "esets"
+      - name: "--f_data_dir"
+        type: file
+        direction: output
+        default: "fData"
+      - name: "--p_data_dir"
+        type: file
+        direction: output
+        default: "pData"
 
 resources:
   - type: nextflow_script
     path: main.nf
     entrypoint: run_wf
+  - path: disable_publishfiles_process.config
 
 test_resources:
   - type: nextflow_script
@@ -89,6 +116,9 @@ dependencies:
 
 runners:
   - type: nextflow
+    config: 
+      script: 
+        - includeConfig("disable_publishfiles_process.config")
 
 engines:
   - type: native
