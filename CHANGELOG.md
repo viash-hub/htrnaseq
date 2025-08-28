@@ -1,3 +1,9 @@
+# htrnaseq v0.11.0
+
+## Minor changes
+
+* Bump craftbox to v0.3.0 (PR #69).
+
 # htrnaseq v0.10.0
 
 ## Breaking changes
