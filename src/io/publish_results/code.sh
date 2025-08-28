@@ -18,10 +18,10 @@ path_pars=(
   par_run_params_output
 )
 
-for par in ${unset_if_false[@]}; do
+for par in ${path_pars[@]}; do
     curr_val="${!par}"
     new_value=$(realpath --canonicalize-missing "$curr_val")
-    local -g "$unset_if_false=$new_value"
+    declare -g "$par=$new_value"
 done
 
 mkdir -p "$par_star_output_dir" && echo "$par_star_output_dir created"

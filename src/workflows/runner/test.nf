@@ -103,7 +103,7 @@ workflow test_wf {
         events
     }
     | map {states -> 
-        def output_state = states[0]
+        def output_state = states[0][1]
         assert output_state.eset_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.rds", "VH02001614.rds"].toSet()
         assert output_state.star_output_dir.listFiles().collect{it.name}.toSet() == ["VH02001612", "VH02001614"].toSet()
         ["VH02001612", "VH02001614"].each{it ->
