@@ -12,6 +12,10 @@
 
 * `runner`: disable `publishFilesProc` because this workflow handles publishing itself (PR #68).
 
+## Minor changes
+
+* Bump craftbox to v0.3.0 (PR #69).
+
 # htrnaseq v0.10.0
 
 ## Breaking changes
