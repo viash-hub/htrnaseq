@@ -85,7 +85,7 @@ argument_groups:
       - name: "--f_data_dir"
         type: file
         direction: output
-        default: "./"
+        default: "fData"
       - name: "--p_data_dir"
         type: file
         direction: output

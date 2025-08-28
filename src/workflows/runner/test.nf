@@ -184,7 +184,7 @@ workflow test_wf {
             assert files("${star_output}/VH02001614/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
             assert file("${expected_result_dir}/report.html").isFile()
             assert file("${expected_result_dir}/params.yaml").isFile()
-            assert file("${expected_result_dir}/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
+            assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
 
         } catch (Exception e) {
             throw new WorkflowScriptErrorException("Integration test failed!", e)
@@ -321,7 +321,7 @@ workflow test_wf_with_lanes {
             assert files("${star_output}/VH02001614/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
             assert file("${expected_result_dir}/report.html").isFile()
             assert file("${expected_result_dir}/params.yaml").isFile()
-            assert file("${expected_result_dir}/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
+            assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
 
         } catch (Exception e) {
             throw new WorkflowScriptErrorException("Integration test failed!", e)
