@@ -26,7 +26,6 @@ workflow run_wf {
         def new_state = ["run_params": run_params_output_templates[0], "all_states": all_states]
         return [new_id, new_state]
       }
-
       | save_params.run(
         key: "save_params_runner",
         fromState: {id, state ->
@@ -60,6 +59,19 @@ workflow run_wf {
       )
     
     htrnaseq_ch = input_ch
+      | map { id, state -> 
+        // The argument names for this workflow and the htrnaseq workflow may overlap
+        // here, we store a copy in order to make sure to not accidentally overwrite the state.
+        def new_state = state + [
+          "star_output_dir_workflow": state.star_output_dir,
+          "nrReadsNrGenesPerChrom_dir_workflow": state.nrReadsNrGenesPerChrom_dir,
+          "star_qc_metrics_dir_workflow": state.star_qc_metrics_dir,
+          "eset_dir_workflow": state.eset_dir,
+          "f_data_dir_workflow": state.f_data_dir,
+          "p_data_dir_workflow": state.p_data_dir
+        ]
+        return [id, new_state]
+      }
       | listInputDir.run(
         fromState: [
           "input": "input",
@@ -119,49 +131,81 @@ workflow run_wf {
         toState: { id, result, state -> state + result }
       )
 
-      // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
-      // but for publishing the results, this is not handy because we want to use the $id
-      // variable as a pointer to the target data.
-      //
-      // So, we should combine everything together
-      //
-      // project_id / experiment_id / "data_processed" / date_workflow
-    grouped_ch = htrnaseq_ch
-      | toSortedList
-      | map{ vs ->
-          def all_fastqs
-          [
-            vs[0][1].run_id, // The original ID
-            [
-              star_output: reduce_paths(vs.collect{ it[1].star_output }.flatten()),
-              nrReadsNrGenesPerChrom: reduce_paths(vs.collect{ it[1].nrReadsNrGenesPerChrom }),
-              star_qc_metrics: reduce_paths(vs.collect{ it[1].star_qc_metrics }),
-              eset: reduce_paths(vs.collect{ it[1].eset }),
-              f_data: reduce_paths(vs.collect{ it[1].f_data }),
-              p_data: reduce_paths(vs.collect{ it[1].p_data }),
-              fastq_output: vs.collect{ it[1].fastq_output }.flatten().unique(),
-              html_report: vs.collect{ it[1].html_report }[0],  // The report is for all pools
-              plain_output: vs.collect{ it[1].plain_output }[0],
-              project_id: vs.collect{ it[1].project_id }[0],
-              experiment_id: vs.collect{ it[1].experiment_id }[0]
-            ]
-          ]
-        }
-
-    grouped_with_params_list_ch = grouped_ch.combine(save_params_ch)
+    // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
+    // but for publishing the results, this is not handy because we want to use the $id
+    // variable as a pointer to the target data.
+    // So, we should combine everything together
+    results_publish_ch = htrnaseq_ch
+      | combine(save_params_ch)
       | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
         def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         return [new_id, new_state]
-      
       }
+      | toSortedList
+      | map{ vs ->
+          def states = vs.collect{it[1]}
 
-    results_publish_ch = grouped_with_params_list_ch
+          // The STAR output is a directory for each well in a plate (or pool of plates).
+          // The wells are grouped into a directory per sample. The name of this directory should
+          // match the sample_id.
+          def star_output_samples = states.collectMany{state -> 
+            state.star_output.collect{
+              def star_sample_dir = it.parent
+              assert star_sample_dir.name == state.sample_id: "Unexpected state: the parent directory of STAR output \
+                path '${it}' should match with the sample ID ${sample_id}"
+              star_sample_dir
+            }
+          }
+          def new_state = [
+            "star_output": star_output_samples,
+          ]
+
+          // Keys for which the values should be the same across samples
+          def state_keys_unique = [
+            "html_report",
+            "project_id",
+            "experiment_id",
+            "star_output_dir_workflow",
+            "nrReadsNrGenesPerChrom_dir_workflow",
+            "star_qc_metrics_dir_workflow",
+            "eset_dir_workflow",
+            "f_data_dir_workflow",
+            "p_data_dir_workflow",
+            "f_data",
+            "run_params"
+          ]
+          def state_unique_keys = state_keys_unique.inject([:]) { state_to_update, argument_name ->
+            argument_values = states.collect{it.get(argument_name)}.unique()
+            assert argument_values.size() == 1, "State error: values for argument $argument_name should be the same across states. \
+                                                 Argument values: $argument_values"
+            // take the unique value from the set (there is only one)
+            def argument_value
+            argument_values.each { argument_value = it }
+            state_to_update + [(argument_name): argument_value]
+          }
+
+          // Keys that just require gathering of values across samples
+          def state_keys_collect = [
+            "nrReadsNrGenesPerChrom",
+            "star_qc_metrics",
+            "eset",
+            "p_data",
+          ]
+          def state_collect = state_keys_collect.collectEntries{ key_ ->
+            [key_, states.collect{it.get(key_)}]
+          }
+
+          new_state = new_state + state_unique_keys + state_collect
+          [states[0].run_id, new_state]  
+      }
       | publish_results.run(
         fromState: { id, state ->
-          def output_dir = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
-          println("Publising results to ${params.results_publish_dir}/${output_dir}")
+          def prefix = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
 
-          [
+          println("Publising results to ${params.results_publish_dir}/${prefix}")
+
+          [ 
+            // Inputs
             star_output: state.star_output,
             nrReadsNrGenesPerChrom: state.nrReadsNrGenesPerChrom,
             star_qc_metrics: state.star_qc_metrics,
@@ -170,10 +214,18 @@ workflow run_wf {
             p_data: state.p_data,
             html_report: state.html_report,
             run_params: state.run_params,
-            output: output_dir.toString()
+            // Output locations
+            run_params_output: "${prefix}/${state.run_params.name}",
+            html_report_output: "${prefix}/${state.html_report.name}", 
+            star_output_dir: "${prefix}/${state.star_output_dir_workflow}",
+            nrReadsNrGenesPerChrom_dir: "${prefix}/${state.nrReadsNrGenesPerChrom_dir_workflow}",
+            star_qc_metrics_dir: "${prefix}/${state.star_qc_metrics_dir_workflow}",
+            eset_dir: "${prefix}/${state.eset_dir_workflow}",
+            f_data_dir: "${prefix}/${state.f_data_dir_workflow}",
+            p_data_dir: "${prefix}/${state.p_data_dir_workflow}"
           ]
         },
-        toState: { id, result, state -> state },
+        toState: { id, result, state -> result },
         directives: [
           publishDir: [
             path: "${params.results_publish_dir}", 
@@ -182,33 +234,43 @@ workflow run_wf {
           ]
         ]
       )
+      | setState([
+          "star_output_dir",
+          "nrReadsNrGenesPerChrom_dir",
+          "star_qc_metrics_dir",
+          "eset_dir",
+          "f_data_dir",
+          "p_data_dir",
+        ]
+      )
 
-    fastq_publish_ch = grouped_ch
-      | flatMap{id, state ->
-        def new_states = state.fastq_output.collect{fastq_dir -> 
-          def run_id = fastq_dir.name // The folder name corresponds to the run
-          def sample = fastq_dir.parent.name // The parent folder name should be the sample
-          def new_id = "${run_id}/${sample}"
-          def fastq_files = fastq_dir.listFiles()
-          def new_state = [
-            "fastq_output": fastq_files,
-            "sample_id": sample,
-            "run_id": run_id 
-          ]
-          return [new_id, new_state]
-        }
-        return new_states
+    fastq_publish_ch = htrnaseq_ch
+      // The output from the htrnaseq workflow is on sample (i.e. pool) level
+      // Multiple sequencing runs may have contributes to the FASTQ files from this pool.
+      // So the fastq_output is a list of directories, one for each run.
+      // We assume that the names of the folders containing the FASTQ files are equal to the pool names.
+      | flatMap {id, state ->
+          state.fastq_output.collect{fastq_dir ->
+            def run_id = fastq_dir.name
+            def new_id = "${run_id}/${state.sample_id}"
+            def new_state = [
+              "fastq_output": fastq_dir.listFiles(),
+              "sample_id": state.sample_id,
+              "run_id": run_id,
+              "output": "${run_id}/${date}_htrnaseq_${version}/${state.sample_id}".toString()
+            ]
+            [new_id, new_state]
+          }
       }
+      // A folder containing the FASTQ files from a certain pool may be present in the state from
+      // multiple samples; if that pool contributed to the data from those samples.
+      // Those FASTQ files will only be published once by filtering out the duplicate events here.
+      | unique{it[0]}
       | publish_fastqs.run(
-        fromState: { id, state ->
-          def output_dir = "${state.run_id}/${date}_htrnaseq_${version}/${state.sample_id}"
-          println("Publising fastqs to ${params.fastq_publish_dir}/${output_dir}")
-
-          [
-            input: state.fastq_output,
-            output: output_dir.toString(),
-          ]
-        },
+        fromState: [
+          "input": "fastq_output",
+          "output": "output",
+        ],
         toState: { id, result, state -> state },
         directives: [
           publishDir: [
@@ -220,8 +282,8 @@ workflow run_wf {
       )
 
   emit:
-    grouped_ch
-      | map{ id, state -> [ id, [ _meta: [ join_id: state.run_id ] ] ] }
+    results_publish_ch
+
 }
 
 def get_version(inputFile) {
@@ -230,37 +292,4 @@ def get_version(inputFile) {
   def version = (loaded_viash_config.version) ? loaded_viash_config.version : "unknown_version"
   println("HT-RNAseq version to be used: ${version}")
   return version
-}
-
-/*
- * This function uses a heuristic to group a list of paths so that the level of nesting
- * of IDs is represented in the output.
- *
- * We iterative of the path sections (subfolders) from the last (file) the first (root node).
- * The first path segment that is common across all 'events' is the cutoff. We cutoff the paths
- * at this level, select the unique elements from the list and use that as input for the next step.
- *
- * An optional offset allows one to shift the cutoff left or right.
- */
-def reduce_paths(paths, offset = 0) {
-  def path_length = paths.collect{ it.getNameCount() }[0]
-
-  def unique_list = (path_length-1..0).collectEntries { i ->
-    [ (i): paths.collect{ it.getName(i) }.unique().size() ]
-  }
-
-  def cutoff = unique_list.find{ it.value == 1 }.key
-
-  def grouped_paths = paths.collect{ f -> "/" + f.subpath(0, cutoff+1+offset) }.unique()
-
-  println("")
-  println("Detecting the common path section to pass to the next step:")
-  print("  From: ")
-  print paths
-  println("")
-  print("  To:   ")
-  print grouped_paths
-  println("")
-
-  return grouped_paths
 }
