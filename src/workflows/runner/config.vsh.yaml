@@ -38,11 +38,6 @@ argument_groups:
         type: integer
         min: 1
         default: 10
-      - name: "--run_params"
-        type: file
-        required: false
-        direction: output
-        default: params.yaml
   - name: Metadata arguments
     arguments:
       - name: --id
@@ -66,6 +61,10 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
+      - name: "--run_params_output"
+        type: file
+        direction: output
+        default: params.yaml
       - name: "--star_output_dir"
         type: file
         direction: output

@@ -68,7 +68,8 @@ workflow run_wf {
           "star_qc_metrics_dir_workflow": state.star_qc_metrics_dir,
           "eset_dir_workflow": state.eset_dir,
           "f_data_dir_workflow": state.f_data_dir,
-          "p_data_dir_workflow": state.p_data_dir
+          "p_data_dir_workflow": state.p_data_dir,
+          "run_params_workflow": state.run_params,
         ]
         return [id, new_state]
       }
@@ -215,8 +216,8 @@ workflow run_wf {
             html_report: state.html_report,
             run_params: state.run_params,
             // Output locations
-            run_params_output: "${prefix}/${state.run_params.name}",
             html_report_output: "${prefix}/${state.html_report.name}", 
+            run_params_output: "${prefix}/${state.run_params_workflow}",
             star_output_dir: "${prefix}/${state.star_output_dir_workflow}",
             nrReadsNrGenesPerChrom_dir: "${prefix}/${state.nrReadsNrGenesPerChrom_dir_workflow}",
             star_qc_metrics_dir: "${prefix}/${state.star_qc_metrics_dir_workflow}",
@@ -236,6 +237,7 @@ workflow run_wf {
       )
       | setState([
           "star_output_dir",
+          "run_params_output",
           "nrReadsNrGenesPerChrom_dir",
           "star_qc_metrics_dir",
           "eset_dir",
