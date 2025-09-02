@@ -61,7 +61,7 @@ argument_groups:
         required: true
   - name: Output arguments
     arguments:
-      - name: "--run_params_output"
+      - name: "--run_params"
         type: file
         direction: output
         default: params.yaml

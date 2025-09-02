@@ -111,7 +111,7 @@ workflow test_wf {
         }
         assert output_state.star_qc_metrics_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
         assert output_state.nrReadsNrGenesPerChrom_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
-        assert output_state.run_params_output.isFile()
+        assert output_state.run_params.isFile()
     }
 
 

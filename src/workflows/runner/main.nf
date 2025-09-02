@@ -129,7 +129,7 @@ workflow run_wf {
           umi_length: "umi_length",
           sample_id: "sample_id",
         ],
-        toState: { id, result, state -> state + result }
+        toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
       )
 
     // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
@@ -139,6 +139,7 @@ workflow run_wf {
     results_publish_ch = htrnaseq_ch
       | combine(save_params_ch)
       | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
+        assert save_params_state.run_params.isFile()
         def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         return [new_id, new_state]
       }
@@ -226,7 +227,7 @@ workflow run_wf {
             p_data_dir: "${prefix}/${state.p_data_dir_workflow}"
           ]
         },
-        toState: { id, result, state -> result },
+        toState: { id, result, state -> result + ["run_params": state.run_params] },
         directives: [
           publishDir: [
             path: "${params.results_publish_dir}", 
@@ -237,12 +238,12 @@ workflow run_wf {
       )
       | setState([
           "star_output_dir",
-          "run_params_output",
           "nrReadsNrGenesPerChrom_dir",
           "star_qc_metrics_dir",
           "eset_dir",
           "f_data_dir",
           "p_data_dir",
+          "run_params",
         ]
       )
 
