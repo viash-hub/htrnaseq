@@ -6,7 +6,7 @@
 
 ## New features
 
-* `runner`: add output results to state in order for the workflow to be used as subworkflow (PR #68).
+* `runner`: add output results to state in order for the workflow to be used as subworkflow (PR #68, PR 70, PR #71).
 
 ## Bug fixes
 
