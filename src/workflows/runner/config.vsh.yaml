@@ -60,6 +60,9 @@ argument_groups:
         type: string
         required: true
   - name: Output arguments
+    description: |
+      Parameters that determine the structure of the output. These parameters are provided for internal use only
+      and their default should not be overwritten.
     arguments:
       - name: "--run_params"
         type: file
