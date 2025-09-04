@@ -62,7 +62,7 @@ argument_groups:
   - name: Output arguments
     description: |
       Parameters that determine the structure of the output. These parameters are provided for internal use only
-      and their default should not be overwritten.
+      and their defaults should not be overwritten.
     arguments:
       - name: "--run_params"
         type: file
