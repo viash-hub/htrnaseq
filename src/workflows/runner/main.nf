@@ -231,7 +231,7 @@ workflow run_wf {
         toState: { id, result, state -> result + ["run_params": state.run_params] },
         directives: [
           publishDir: [
-            path: "${params.results_publish_dir}", 
+            path: "${file(params.results_publish_dir).toUriString()}", 
             overwrite: false,
             mode: "copy"
           ]
@@ -278,7 +278,7 @@ workflow run_wf {
         toState: { id, result, state -> state },
         directives: [
           publishDir: [
-            path: "${params.fastq_publish_dir}", 
+            path: "${file(params.fastq_publish_dir).toUriString()}", 
             overwrite: false,
             mode: "copy"
           ]
