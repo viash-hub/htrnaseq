@@ -173,6 +173,7 @@ workflow run_wf {
             "eset_dir_workflow",
             "f_data_dir_workflow",
             "p_data_dir_workflow",
+            "run_params_workflow",
             "f_data",
             "run_params"
           ]
