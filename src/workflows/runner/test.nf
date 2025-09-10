@@ -367,75 +367,75 @@ workflow test_wf_only_one_eset {
     }
 
 
-    workflow.onComplete = {
-        try {
-            // Nexflow only allows exceptions generated using the 'error' function (which throws WorkflowScriptErrorException).
-            // So in order for the assert statement to work (or allow other errors to let the tests to fail)
-            // We need to wrap these in WorkflowScriptErrorException. See https://github.com/nextflow-io/nextflow/pull/4458/files
-            // The error message will show up in .nextflow.log
-            def fastq_subdir = file("${params.fastq_publish_dir}")
-            assert fastq_subdir.isDirectory()
-            def found_fastq_folders = fastq_subdir.listFiles().findAll{it.isDirectory()}.collect{it.name}.toSet()
-            def expected_run_folders = ["run_1"].toSet()
-            assert found_fastq_folders == expected_run_folders, "Expected correct run folders to be present. Found: ${found_fastq_folders}"
-            unique_dirs = [
-                "run1": files("${fastq_subdir.toUriString()}/run_1/*_htrnaseq_${pipeline_version}", type: 'any'),
-            ]
-            assert unique_dirs.every{it.value.size() == 1}
-            unique_dirs = unique_dirs.collectEntries{k, v -> [k, v[0]]}
+  workflow.onComplete = {
+    try {
+        // Nexflow only allows exceptions generated using the 'error' function (which throws WorkflowScriptErrorException).
+        // So in order for the assert statement to work (or allow other errors to let the tests to fail)
+        // We need to wrap these in WorkflowScriptErrorException. See https://github.com/nextflow-io/nextflow/pull/4458/files
+        // The error message will show up in .nextflow.log
+        def fastq_subdir = file("${params.fastq_publish_dir}")
+        assert fastq_subdir.isDirectory()
+        def found_fastq_folders = fastq_subdir.listFiles().findAll{it.isDirectory()}.collect{it.name}.toSet()
+        def expected_run_folders = ["run_1"].toSet()
+        assert found_fastq_folders == expected_run_folders, "Expected correct run folders to be present. Found: ${found_fastq_folders}"
+        unique_dirs = [
+            "run1": files("${fastq_subdir.toUriString()}/run_1/*_htrnaseq_${pipeline_version}", type: 'any'),
+        ]
+        assert unique_dirs.every{it.value.size() == 1}
+        unique_dirs = unique_dirs.collectEntries{k, v -> [k, v[0]]}
 
-            assert unique_dirs.every{it.value.isDirectory()}
-            assert unique_dirs.collect{_key, _value -> _value.name}.toSet().size() == 1
-            def expected_samples = [
-                "run1": "VH02001612",
-            ]
+        assert unique_dirs.every{it.value.isDirectory()}
+        assert unique_dirs.collect{_key, _value -> _value.name}.toSet().size() == 1
+        def expected_samples = [
+            "run1": "VH02001612",
+        ]
 
-            unique_dirs.each{_key, _value ->
-                def expected_sample = expected_samples[_key]
-                def expected_sample_dir = _value.resolve(expected_sample)
-                assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
-                def expected_fastq_files = [
-                    "A1_R1_001.fastq", "A1_R2_001.fastq", 
-                    "B1_R1_001.fastq", "B1_R2_001.fastq",
-                    "unknown_R1_001.fastq", "unknown_R2_001.fastq"]
-                def found_files = files("${expected_sample_dir}/*.fastq", type: 'any')
-                assert found_files.every{it.isFile()}
-                assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
-            }
-
-            def results_subdir = file("${params.results_publish_dir}")
-            assert fastq_subdir.isDirectory()
-            def expected_subdir = file("${results_subdir}/foo/bar/data_processed", type: 'any')
-            assert expected_subdir.isDirectory()
-            def expected_result_dir = files("${expected_subdir}/*_htrnaseq_${pipeline_version}", type: 'any')
-            assert expected_result_dir.size() == 1
-            expected_result_dir = expected_result_dir[0]
-            assert expected_result_dir.isDirectory()
-            def expected_esets = ["VH02001612.rds"]
-            def found_esets = files("${expected_result_dir}/esets/*.rds", type: 'any')
-            assert found_esets.size() == 1
-            assert found_esets.collect{it.name}.toSet() == expected_esets.toSet()
-            expected_table_filenames = ["VH02001612.txt"]
-            def found_pdata = files("${expected_result_dir}/pData/*.txt", type: 'any')
-            assert found_pdata.size() == 1
-            assert found_pdata.collect{it.name}.toSet() == expected_table_filenames.toSet()
-            def found_nr_genes_nr_reads = files("${expected_result_dir}/nrReadsNrGenesPerChrom/*.txt", type: 'any')
-            assert found_nr_genes_nr_reads.size() == 1
-            assert found_nr_genes_nr_reads.collect{it.name}.toSet() == expected_table_filenames.toSet() 
-            def found_star_logs = files("${expected_result_dir}/starLogs/*.txt", type: 'any')
-            assert found_star_logs.size() == 1
-            assert found_star_logs.collect{it.name}.toSet() == expected_table_filenames.toSet()
-            def star_output = file("${expected_result_dir}/star_output", type: 'any')
-            assert star_output.isDirectory()
-            
-            assert files("${star_output}/*", type: 'any').collect{it.name}.toSet() == ["VH02001612"].toSet()
-            assert files("${star_output}/VH02001612/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
-            assert file("${expected_result_dir}/report.html").isFile()
-            assert file("${expected_result_dir}/params.yaml").isFile()
-            assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
-
-        } catch (Exception e) {
-            throw new WorkflowScriptErrorException("Integration test failed!", e)
+        unique_dirs.each{_key, _value ->
+            def expected_sample = expected_samples[_key]
+            def expected_sample_dir = _value.resolve(expected_sample)
+            assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
+            def expected_fastq_files = [
+                "A1_R1_001.fastq", "A1_R2_001.fastq", 
+                "B1_R1_001.fastq", "B1_R2_001.fastq",
+                "unknown_R1_001.fastq", "unknown_R2_001.fastq"]
+            def found_files = files("${expected_sample_dir}/*.fastq", type: 'any')
+            assert found_files.every{it.isFile()}
+            assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
         }
+
+        def results_subdir = file("${params.results_publish_dir}")
+        assert fastq_subdir.isDirectory()
+        def expected_subdir = file("${results_subdir}/foo/bar/data_processed", type: 'any')
+        assert expected_subdir.isDirectory()
+        def expected_result_dir = files("${expected_subdir}/*_htrnaseq_${pipeline_version}", type: 'any')
+        assert expected_result_dir.size() == 1
+        expected_result_dir = expected_result_dir[0]
+        assert expected_result_dir.isDirectory()
+        def expected_esets = ["VH02001612.rds"]
+        def found_esets = files("${expected_result_dir}/esets/*.rds", type: 'any')
+        assert found_esets.size() == 1
+        assert found_esets.collect{it.name}.toSet() == expected_esets.toSet()
+        expected_table_filenames = ["VH02001612.txt"]
+        def found_pdata = files("${expected_result_dir}/pData/*.txt", type: 'any')
+        assert found_pdata.size() == 1
+        assert found_pdata.collect{it.name}.toSet() == expected_table_filenames.toSet()
+        def found_nr_genes_nr_reads = files("${expected_result_dir}/nrReadsNrGenesPerChrom/*.txt", type: 'any')
+        assert found_nr_genes_nr_reads.size() == 1
+        assert found_nr_genes_nr_reads.collect{it.name}.toSet() == expected_table_filenames.toSet() 
+        def found_star_logs = files("${expected_result_dir}/starLogs/*.txt", type: 'any')
+        assert found_star_logs.size() == 1
+        assert found_star_logs.collect{it.name}.toSet() == expected_table_filenames.toSet()
+        def star_output = file("${expected_result_dir}/star_output", type: 'any')
+        assert star_output.isDirectory()
+        
+        assert files("${star_output}/*", type: 'any').collect{it.name}.toSet() == ["VH02001612"].toSet()
+        assert files("${star_output}/VH02001612/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
+        assert file("${expected_result_dir}/report.html").isFile()
+        assert file("${expected_result_dir}/params.yaml").isFile()
+        assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
+
+    } catch (Exception e) {
+        throw new WorkflowScriptErrorException("Integration test failed!", e)
     }
+  }
 }
