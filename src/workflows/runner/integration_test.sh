@@ -22,3 +22,11 @@ nextflow \
   -resume \
   -profile docker,local
 
+
+nextflow \
+  run . \
+  -main-script src/workflows/runner/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_wf_only_one_eset \
+  -resume \
+  -profile docker,local
