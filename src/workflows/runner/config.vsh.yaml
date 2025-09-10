@@ -103,6 +103,12 @@ test_resources:
   - type: nextflow_script
     path: test.nf
     entrypoint: test_wf
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf_with_lanes
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf_only_one_eset
 
 dependencies:
   - name: utils/listInputDir
