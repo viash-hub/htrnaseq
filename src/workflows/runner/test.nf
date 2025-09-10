@@ -19,7 +19,7 @@ if (!params.containsKey("publish_dir") && params.containsKey("publishDir")) {
 if (!params.containsKey("publish_dir")) {
     def tempDir = Files.createTempDirectory("demultiplex_runner_integration_test")
     println "Created temp directory: $tempDir"
-    Register shutdown hook to delete it on JVM exit
+    // Register shutdown hook to delete it on JVM exit
     Runtime.runtime.addShutdownHook(new Thread({
         try {
             // Delete directory recursively
