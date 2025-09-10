@@ -11,5 +11,5 @@ echo "Copying files..."
 IFS=";" read -ra input <<<$par_input
 
 for i in "${input[@]}"; do
-  cp -rL "$i" "$par_output/"
+  cp -a "$i" "$par_output/"
 done

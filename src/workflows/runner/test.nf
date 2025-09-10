@@ -20,17 +20,17 @@ if (!params.containsKey("publish_dir")) {
     def tempDir = Files.createTempDirectory("demultiplex_runner_integration_test")
     println "Created temp directory: $tempDir"
     // Register shutdown hook to delete it on JVM exit
-    Runtime.runtime.addShutdownHook(new Thread({
-        try {
-            // Delete directory recursively
-            Files.walk(tempDir)
-                .sorted(Comparator.reverseOrder())
-                .forEach { Files.delete(it) }
-            println "Deleted temp directory: $tempDir"
-        } catch (Exception e) {
-            println "Failed to delete temp directory: $e"
-        }
-    }))
+    // Runtime.runtime.addShutdownHook(new Thread({
+    //     try {
+    //         // Delete directory recursively
+    //         Files.walk(tempDir)
+    //             .sorted(Comparator.reverseOrder())
+    //             .forEach { Files.delete(it) }
+    //         println "Deleted temp directory: $tempDir"
+    //     } catch (Exception e) {
+    //         println "Failed to delete temp directory: $e"
+    //     }
+    // }))
     params.publish_dir = tempDir
 }
 
@@ -107,7 +107,7 @@ workflow test_wf {
         assert output_state.eset_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.rds", "VH02001614.rds"].toSet()
         assert output_state.star_output_dir.listFiles().collect{it.name}.toSet() == ["VH02001612", "VH02001614"].toSet()
         ["VH02001612", "VH02001614"].each{it ->
-           assert output_state.star_output_dir.resolve(it).listFiles().collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
+           assert output_state.star_output_dir.resolve(it).toRealPath().listFiles().collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
         }
         assert output_state.star_qc_metrics_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
         assert output_state.nrReadsNrGenesPerChrom_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
