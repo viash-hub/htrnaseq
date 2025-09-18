@@ -4,6 +4,10 @@
 
 * Improve publishing speed by keeping symbolic links (PR #74).
 
+# Bug fixes
+
+* Avoid double slashes in the publish directory path in order to not create empty objects on S3 (PR #72).
+
 # htrnaseq v0.11.0
 
 ## Breaking changes
