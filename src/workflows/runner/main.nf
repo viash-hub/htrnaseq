@@ -3,6 +3,10 @@ def date = new Date().format('yyyyMMdd_hhmmss')
 def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
 
+if (!params.containsKey("results_publish_dir") || !params.containsKey("fastq_publish_dir")) {
+   error "Please set both 'results_publish_dir' and 'fastq_publish_dir'."
+}
+
 // S3 paths containing double slashes might cause issues with empty objects being created
 // Remove trailing slashes from the publish dir. The params map is immutable, so create a copy
 def regex_trailing_slashes = ~/\/+$/
