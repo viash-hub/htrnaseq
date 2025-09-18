@@ -1,3 +1,9 @@
+# htrnaseq v0.12.0
+
+# Minor changes
+
+* Improve publishing speed by keeping symbolic links (PR #74).
+
 # htrnaseq v0.11.0
 
 ## Breaking changes
