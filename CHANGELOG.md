@@ -12,6 +12,8 @@
 
 * `runner`: disable `publishFilesProc` because this workflow handles publishing itself (PR #68).
 
+* Avoid double slashes in the publish directory path in order to not create empty objects on S3 (PR #72).
+
 ## Minor changes
 
 * Bump craftbox to v0.3.0 (PR #69).
