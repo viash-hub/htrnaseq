@@ -3,6 +3,16 @@ def date = new Date().format('yyyyMMdd_hhmmss')
 def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
 
+if (!params.containsKey("results_publish_dir") || !params.containsKey("fastq_publish_dir")) {
+   error "Please set both 'results_publish_dir' and 'fastq_publish_dir'."
+}
+
+// S3 paths containing double slashes might cause issues with empty objects being created
+// Remove trailing slashes from the publish dir. The params map is immutable, so create a copy
+def regex_trailing_slashes = ~/\/+$/
+def results_publish_dir = params.results_publish_dir - regex_trailing_slashes
+def fastq_publish_dir = params.fastq_publish_dir - regex_trailing_slashes
+
 workflow run_wf {
   take:
     raw_ch
@@ -205,7 +215,7 @@ workflow run_wf {
         fromState: { id, state ->
           def prefix = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
 
-          println("Publising results to ${params.results_publish_dir}/${prefix}")
+          println("Publising results to ${results_publish_dir}/${prefix}")
 
           [ 
             // Inputs
@@ -231,7 +241,7 @@ workflow run_wf {
         toState: { id, result, state -> result + ["run_params": state.run_params] },
         directives: [
           publishDir: [
-            path: "${params.results_publish_dir}", 
+            path: results_publish_dir, 
             overwrite: false,
             mode: "copy"
           ]
@@ -278,7 +288,7 @@ workflow run_wf {
         toState: { id, result, state -> state },
         directives: [
           publishDir: [
-            path: "${params.fastq_publish_dir}", 
+            path: fastq_publish_dir, 
             overwrite: false,
             mode: "copy"
           ]
