@@ -22,7 +22,7 @@ declare -A path_pars_files=(
 )
 
 echo "Canonicalizing output paths."
-all_path_args=( "${!path_pars[@]}" "${!path_pars_dirs[@]}" )
+all_path_args=( "${!path_pars_files[@]}" "${!path_pars_dirs[@]}" )
 for par in ${all_path_args[@]}; do
     curr_val="${!par}"
     printf "\t%s\n" "Canonicalizing path '$curr_val'"
