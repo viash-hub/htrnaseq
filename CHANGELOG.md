@@ -2,7 +2,7 @@
 
 # Minor changes
 
-* Update `parallel_map` cpu label from `lowcpu` to `highcpu` (PR ).
+* Update `parallel_map` cpu label from `lowcpu` to `highcpu` (PR 75).
 
 # htrnaseq v0.12.0
 
