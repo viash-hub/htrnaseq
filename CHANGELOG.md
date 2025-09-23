@@ -1,3 +1,9 @@
+# htrnaseq v0.12.2
+
+## Bug fixes
+
+* Avoid duplicate input paths when publishing results (PR #76).
+
 # htrnaseq v0.12.1
 
 # Minor changes
