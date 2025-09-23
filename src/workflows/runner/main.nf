@@ -166,7 +166,7 @@ workflow run_wf {
               assert star_sample_dir.name == state.sample_id: "Unexpected state: the parent directory of STAR output \
                 path '${it}' should match with the sample ID ${sample_id}"
               star_sample_dir
-            }
+            }.unique()
           }
           def new_state = [
             "star_output": star_output_samples,
