@@ -29,7 +29,8 @@ if __name__ == "__main__":
     index = []
     tags_selection = ("CB", "UB", "GX", "GN")
     for aligned_segment in samfile:
-        tags = dict(aligned_segment.get_tags())
+        # STAR version introduced '-' as a placeholder for empty tags
+        tags = {tag_name:tag_value for tag_name,tag_value in aligned_segment.get_tags() if tag_value != "-"}
         all_tags.append(tags)
         reference_name = aligned_segment.reference_name
         index.append("*" if not reference_name else reference_name)

@@ -31,6 +31,10 @@ def barcode_1_summary(test_resources_path):
     return test_resources_path / "barcode_1" / "summary.csv"
 
 @pytest.fixture
+def barcode_1_features_stats(test_resources_path):
+    return test_resources_path / "barcode_1" / "Features.stats"
+
+@pytest.fixture
 def barcode_2_star_log(test_resources_path):
     return test_resources_path / "barcode_2" / "Log.final.out"
 
@@ -41,6 +45,10 @@ def barcode_2_reads_per_gene_file(test_resources_path):
 @pytest.fixture
 def barcode_2_summary(test_resources_path):
     return test_resources_path / "barcode_2" / "summary.csv"
+
+@pytest.fixture
+def barcode_2_features_stats(test_resources_path):
+    return test_resources_path / "barcode_2" / "Features.stats"
 
 @pytest.fixture
 def no_reads_mapped_star_log(test_resources_path):
@@ -55,6 +63,10 @@ def no_reads_mapped_summary(test_resources_path):
     return test_resources_path / "empty" / "summary.csv"
 
 @pytest.fixture
+def no_reads_mapped_features_stats(test_resources_path):
+    return test_resources_path / "empty" / "Features.stats"
+
+@pytest.fixture
 def random_path(tmp_path):
     def wrapper(extension=None):
         extension = "" if not extension else f".{extension}"
@@ -62,9 +74,10 @@ def random_path(tmp_path):
     return wrapper 
 
 def test_incorrect_number_of_inputs_raises(run_component,
-                                           barcode_1_star_log, barcode_2_star_log,
+                                           barcode_1_star_log,
                                            barcode_1_reads_per_gene_file, barcode_2_reads_per_gene_file,
                                            barcode_1_summary, barcode_2_summary,
+                                           barcode_1_features_stats, barcode_2_features_stats,
                                            random_path):
     output_path = random_path("txt")
     with pytest.raises(CalledProcessError) as err:
@@ -73,10 +86,12 @@ def test_incorrect_number_of_inputs_raises(run_component,
             "--star_logs", f"{barcode_1_star_log}", 
             "--reads_per_gene_logs", f"{barcode_1_reads_per_gene_file};{barcode_2_reads_per_gene_file}",
             "--gene_summary_logs", f"{barcode_1_summary};{barcode_2_summary}",
+            "--features_stats", f"{barcode_1_features_stats};{barcode_2_features_stats}",
             "--output", output_path,
         ])
     assert re.search(r"ValueError: Expected the same number of inputs for 'star_logs' \(1\), "
-                     r"'gene_summary_logs' \(2\), 'reads_per_gene_logs' \(2\) and 'barcodes' \(2\)\.",
+                     r"'gene_summary_logs' \(2\), 'reads_per_gene_logs' \(2\), 'features_stats' "
+                     r"\(2\) and 'barcodes' \(2\)\.",
             err.value.stdout.decode('utf-8'))
 
 
@@ -84,6 +99,7 @@ def test_incorrect_number_of_inputs_raises(run_component,
 def test_equal_number_of_argument(run_component,
                                   barcode_1_star_log, barcode_2_star_log,
                                   barcode_1_reads_per_gene_file, barcode_2_reads_per_gene_file,
+                                  barcode_1_features_stats, barcode_2_features_stats,
                                   barcode_1_summary, barcode_2_summary,
                                   random_path):
     output_path = random_path("txt")
@@ -92,6 +108,7 @@ def test_equal_number_of_argument(run_component,
         "--star_logs", f"{barcode_1_star_log};{barcode_2_star_log}", 
         "--reads_per_gene_logs", f"{barcode_1_reads_per_gene_file};{barcode_2_reads_per_gene_file}",
         "--gene_summary_logs", f"{barcode_1_summary};{barcode_2_summary}",
+        "--features_stats", f"{barcode_1_features_stats};{barcode_2_features_stats}",
         "--output", output_path,
     ])
     # We use strings here to make a comparison of the file contents without
@@ -133,6 +150,7 @@ def test_equal_number_of_argument(run_component,
 
 def test_empty(run_component, no_reads_mapped_star_log,
                no_reads_mapped_reads_per_gene_file, no_reads_mapped_summary,
+               no_reads_mapped_features_stats,
                random_path):
     """
     Sometimes the summary.csv contains '-nan' values, make sure they
@@ -144,6 +162,7 @@ def test_empty(run_component, no_reads_mapped_star_log,
         "--star_logs", no_reads_mapped_star_log,
         "--reads_per_gene_logs", no_reads_mapped_reads_per_gene_file,
         "--gene_summary_logs", no_reads_mapped_summary,
+        "--features_stats", no_reads_mapped_features_stats,
         "--output", output_path,
     ])
     expected_dict = {

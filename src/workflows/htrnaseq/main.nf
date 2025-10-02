@@ -272,6 +272,7 @@ workflow run_wf {
             "star_logs": state.star_output.collect{it.resolve("Log.final.out")},
             "gene_summary_logs": state.star_output.collect{it.resolve("Solo.out/Gene/Summary.csv")},
             "reads_per_gene_logs": state.star_output.collect{it.resolve("ReadsPerGene.out.tab")},
+            "features_stats": state.star_output.collect{it.resolve("Solo.out/Gene/Features.stats")},
             "barcodes": state.barcode,
             "output": state.star_qc_metrics
           ]

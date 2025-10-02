@@ -5,7 +5,7 @@ include { htrnaseq } from targetDir + "/workflows/htrnaseq/main.nf"
 include { check_eset } from targetDir + "/integration_test_components/htrnaseq/check_eset/main.nf"
 
 
-params.resources_test =  "gs://viash-hub-test-data/htrnaseq/v1/"
+params.resources_test = params.rootDir + "/resources_test"
 
 workflow test_wf {
   resources_test_file = file(params.resources_test)

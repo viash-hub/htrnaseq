@@ -36,6 +36,13 @@ argument_groups:
         required: true
         description: |
           Paths to the 'ReadsPerGene.out.tab' files as output by STAR.
+      - name: "--features_stats"
+        type: file
+        multiple: true
+        required: true
+        description: |
+          Paths to the 'Features.stats' files from STAR Solo. Can be found in
+          the 'Solo.out/Gene' folder relative to the root of the STAR output directory. 
       - name: "--output"
         type: file
         direction: output

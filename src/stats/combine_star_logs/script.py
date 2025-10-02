@@ -1,20 +1,19 @@
 import logging
 import pandas as pd
 from itertools import batched, starmap
+import numpy as np
 
 ### VIASH START
 meta = {
     "name": "combine_star_logs",
 }
 par = {
-    "star_logs": ["src/stats/combine_star_logs/test_data/barcode_1/Log.final.out",
-                  "src/stats/combine_star_logs/test_data/barcode_2/Log.final.out"],
-    "gene_summary_logs": ["src/stats/combine_star_logs/test_data/barcode_1/summary.csv",
-                          "src/stats/combine_star_logs/test_data/barcode_2/summary.csv"], 
-    "reads_per_gene_logs": ["src/stats/combine_star_logs/test_data/barcode_1/ReadsPerGene.out.tab",
-                            "src/stats/combine_star_logs/test_data/barcode_2/ReadsPerGene.out.tab"],
+    "star_logs": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/Log.final.out"],
+    "gene_summary_logs": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/summary.csv"], 
+    "reads_per_gene_logs": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/ReadsPerGene.out.tab"],
+    "features_stats": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/Features.stats"],
     "output": "output.txt",
-    "barcodes": ["ACGG", "TTTT"],
+    "barcodes": ["ACGG"],
 }
 
 ### VIASH END
@@ -49,6 +48,16 @@ def summary_to_dataframe(barcode: str, summary_path) -> pd.DataFrame:
                            index_col=0, dtype=pd.StringDtype())
     logger.info("Read %d row(s) and %d column(s) from summary file at %s",
                 *result.shape, summary_path)
+    return result
+
+
+def features_stats_to_dataframe(barcode: str, features_stats) -> pd.DataFrame:
+    logger.info("Reading feature statistics %s for barcode %s", features_stats, barcode)
+    result = pd.read_fwf(features_stats, index_col=0, header=None,
+                         dtype={"Value": pd.Int64Dtype()}, names=["Category", "Value"])
+    result = result.loc[["MultiFeature"]]
+    logger.info("Read %d row(s) and %d column(s) from summary file at %s",
+                *result.shape, features_stats)
     return result
 
 
@@ -110,18 +119,22 @@ def star_log_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame
 def summary_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Filtering and formatting summary logs for barcode %s. "
                 "Starting with %d row(s) and %d column(s)", barcode, *df.shape)
+    # The Reads Mapped to Gene: Unique+Multiple Gene output was changed in 2.7.10b
+    # to say 'NoMulti'. For backwards compatibility, the value from this column will be calculated
+    # manually later. Remove this value here.
     columns_to_remove = (
         "Number of Reads",
         "Q30 Bases in RNA read",
         "Reads Mapped to Genome: Unique",
-        "Reads Mapped to Transcriptome: Unique Genes",
-        "Reads in Cells Mapped to Unique Genes",
+        "Reads Mapped to Gene: Unique Gene",
+        #"Unique Reads in Cells Mapped to Gene",
         "Median UMI per Cell",
-        "Median Genes per Cell",
+        "Median Gene per Cell",
         "Reads Mapped to Genome: Unique+Multiple",
         "Median Reads per Cell",
         "Mean UMI per Cell",
-        "Mean Genes per Cell",
+        "Mean Gene per Cell",
+        "Reads Mapped to Gene: Unique+Multiple Gene",
     )
 
     to_keep = ~df.index.isin(columns_to_remove)
@@ -132,14 +145,21 @@ def summary_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame)
     result.index = result.index.str.replace(r"(?:^|\s).", lambda m:m.group(0).upper(),
                                             regex=True).str.replace(" ", "")
     to_rename = {"UMIsInCells": "NumberOfUMIs", 
-                 "TotalGenesDetected": "NumberOfGenes"}
+                 "TotalGeneDetected": "NumberOfGenes"}
+    
+    # The following renames are needed to keep backwards compatibility
+    # when STAR was updated to 2.7.11b
+    to_rename.update({
+        "FractionOfUniqueReadsInCells": "FractionOfReadsInCells",
+        "UniqueReadsInCellsMappedToGene": "ReadsInCellsMappedToUniqueGenes",
+    })
     try:
         result = result.rename(to_rename, errors="raise")
     except KeyError as e:
         raise KeyError(f"Tried to rename log entries ({','.join(to_rename)}) in the summary "
                        f"log for barcode {barcode}, but an entry was not found in the file. "
                        "Make sure that you are using the correct version of STAR."
-                       f"Available entries: {", ".join(result.index.to_list())}") from e
+                       f"Available entries: {', '.join(result.index.to_list())}") from e
     logger.info("Done filtering summary logs for barcode %s. Result has %d row(s) and %d column(s). "
                 "Found entries:\n\t%s",
                 barcode, *result.shape, "\n\t".join(result.index.to_list()))
@@ -160,18 +180,19 @@ def main(par):
     # Provide an overview of the parameters in the logs
     parameters_str = [f'\t{param}: {param_val}\n' for param, param_val in par.items()]
     logger.info("Parameters:\n%s", "".join(parameters_str).rstrip())
-    star_logs, gene_summary_logs, reads_per_gene_logs, barcodes  = par["star_logs"], \
-        par["gene_summary_logs"], par["reads_per_gene_logs"], par["barcodes"]
+    star_logs, gene_summary_logs, reads_per_gene_logs, barcodes, features_stats  = par["star_logs"], \
+        par["gene_summary_logs"], par["reads_per_gene_logs"], par["barcodes"], par["features_stats"]
     number_of_inputs = tuple(len(i) for i in (star_logs, gene_summary_logs,
-                                              reads_per_gene_logs, barcodes))
+                                              reads_per_gene_logs, features_stats, barcodes, ))
     if len(set(number_of_inputs)) != 1:
         raise ValueError("Expected the same number of inputs for 'star_logs' (%d), "
-                         "'gene_summary_logs' (%d), 'reads_per_gene_logs' (%d) "
-                         "and 'barcodes' (%d)." % number_of_inputs)
+                         "'gene_summary_logs' (%d), 'reads_per_gene_logs' (%d), "
+                         "'features_stats' (%d) and 'barcodes' (%d)." % number_of_inputs)
     
     logs_to_process = [
         (star_log_to_dataframe, star_log_remove_unwanted_entries_and_adjust_format, star_logs),
         (summary_to_dataframe, summary_remove_unwanted_entries_and_adjust_format, gene_summary_logs),
+        (features_stats_to_dataframe, None, features_stats),
         (reads_per_gene_to_dataframe, None, reads_per_gene_logs),
     ]
     logger.info("Formatting the contents of the log files.") 
@@ -184,10 +205,8 @@ def main(par):
         data_joined = join_dfs(data_formatted, barcodes)
         all_logs_data.append(data_joined)
 
-    logger.info("Joining entries across the different logs together.") 
+    logger.info("Joining entries across the different logs together.")
     all_stats = pd.concat(all_logs_data, axis=1)
-    logger.info("Log statistics were gathered for the following barcodes: %s", 
-                ", ".join(all_stats.index.to_list()))
     dtypes = {
         'NumberOfInputReads': pd.UInt64Dtype(),
         'NumberOfMappedReads': pd.UInt64Dtype(),
@@ -205,15 +224,29 @@ def main(par):
         'ReadsWithValidBarcodes': pd.Float64Dtype(),
         'SequencingSaturation': pd.Float64Dtype(),
         'Q30BasesInCB+UMI': pd.Float64Dtype(),
-        'ReadsMappedToTranscriptome:Unique+MultipeGenes': pd.Float64Dtype(),
         'EstimatedNumberOfCells': pd.UInt64Dtype(),
         'FractionOfReadsInCells': pd.Float64Dtype(),
         'MeanReadsPerCell': pd.UInt64Dtype(),
         'NumberOfUMIs': pd.UInt64Dtype(),
         'NumberOfGenes': pd.UInt64Dtype(),
-        'NumberOfCountedReads': pd.UInt64Dtype(),
+        'MultiFeature': pd.UInt64Dtype(),
+        'ReadsInCellsMappedToUniqueGenes': pd.UInt64Dtype(),
     }
-    all_stats = all_stats.astype(dtypes) 
+    all_stats = all_stats.astype(dtypes)
+    fraction_mapped = ((all_stats["ReadsInCellsMappedToUniqueGenes"] + all_stats["MultiFeature"]) 
+                       / all_stats["NumberOfInputReads"])
+    # Devision by 0 produces np.float64(np.nan); which does not respond to pandas' fillna
+    # Use .values combined with nan_to_num instead; this works for pd.NA and np.nan.
+    # See also this: https://github.com/pandas-dev/pandas/issues/32265
+    fraction_mapped = pd.Series(np.nan_to_num(fraction_mapped.values, nan=0.0),
+                                index=all_stats.index, dtype=pd.Float64Dtype())
+    all_stats.insert(loc=16, column="ReadsMappedToTranscriptome:Unique+MultipeGenes",
+                     value=fraction_mapped)
+    all_stats = all_stats.drop(labels=["MultiFeature", "ReadsInCellsMappedToUniqueGenes"], 
+                               axis="columns")
+    logger.info("Log statistics were gathered for the following barcodes: %s", 
+                ", ".join(all_stats.index.to_list()))
+
     # batched() is used here to print a limited amount of columnns at a time
     # to make sure that they are all displayed (pandas might limit the view for readability)
     logger.info("Summary of final output:\n%s\n",
