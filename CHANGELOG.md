@@ -1,3 +1,21 @@
+# htrnaseq v0.13.0
+
+## Breaking changes
+
+* The version of STAR has been bumped to `2.7.11b` (PR #77). An effort has been made to maintain backwards compatibility for the
+  expressionSet and its related output (`fData`, `pData`, `nrReadsNrGenesPerChrom`). Both the name of the fields and their contents have been validated.
+  The raw STAR output has of cource been altered because of the update.
+  - `paralel_map`: when a file or directory already exists at the locations provided for `joblog` and `output`, 
+    a check is performed to see if that location contains output from a previous run before overwriting.
+  - `workflows/htrnaseq` and `workflows/runner`: the output for `star_output` and `star_output_dir` (respectively)
+    has been changed because it contains the raw output from STAR (and some of it's formatting for the output files 
+    has been updated).
+  - `stats/combine_star_logs`: a new argument `features_stats` has been added. STAR no longer outputs a value for
+    the total percentage of reads mapped that are mapped to a gene or to multiple genes. In order to maintain backwards
+    compatibility, this value (`ReadsMappedToTranscriptome:Unique+MultipeGenes`) is calculated manually, in part by information
+    that is available in the `Features.stats` files.
+  - `stats/combine_star_logs`: Now requires the files provided to `gene_summary_logs` to adhere to the formatting of STAR version `2.7.11b`
+
 # htrnaseq v0.12.2
 
 ## Bug fixes
