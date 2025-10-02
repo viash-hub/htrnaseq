@@ -5,16 +5,16 @@ Q30 Bases in CB+UMI,0.984461
 Q30 Bases in RNA read,0.786064
 Reads Mapped to Genome: Unique+Multiple,0.706942
 Reads Mapped to Genome: Unique,0.706942
-Reads Mapped to Transcriptome: Unique+Multipe Genes,0.530871
-Reads Mapped to Transcriptome: Unique Genes,0.489316
+Reads Mapped to Gene: Unique+Multiple Gene,NoMulti
+Reads Mapped to Gene: Unique Gene,0.489316
 Estimated Number of Cells,1
-Reads in Cells Mapped to Unique Genes,4969
-Fraction of Reads in Cells,1
+Unique Reads in Cells Mapped to Gene,4969
+Fraction of Unique Reads in Cells,1
 Mean Reads per Cell,4969
 Median Reads per Cell,4969
 UMIs in Cells,4701
 Mean UMI per Cell,4701
 Median UMI per Cell,4701
-Mean Genes per Cell,2397
-Median Genes per Cell,2397
-Total Genes Detected,2397
+Mean Gene per Cell,2397
+Median Gene per Cell,2397
+Total Gene Detected,2397

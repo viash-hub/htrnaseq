@@ -19,6 +19,7 @@ argument_groups:
 resources:
   - type: r_script
     path: script.R
+  - path: /resources_test/expected_expressions.matrix
 engines:
   - type: docker
     image: bioconductor/bioconductor_docker:3.19
