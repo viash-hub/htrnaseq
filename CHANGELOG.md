@@ -15,6 +15,8 @@
     compatibility, this value (`ReadsMappedToTranscriptome:Unique+MultipeGenes`) is calculated manually, in part by information
     that is available in the `Features.stats` files.
   - `stats/combine_star_logs`: Now requires the files provided to `gene_summary_logs` to adhere to the formatting of STAR version `2.7.11b`
+  - `stats/generate_well_statistics`: Updated to filter out '-' values for the BAM tags, STAR introduced these as a placeholder for empty tags.
+
 
 # htrnaseq v0.12.2
 
