@@ -170,10 +170,10 @@ if (length(Design_levels) == 1) {
 } else {
   colours <- c("#d6e0ff")
   names(colours) <- c("nonEmpty")
-  colourList[[annotVar]] <- list(
+  colourList[[annotationVar]] <- list(
     "colours" = colours,
-    "annotVar" = annotVar,
-    "text" = annotVar
+    "annotVar" = annotationVar,
+    "text" = annotationVar
   )
 }
 ```

@@ -1,3 +1,9 @@
+# htrnaseq v0.12.x
+
+## Bug fixes
+
+* Allow for annotation of more than 20 pools (PR #78).
+
 # htrnaseq v0.12.2
 
 ## Bug fixes
