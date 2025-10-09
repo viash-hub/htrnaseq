@@ -1,5 +1,5 @@
 name: htrnaseq
-version: v0.12.2
+version: v0.12.3
 summary: |
   A workflow for high-throughput RNA-seq data analyses.
 description: |
@@ -54,4 +54,3 @@ config_mods: |
   .runners[.type == 'nextflow'].config.script += 'includeConfig("nextflow_labels.config")'
   .resources += {path: '/src/config/labels.config', dest: 'nextflow_labels.config'}
   .resources += {path: '/_viash.yaml', dest: '_viash.yaml'}
-
