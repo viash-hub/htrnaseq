@@ -1,4 +1,4 @@
-# htrnaseq v0.12.x
+# htrnaseq v0.12.3
 
 ## Bug fixes
 
@@ -12,17 +12,17 @@
 
 # htrnaseq v0.12.1
 
-# Minor changes
+## Minor changes
 
 * Update `parallel_map` cpu label from `lowcpu` to `highcpu` (PR 75).
 
 # htrnaseq v0.12.0
 
-# Minor changes
+## Minor changes
 
 * Improve publishing speed by keeping symbolic links (PR #74).
 
-# Bug fixes
+## Bug fixes
 
 * Avoid double slashes in the publish directory path in order to not create empty objects on S3 (PR #72).
 
