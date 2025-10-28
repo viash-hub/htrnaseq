@@ -16,6 +16,11 @@ argument_groups:
             * _001 fixed suffix.
         type: file
         required: true
+      - name: "--run_id"
+        description: |
+          Unique ID for the sequencing run
+        type: string
+        required: false
       - name: --barcodesFasta
         type: file
         required: true

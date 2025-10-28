@@ -54,7 +54,8 @@ workflow test_wf {
   // if all arguments are present in the hashmap
   output_ch = Channel.fromList([
     [
-        id: "run_1",
+        id: "run_1_exp_bar",
+        run_id: "run_1",
         input: resources_test.resolve("10k/SRR14730301"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
@@ -65,7 +66,8 @@ workflow test_wf {
         results_publish_dir: params.results_publish_dir,
     ],
     [
-        id: "run_2",
+        id: "run_2_exp_bar",
+        run_id: "run_2",
         input:  resources_test.resolve("10k/SRR14730301"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
@@ -76,13 +78,26 @@ workflow test_wf {
         results_publish_dir: params.results_publish_dir,
     ],
     [
-        id: "run_3",
+        id: "run_3_exp_bar",
+        run_id: "run_3",
         input:resources_test.resolve("10k/SRR14730302"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
         annotation: resources_test.resolve("genomeDir/gencode.v41.annotation.gtf.gz"),
         project_id: "foo",
         experiment_id: "bar",
+        fastq_publish_dir: params.fastq_publish_dir,
+        results_publish_dir: params.results_publish_dir,
+    ],
+    [
+        id: "run_2_exp_ipsum",
+        run_id: "run_2",
+        input:resources_test.resolve("10k/SRR14730302"),
+        genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
+        barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
+        annotation: resources_test.resolve("genomeDir/gencode.v41.annotation.gtf.gz"),
+        project_id: "lorem",
+        experiment_id: "ipsum",
         fastq_publish_dir: params.fastq_publish_dir,
         results_publish_dir: params.results_publish_dir,
     ]
@@ -99,7 +114,7 @@ workflow test_wf {
   tosortedlistch = output_ch
     | toSortedList()
     | map {events ->
-        assert events.size() == 1, "Expected one events to be output, found ${events.size()}"
+        assert events.size() == 3, "Expected three events to be output, found ${events.size()}"
         events
     }
     | map {states -> 

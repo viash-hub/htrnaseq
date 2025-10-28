@@ -25,7 +25,7 @@ workflow run_wf {
     // The number of events per sample needs is passed number to `groupTuple()`
     // so that it can emit the sample as soon as it is ready. This makes sure
     // that the samples are processed asynchronously. 
-    output_ch = input_ch.join(event_counts_ch)
+    output_ch = input_ch.join(event_counts_ch, failOnMismatch: true)
       | flatMap {id, state_demultiplex, state_event_counts ->
           assert state_demultiplex.input_r1.size() == state_demultiplex.input_r2.size(),
             "Expected output from well demultiplexing to contain equal amount or forward and reverse FASTQ files."
