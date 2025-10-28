@@ -71,7 +71,7 @@ workflow run_wf {
         toState: ["run_params": "output"]
       )
     
-    list_ch = input_ch
+    htrnaseq_ch = input_ch
       | map { id, state -> 
         // The argument names for this workflow and the htrnaseq workflow may overlap
         // here, we store a copy in order to make sure to not accidentally overwrite the state.
@@ -106,94 +106,46 @@ workflow run_wf {
       // The ID of the event here is important! It determines the name of the output
       // folders for the FASTQ files and these folders are published as-is later.
       // The folder where the FASTQ files are stored in should be named after the run ID.
-      | map {id, state -> ["${state.project_id}/${state.experiment_id}".toString(), state]}
+      | map {id, state -> ["${state.sample_id}/${state.run_id}".toString(), state]}
       | groupTuple(by: 0, sort: "hash")
+      | map {id, states ->
+        def new_r1 = states.collect{it.r1_output}
+        def new_r2 = states.collect{it.r2_output}
+        // This assumes that, except for r1 and r2, 
+        // the keys across the grouped states are the same.
+        // TODO: this can be asserted.
+        def new_state = states[0] + [
+          "r1": new_r1,
+          "r2": new_r2,
+        ]
+        return [id, new_state]
+      }
       | view {"Pool inputs after listing directory: $it"}
-      | toSortedList()
-      | flatMap{ lst -> lst.indexed().collect{index, value -> [index, value]}}
-
-    def htrnaseq_chs = ([htrnaseq] * 10).indexed().collect{ i, workflow_to_run ->
-      def workflow_clone = workflow_to_run.cloneWithName("htrnaseq_${i}")
-      def out_ch = list_ch
-        | filter {index, events -> index == i}
-        | view { _, id_and_states ->
-          def (id, states) = id_and_states
-          def get_unique_property = { property -> states.collect{it.get(property)}.unique() }
-          def experiment_id = get_unique_property("experiment_id")
-          def project_id = get_unique_property("project_id")
-          def runs = get_unique_property("run_id") 
-          def plate_id = get_unique_property("sample_id")
-          def r1 = get_unique_property("r1_output").collect{it.name} 
-          def r2 = get_unique_property("r2_output").collect{it.name} 
-          """
-            |==================
-            | HTRNASEQ RUN ${i} - ID ${id}
-            |==================
-            |
-            | experiment_id: ${experiment_id}
-            | project_id: ${project_id}
-            | run_id: ${runs}
-            | plate ID: ${plate_id}
-            | R1: ${r1}
-            | R2: ${r2}
-            |
-            |""".stripMargin()
-        }
-        | flatMap {_, id_and_states -> 
-          def (id, states) = id_and_states
-          states.collect{[id, it]}
-        }
-        | map {id, state -> 
-          ["${state.project_id}/${state.experiment_id}/${state.sample_id}/${state.run_id}".toString(), state]
-        }
-        | groupTuple(by: 0, sort: "hash")
-        | map {id, states ->
-          def new_r1 = states.collect{it.r1_output}
-          def new_r2 = states.collect{it.r2_output}
-          // This assumes that, except for r1 and r2, 
-          // the keys across the grouped states are the same.
-          // TODO: this can be asserted.
-          def first_state = states[0]
-          def new_state = states[0] + [
-            "r1": new_r1,
-            "r2": new_r2,
+      | htrnaseq.run(
+        args: [
+          f_data: 'fData/$id.txt',
+          p_data: 'pData/$id.txt',
+          star_output: 'star_output/$id/*',
+          fastq_output: 'fastq/*',
+          eset: 'esets/$id.rds',
+          nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
+          star_qc_metrics: 'starLogs/$id.txt',
+          html_report: "report.html",
+          run_params: null
+        ],
+        fromState: {id, state ->
+          [
+            input_r1: state.r1,
+            input_r2: state.r2,
+            barcodesFasta: state.barcodesFasta,
+            genomeDir: state.genomeDir,
+            annotation: state.annotation,
+            umi_length: state.umi_length,
+            sample_id: "${state.project_id}/${state.experiment_id}/${state.sample_id}",
           ]
-          return [id, new_state]
-        }
-        | workflow_clone.run(
-          args: [
-            f_data: 'fData/$id.txt',
-            p_data: 'pData/$id.txt',
-            star_output: 'star_output/$id/*',
-            fastq_output: 'fastq/*',
-            eset: 'esets/$id.rds',
-            nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
-            star_qc_metrics: 'starLogs/$id.txt',
-            html_report: "report.html",
-            run_params: null
-          ],
-          fromState: {id, state ->
-            [
-              input_r1: state.r1,
-              input_r2: state.r2,
-              barcodesFasta: state.barcodesFasta,
-              genomeDir: state.genomeDir,
-              annotation: state.annotation,
-              umi_length: state.umi_length,
-              sample_id: "${state.project_id}/${state.experiment_id}/${state.sample_id}",
-            ]
-          },
-          toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
-        )
-      return out_ch
-    } 
-
-    // mix all results
-    htrnaseq_ch =
-      (htrnaseq_chs.size == 1)
-        ? htrnaseq_chs[0]
-        : htrnaseq_chs[0].mix(*htrnaseq_chs.drop(1))
-
+        },
+        toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
+      )
 
     // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
     // but for publishing the results, this is not handy because we want to use the $id
@@ -203,8 +155,8 @@ workflow run_wf {
       | combine(save_params_ch)
       | map {id, grouped_ch_state, _, save_params_state ->
         assert save_params_state.run_params.isFile()
-        def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         def new_id = "${grouped_ch_state.project_id}/${grouped_ch_state.experiment_id}".toString()
+        def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         return [new_id, new_state]
       }
       | groupTuple(by: 0, sort: 'hash')
@@ -290,7 +242,7 @@ workflow run_wf {
             p_data_dir: "${prefix}/${state.p_data_dir_workflow}"
           ]
         },
-        toState: { id, result, state -> result + ["run_params": state.run_params, "_meta": state._meta] },
+        toState: { id, result, state -> result + ["run_params": state.run_params, "_meta": state._meta]},
         directives: [
           publishDir: [
             path: results_publish_dir, 
