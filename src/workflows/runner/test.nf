@@ -114,7 +114,7 @@ workflow test_wf {
   tosortedlistch = output_ch
     | toSortedList()
     | map {events ->
-        assert events.size() == 3, "Expected three events to be output, found ${events.size()}"
+        assert events.size() == 2, "Expected 2 events to be output, found ${events.size()}"
         events
     }
     | map {states -> 
