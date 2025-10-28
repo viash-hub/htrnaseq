@@ -70,7 +70,6 @@ workflow test_wf2 {
 
 
 workflow test_no_events {
-  // Test the edge case where one of the barcodes has no reads
   resources_test_file = file(params.resources_test)
   input_ch = Channel.fromList([])
     | map{ state -> [state.id, state] }
