@@ -22,7 +22,10 @@ workflow run_wf {
       // List the FASTQ files per input directory
       // Be careful: an event per lane is created!
       | map {id, state ->
-        def new_state = state + ["run_id": id]
+        def new_state = state + ["_meta": ["join_id": id]]
+        if (!state.run_id) {
+          new_state = new_state + ["run_id": id]
+        }
         return [id, new_state]
       }
 
@@ -130,15 +133,17 @@ workflow run_wf {
           html_report: "report.html",
           run_params: null
         ],
-        fromState: [
-          input_r1: "r1",
-          input_r2: "r2",
-          barcodesFasta: "barcodesFasta",
-          genomeDir: "genomeDir",
-          annotation: "annotation",
-          umi_length: "umi_length",
-          sample_id: "sample_id",
-        ],
+        fromState: {id, state ->
+          [
+            input_r1: state.r1,
+            input_r2: state.r2,
+            barcodesFasta: state.barcodesFasta,
+            genomeDir: state.genomeDir,
+            annotation: state.annotation,
+            umi_length: state.umi_length,
+            sample_id: "${state.project_id}/${state.experiment_id}/${state.sample_id}",
+          ]
+        },
         toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
       )
 
@@ -148,15 +153,14 @@ workflow run_wf {
     // So, we should combine everything together
     results_publish_ch = htrnaseq_ch
       | combine(save_params_ch)
-      | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
+      | map {id, grouped_ch_state, _, save_params_state ->
         assert save_params_state.run_params.isFile()
+        def new_id = "${grouped_ch_state.project_id}/${grouped_ch_state.experiment_id}".toString()
         def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
         return [new_id, new_state]
       }
-      | toSortedList
-      | map{ vs ->
-          def states = vs.collect{it[1]}
-
+      | groupTuple(by: 0, sort: 'hash')
+      | map{ id, states ->
           // The STAR output is a directory for each well in a plate (or pool of plates).
           // The wells are grouped into a directory per sample. The name of this directory should
           // match the sample_id.
@@ -208,8 +212,8 @@ workflow run_wf {
             [key_, states.collect{it.get(key_)}]
           }
 
-          new_state = new_state + state_unique_keys + state_collect
-          [states[0].run_id, new_state]  
+          new_state = new_state + state_unique_keys + state_collect + ["_meta": states[0]._meta]
+          [id, new_state]  
       }
       | publish_results.run(
         fromState: { id, state ->
@@ -238,7 +242,7 @@ workflow run_wf {
             p_data_dir: "${prefix}/${state.p_data_dir_workflow}"
           ]
         },
-        toState: { id, result, state -> result + ["run_params": state.run_params] },
+        toState: { id, result, state -> result + ["run_params": state.run_params, "_meta": state._meta]},
         directives: [
           publishDir: [
             path: results_publish_dir, 
@@ -255,6 +259,7 @@ workflow run_wf {
           "f_data_dir",
           "p_data_dir",
           "run_params",
+          "_meta"
         ]
       )
 

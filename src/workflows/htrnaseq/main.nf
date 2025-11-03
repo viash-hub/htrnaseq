@@ -119,7 +119,7 @@ workflow run_wf {
       }
 
 
-    concat_samples_ch = demultiplex_ch.join(f_data_ch)
+    concat_samples_ch = demultiplex_ch.join(f_data_ch, failOnMismatch: true, failOnDuplicate: true)
       | map {id, demultiplex_state, f_data_state ->
         def newState = demultiplex_state + ["f_data": f_data_state["f_data"]]
         [id, newState]
@@ -140,7 +140,7 @@ workflow run_wf {
         }
       )
 
-    pool_ch = concat_samples_ch.join(fastq_output_directory_ch)
+    pool_ch = concat_samples_ch.join(fastq_output_directory_ch, failOnMismatch: true, failOnDuplicate: true)
       | map {id, concat_state, fastq_output_directory_state ->
         def new_state = concat_state + fastq_output_directory_state
         return [id, new_state]
@@ -281,7 +281,7 @@ workflow run_wf {
         ]
       )
     
-    eset_ch = star_logs_ch.join(pool_statistics_ch, remainder: true)
+    eset_ch = star_logs_ch.join(pool_statistics_ch, failOnMismatch: true, failOnDuplicate: true)
       | map {id, star_logs_state, pool_statistics_state ->
         def newState = star_logs_state + ["nrReadsNrGenesPerChromPool": pool_statistics_state.nrReadsNrGenesPerChromPool]
         return [id, newState]
@@ -312,7 +312,9 @@ workflow run_wf {
 
     report_channel = eset_ch
       | toSortedList()
+      | filter{it}
       | map {ids_and_states ->
+        assert ids_and_states.size() > 0 
         def states = ids_and_states.collect{it[1]}
         def html_report = states[0].html_report
         def ids = ids_and_states.collect{it[0]}
@@ -334,7 +336,7 @@ workflow run_wf {
         }
       }
 
-    output_ch = eset_ch.join(report_channel)
+    output_ch = eset_ch.join(report_channel, failOnMismatch: true, failOnDuplicate: true)
       | map {id, state_eset, state_report ->
         def new_state = state_eset + [
           "html_report": state_report.html_report,

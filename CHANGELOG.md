@@ -1,4 +1,11 @@
-# htrnaseq v0.12.x
+# htrnqseq v0.13.0
+
+## Breaking changes
+
+* `runner`: allow multiple experiments to be processed in parallel (PR #81). 
+  As a consequence; the sample ID that is stored in the ExpressionSet files (esets) is now prefixed by the project and experiment IDs.
+
+# htrnaseq v0.12.3
 
 ## Bug fixes
 
