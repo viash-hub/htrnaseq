@@ -54,7 +54,8 @@ workflow test_wf {
   // if all arguments are present in the hashmap
   output_ch = Channel.fromList([
     [
-        id: "run_1",
+        id: "run_1_exp_bar",
+        run_id: "run_1",
         input: resources_test.resolve("10k/SRR14730301"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
@@ -65,7 +66,8 @@ workflow test_wf {
         results_publish_dir: params.results_publish_dir,
     ],
     [
-        id: "run_2",
+        id: "run_2_exp_bar",
+        run_id: "run_2",
         input:  resources_test.resolve("10k/SRR14730301"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
@@ -76,13 +78,26 @@ workflow test_wf {
         results_publish_dir: params.results_publish_dir,
     ],
     [
-        id: "run_3",
+        id: "run_3_exp_bar",
+        run_id: "run_3",
         input:resources_test.resolve("10k/SRR14730302"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
         annotation: resources_test.resolve("genomeDir/gencode.v41.annotation.gtf.gz"),
         project_id: "foo",
         experiment_id: "bar",
+        fastq_publish_dir: params.fastq_publish_dir,
+        results_publish_dir: params.results_publish_dir,
+    ],
+    [
+        id: "run_2_exp_ipsum",
+        run_id: "run_2",
+        input:resources_test.resolve("10k/SRR14730302"),
+        genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
+        barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
+        annotation: resources_test.resolve("genomeDir/gencode.v41.annotation.gtf.gz"),
+        project_id: "lorem",
+        experiment_id: "ipsum",
         fastq_publish_dir: params.fastq_publish_dir,
         results_publish_dir: params.results_publish_dir,
     ]
@@ -99,11 +114,11 @@ workflow test_wf {
   tosortedlistch = output_ch
     | toSortedList()
     | map {events ->
-        assert events.size() == 1, "Expected one events to be output, found ${events.size()}"
+        assert events.size() == 2, "Expected 2 events to be output, found ${events.size()}"
         events
     }
     | map {states -> 
-        def output_state = states[0][1]
+        def output_state = states.find{id, _ -> id == "foo/bar"}[1]
         assert output_state.eset_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.rds", "VH02001614.rds"].toSet()
         assert output_state.star_output_dir.listFiles().collect{it.name}.toSet() == ["VH02001612", "VH02001614"].toSet()
         ["VH02001612", "VH02001614"].each{it ->
@@ -112,6 +127,16 @@ workflow test_wf {
         assert output_state.star_qc_metrics_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
         assert output_state.nrReadsNrGenesPerChrom_dir.listFiles().collect{it.name}.toSet() == ["VH02001612.txt", "VH02001614.txt"].toSet()
         assert output_state.run_params.isFile()
+
+        def output_state_lorem = states.find{id, _ -> id == "lorem/ipsum"}[1]
+        assert output_state_lorem.eset_dir.listFiles().collect{it.name}.toSet() == ["VH02001614.rds"].toSet()
+        assert output_state_lorem.star_output_dir.listFiles().collect{it.name}.toSet() == ["VH02001614"].toSet()
+        ["VH02001614"].each{it ->
+           assert output_state_lorem.star_output_dir.resolve(it).toRealPath().listFiles().collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
+        }
+        assert output_state_lorem.star_qc_metrics_dir.listFiles().collect{it.name}.toSet() == ["VH02001614.txt"].toSet()
+        assert output_state_lorem.nrReadsNrGenesPerChrom_dir.listFiles().collect{it.name}.toSet() == ["VH02001614.txt"].toSet()
+        assert output_state_lorem.run_params.isFile()
     }
 
 
@@ -155,6 +180,7 @@ workflow test_wf {
                 assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
             }
 
+            // Experiment foo/bar
             def results_subdir = file("${params.results_publish_dir}")
             assert fastq_subdir.isDirectory()
             def expected_subdir = file("${results_subdir}/foo/bar/data_processed", type: 'any')
@@ -186,6 +212,37 @@ workflow test_wf {
             assert file("${expected_result_dir}/report.html").isFile()
             assert file("${expected_result_dir}/params.yaml").isFile()
             assert file("${expected_result_dir}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
+
+
+            // Experiment lorem/ipsum
+            def expected_subdir_lorem = file("${results_subdir}/lorem/ipsum/data_processed", type: 'any')
+            assert expected_subdir_lorem.isDirectory()
+            def expected_result_dir_lorem = files("${expected_subdir_lorem}/*_htrnaseq_${pipeline_version}", type: 'any')
+            assert expected_result_dir_lorem.size() == 1
+            expected_result_dir_lorem = expected_result_dir_lorem[0]
+            assert expected_result_dir_lorem.isDirectory()
+            def expected_esets_lorem = ["VH02001614.rds"]
+            def found_esets_lorem = files("${expected_result_dir_lorem}/esets/*.rds", type: 'any')
+            assert found_esets_lorem.size() == 1
+            assert found_esets_lorem.collect{it.name}.toSet() == expected_esets_lorem.toSet()
+            expected_table_filenames_lorem = ["VH02001614.txt"]
+            def found_pdata_lorem = files("${expected_result_dir_lorem}/pData/*.txt", type: 'any')
+            assert found_pdata_lorem.size() == 1
+            assert found_pdata_lorem.collect{it.name}.toSet() == expected_table_filenames_lorem.toSet()
+            def found_nr_genes_nr_reads_lorem = files("${expected_result_dir_lorem}/nrReadsNrGenesPerChrom/*.txt", type: 'any')
+            assert found_nr_genes_nr_reads_lorem.size() == 1
+            assert found_nr_genes_nr_reads_lorem.collect{it.name}.toSet() == expected_table_filenames_lorem.toSet() 
+            def found_star_logs_lorem = files("${expected_result_dir_lorem}/starLogs/*.txt", type: 'any')
+            assert found_star_logs_lorem.size() == 1
+            assert found_star_logs_lorem.collect{it.name}.toSet() == expected_table_filenames_lorem.toSet()
+            def star_output_lorem = file("${expected_result_dir_lorem}/star_output", type: 'any')
+            assert star_output_lorem.isDirectory()
+            
+            assert files("${star_output_lorem}/*", type: 'any').collect{it.name}.toSet() == ["VH02001614"].toSet()
+            assert files("${star_output_lorem}/VH02001614/*", type: 'any').collect{it.name}.toSet() == ["ACACCGAATT", "GGCTATTGAT"].toSet()
+            assert file("${expected_result_dir_lorem}/report.html").isFile()
+            assert file("${expected_result_dir_lorem}/params.yaml").isFile()
+            assert file("${expected_result_dir_lorem}/fData/fData.gencode.v41.annotation.gtf.gz.txt").isFile()
 
         } catch (Exception e) {
             throw new WorkflowScriptErrorException("Integration test failed!", e)

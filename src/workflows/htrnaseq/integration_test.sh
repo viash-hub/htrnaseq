@@ -31,3 +31,12 @@ nextflow \
   -profile docker,local \
   --publish_dir output2
 
+nextflow \
+  run . \
+  -main-script src/workflows/htrnaseq/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_no_events \
+  -resume \
+  -profile docker,local \
+  --publish_dir output2
+
