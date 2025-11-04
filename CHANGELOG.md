@@ -7,7 +7,7 @@
 
 # Minor changes
 
-* `create_report`: bump bioconductor to `3.22` (PR #)
+* `create_report`: bump bioconductor to `3.22` (PR #83).
 
 # htrnaseq v0.12.3
 
