@@ -9,6 +9,10 @@
 
 * `runner`: add `transfer_completed.txt` files to published output when the transfer is completed (PR #82).
 
+# Minor changes
+
+* `create_report`: bump bioconductor to `3.22` (PR #83).
+
 # htrnaseq v0.12.3
 
 ## Bug fixes
