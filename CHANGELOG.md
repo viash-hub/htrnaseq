@@ -5,6 +5,10 @@
 * `runner`: allow multiple experiments to be processed in parallel (PR #81). 
   As a consequence; the sample ID that is stored in the ExpressionSet files (esets) is now prefixed by the project and experiment IDs.
 
+## New features
+
+* `runner`: add `transfer_completed.txt` files to published output when the transfer is completed (PR #82).
+
 # Minor changes
 
 * `create_report`: bump bioconductor to `3.22` (PR #83).
