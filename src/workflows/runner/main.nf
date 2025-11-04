@@ -1,4 +1,12 @@
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.atomic.AtomicBoolean
+
 def date = new Date().format('yyyyMMdd_hhmmss')
+
+session = nextflow.Nextflow.getSession()
+final service = session.publishDirExecutorService()
+
+
 
 def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
@@ -212,14 +220,14 @@ workflow run_wf {
             [key_, states.collect{it.get(key_)}]
           }
 
+          new_state["results_prefix"] = "${state_unique_keys.project_id}/${state_unique_keys.experiment_id}/data_processed/${date}_htrnaseq_${version}"
           new_state = new_state + state_unique_keys + state_collect + ["_meta": states[0]._meta]
           [id, new_state]  
       }
       | publish_results.run(
         fromState: { id, state ->
-          def prefix = "${state.project_id}/${state.experiment_id}/data_processed/${date}_htrnaseq_${version}"
 
-          println("Publising results to ${results_publish_dir}/${prefix}")
+          println("Publising results to ${results_publish_dir}/${state.results_prefix}")
 
           [ 
             // Inputs
@@ -232,34 +240,23 @@ workflow run_wf {
             html_report: state.html_report,
             run_params: state.run_params,
             // Output locations
-            html_report_output: "${prefix}/${state.html_report.name}", 
-            run_params_output: "${prefix}/${state.run_params_workflow}",
-            star_output_dir: "${prefix}/${state.star_output_dir_workflow}",
-            nrReadsNrGenesPerChrom_dir: "${prefix}/${state.nrReadsNrGenesPerChrom_dir_workflow}",
-            star_qc_metrics_dir: "${prefix}/${state.star_qc_metrics_dir_workflow}",
-            eset_dir: "${prefix}/${state.eset_dir_workflow}",
-            f_data_dir: "${prefix}/${state.f_data_dir_workflow}",
-            p_data_dir: "${prefix}/${state.p_data_dir_workflow}"
+            html_report_output: "${state.results_prefix}/${state.html_report.name}", 
+            run_params_output: "${state.results_prefix}/${state.run_params_workflow}",
+            star_output_dir: "${state.results_prefix}/${state.star_output_dir_workflow}",
+            nrReadsNrGenesPerChrom_dir: "${state.results_prefix}/${state.nrReadsNrGenesPerChrom_dir_workflow}",
+            star_qc_metrics_dir: "${state.results_prefix}/${state.star_qc_metrics_dir_workflow}",
+            eset_dir: "${state.results_prefix}/${state.eset_dir_workflow}",
+            f_data_dir: "${state.results_prefix}/${state.f_data_dir_workflow}",
+            p_data_dir: "${state.results_prefix}/${state.p_data_dir_workflow}"
           ]
         },
-        toState: { id, result, state -> result + ["run_params": state.run_params, "_meta": state._meta]},
+        toState: { id, result, state -> result + ["run_params": state.run_params, "_meta": state._meta, "results_prefix": state.results_prefix] },
         directives: [
           publishDir: [
             path: results_publish_dir, 
             overwrite: false,
             mode: "copy"
           ]
-        ]
-      )
-      | setState([
-          "star_output_dir",
-          "nrReadsNrGenesPerChrom_dir",
-          "star_qc_metrics_dir",
-          "eset_dir",
-          "f_data_dir",
-          "p_data_dir",
-          "run_params",
-          "_meta"
         ]
       )
 
@@ -276,7 +273,7 @@ workflow run_wf {
               "fastq_output": fastq_dir.listFiles(),
               "sample_id": state.sample_id,
               "run_id": run_id,
-              "output": "${run_id}/${date}_htrnaseq_${version}/${state.sample_id}".toString()
+              "fastq_prefix": "${run_id}/${date}_htrnaseq_${version}/${state.sample_id}".toString()
             ]
             [new_id, new_state]
           }
@@ -288,7 +285,7 @@ workflow run_wf {
       | publish_fastqs.run(
         fromState: [
           "input": "fastq_output",
-          "output": "output",
+          "output": "fastq_prefix",
         ],
         toState: { id, result, state -> state },
         directives: [
@@ -300,8 +297,84 @@ workflow run_wf {
         ]
       )
 
+
+  has_published = new AtomicBoolean(false)
+
+  interval_ch = channel.interval('30s'){ i ->
+    // Allow this channel to stop generating events based on a later signal
+    if (has_published.get()) {
+      return channel.STOP
+    }
+    i
+  }
+
+  awaited_events_ch = results_publish_ch.mix(fastq_publish_ch)
+    | toSortedList()
+
+  await_ch = awaited_events_ch
+    // Wait for processing events to be done
+    // Create periodic events in order to check for the publishing to be done
+    | combine(interval_ch)
+    | until { event ->
+      println("Checking if publishing has finished in service ${service}")
+      def running_tasks = null
+      if(service instanceof ThreadPoolExecutor) {
+        def completed_tasks = service.getCompletedTaskCount()
+        def task_count = service.getTaskCount()
+        running_tasks = completed_tasks - task_count
+      }
+      else if( System.getenv('NXF_ENABLE_VIRTUAL_THREADS') ) {
+        running_tasks = service.threadCount()
+      }
+      else {
+        error("Publishing service of class ${service.getClass()} is not supported.")
+      }
+      
+      if (running_tasks == 0) {
+        println("Publishing has finished all current tasks. Continuing execution.")
+        return true
+      }
+      println("Workflow is publishing. Waiting...")
+      return false
+    }
+    | last()
+    | map{ events ->
+        // Signal to interval channel to stop generating events.
+        has_published.compareAndSet(false, true)
+        return events.dropRight(1)
+    }
+    | flatMap { events ->
+        println("Creating transfer_complete.txt files.")
+        result_events = []
+        events.each {id, state -> 
+          if (state.containsKey("fastq_prefix")) {
+            def complete_file_fastqs = file("${fastq_publish_dir}/${state.fastq_prefix}/transfer_completed.txt")
+            complete_file_fastqs.text = "" // This will create a file when it does not exist.
+          } else if (state.containsKey("results_prefix")) {
+            def complete_file_results = file("${results_publish_dir}/${state.results_prefix}/transfer_completed.txt") 
+            complete_file_results.text = ""
+            result_events.add([id, state])
+          } else {
+            error "State should contain either 'fastq_prefix' or 'results_prefix'"
+          }
+        }
+        result_events
+    }
+    | setState([
+        "star_output_dir",
+        "nrReadsNrGenesPerChrom_dir",
+        "star_qc_metrics_dir",
+        "eset_dir",
+        "f_data_dir",
+        "p_data_dir",
+        "run_params",
+        "_meta"
+      ]
+    )
+    | view {"innter WF: $it"}
+
   emit:
-    results_publish_ch
+    await_ch
 
 }
 
