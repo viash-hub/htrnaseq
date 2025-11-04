@@ -341,6 +341,7 @@ workflow run_wf {
     | map{ events ->
         // Signal to interval channel to stop generating events.
         has_published.compareAndSet(false, true)
+        // Remove the value that was added by the interval channel.
         return events.dropRight(1)
     }
     | flatMap { events ->
@@ -371,7 +372,6 @@ workflow run_wf {
         "_meta"
       ]
     )
-    | view {"innter WF: $it"}
 
   emit:
     await_ch
