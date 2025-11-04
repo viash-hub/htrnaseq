@@ -5,6 +5,10 @@
 * `runner`: allow multiple experiments to be processed in parallel (PR #81). 
   As a consequence; the sample ID that is stored in the ExpressionSet files (esets) is now prefixed by the project and experiment IDs.
 
+# Minor changes
+
+* `create_report`: bump bioconductor to `3.22` (PR #83).
+
 # htrnaseq v0.12.3
 
 ## Bug fixes
