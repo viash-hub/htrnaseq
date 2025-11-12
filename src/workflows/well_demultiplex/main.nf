@@ -209,8 +209,8 @@ workflow run_wf {
         fromState: { id, state ->
           [
             input: state.output_r1,
-            gzip_output: false,
-            output: "${state.barcode_id}_R1_001.fastq"
+            gzip_output: true,
+            output: "${state.barcode_id}_R1_001.fastq.gz"
           ]
         },
         toState: { id, result, state ->
@@ -225,8 +225,8 @@ workflow run_wf {
         fromState: { id, state ->
           [
             input: state.output_r2,
-            gzip_output: false,
-            output: "${state.barcode_id}_R2_001.fastq",
+            gzip_output: true,
+            output: "${state.barcode_id}_R2_001.fastq.gz",
           ]
         },
         toState: { id, result, state ->
