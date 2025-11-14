@@ -68,7 +68,7 @@ workflow test_wf {
     [
         id: "run_2_exp_bar",
         run_id: "run_2",
-        input:  resources_test.resolve("10k/SRR14730301"),
+        input:  resources_test.resolve("10k/SRR14730302"),
         genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
         barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
         annotation: resources_test.resolve("genomeDir/gencode.v41.annotation.gtf.gz"),
@@ -163,7 +163,7 @@ workflow test_wf {
             assert unique_dirs.collect{_key, _value -> _value.name}.toSet().size() == 1
             def expected_samples = [
                 "run1": "VH02001612",
-                "run2": "VH02001612",
+                "run2": "VH02001614",
                 "run3": "VH02001614"
             ]
 

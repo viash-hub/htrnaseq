@@ -1,5 +1,6 @@
 name: listInputDir
 namespace: utils
+scope: "private"
 description: List the contents of a directory and parse contained fastq files
 arguments:
   - name: "--input"
@@ -14,14 +15,20 @@ arguments:
     multiple: true
   - name: "--r1_output"
     type: file
+    # Allow multiple lanes
+    multiple: true
     description: Path to read 1 fastq/fasta file
     direction: output
   - name: "--r2_output"
     type: file
+    # Allow multiple lanes
+    multiple: true 
     description: Path to read 2 fastq/fasta file
     direction: output
   - name: "--lane"
     type: string
+    # Allow multiple lanes
+    multiple: true
     description: Lane nr
     direction: output
   - name: "--sample"
