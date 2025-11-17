@@ -1,5 +1,9 @@
 # htrnaseq v0.14.0
 
+# Major changes
+
+* `runner`: major refactor that allows sequencing runs to be only demultiplexed once (PR #85).
+
 # Minor changes
 
 * `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
