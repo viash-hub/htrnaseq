@@ -1,4 +1,10 @@
-# htrnqseq v0.13.0
+# htrnaseq v0.14.0
+
+# Minor changes
+
+* `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
+
+# htrnaseq v0.13.0
 
 ## Breaking changes
 
