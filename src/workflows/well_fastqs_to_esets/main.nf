@@ -111,7 +111,7 @@ workflow run_wf {
       )
       // Use the bam file to generate statistics
       | generate_well_statistics.run(
-        directives: [label: ["verylowmem", "verylowcpu"]],
+        directives: [label: ["lowmem", "verylowcpu"]],
         fromState: { id, state ->
           [
             "input": state.star_mapping.resolve('Aligned.sortedByCoord.out.bam'),
