@@ -21,23 +21,17 @@ def regex_trailing_slashes = ~/\/+$/
 def results_publish_dir = params.results_publish_dir - regex_trailing_slashes
 def fastq_publish_dir = params.fastq_publish_dir - regex_trailing_slashes
 
-workflow run_wf {
+
+/* 
+This is a utility workflow that gathers the input events and saves their state to a YAML file.
+*/
+workflow save_params_wf {
   take:
-    raw_ch
+  input_ch
 
   main:
-    input_ch = raw_ch
-      // List the FASTQ files per input directory
-      // Be careful: an event per lane is created!
-      | map {id, state ->
-        def new_state = state + ["_meta": ["join_id": id]]
-        if (!state.run_id) {
-          new_state = new_state + ["run_id": id]
-        }
-        return [id, new_state]
-      }
-
-    save_params_ch = input_ch
+     
+    output_ch = input_ch
       | toSortedList()
       | map { states ->
         def new_id = "save_params"
@@ -78,96 +72,298 @@ workflow run_wf {
         },
         toState: ["run_params": "output"]
       )
-    
-    htrnaseq_ch = input_ch
-      | map { id, state -> 
-        // The argument names for this workflow and the htrnaseq workflow may overlap
-        // here, we store a copy in order to make sure to not accidentally overwrite the state.
-        def new_state = state + [
-          "star_output_dir_workflow": state.star_output_dir,
-          "nrReadsNrGenesPerChrom_dir_workflow": state.nrReadsNrGenesPerChrom_dir,
-          "star_qc_metrics_dir_workflow": state.star_qc_metrics_dir,
-          "eset_dir_workflow": state.eset_dir,
-          "f_data_dir_workflow": state.f_data_dir,
-          "p_data_dir_workflow": state.p_data_dir,
-          "run_params_workflow": state.run_params,
-        ]
+
+  emit:
+  output_ch
+}
+
+
+workflow run_wf {
+  take:
+    raw_ch
+
+  main:
+    input_ch = raw_ch
+      // Use the ID of the event as a default for the `run_id`
+      | map {id, state ->
+        def new_state = state
+        if (!state.run_id) {
+          new_state = new_state + ["run_id": id]
+        }
         return [id, new_state]
       }
+
+    // Save the input parameters to a file
+    // Adds a 'run_params' key to the state with the file.
+    save_params_ch = input_ch
+      | save_params_wf
+  
+    /*
+      WELL DEMULTIPLEXING
+
+      The provided input is a single directory per input event. However, the well demultiplexing
+      requires a list of FASTQ files to be demultiplexed. The `listInputDir` workflow lists the 
+      content of the input directory and deduces the sample IDs from the file name.
+
+      Multiple experiments can be provided, meaning that a input events represent sequencing runs
+      but provided per experiment (i.e. a sequencing run - experiment combination is a unique event).
+      This is because a single sequencing run can contribute to multiple experiments. However, 
+      the demultiplexing of the plate FASTQ files into well FASTQ files should ideally only be done once
+      per sequencing run and not not per-experiment. The `run_id` is used as a way to group the sequencing
+      runs and to determine the name of the output folder. 
+    */
+    demultiplex_ch = input_ch
+      | map {id, state ->
+        [state.run_id, state + ["event_id": id]]
+      }
+      | groupTuple(by: 0, sort: 'hash')
+      // Here there might be multiple states if there are multiple experiments using the same sequencing run
+      | map {run_id, states ->
+        // The 'run_id' parameter _must_ map one to one to an input folder.
+        def input_dirs = states.collect{it.input}
+        assert input_dirs.collect{it.toUriString()}.unique().size() == 1, \
+          "Found more than one input directory that corresponds with run ID '${run_id}'."
+
+        // Its not possible to demultiplex the same sequencing run with different barcodes fasta
+        def barcode_fastas = states.collect{it.barcodesFasta}
+        assert barcode_fastas.collect{it.toUriString()}.unique().size() == 1, \
+          "Demultiplexing the same run (${run_id}) with two different barcode layouts it not supported."
+
+        // Its not allowed to use the same sequencing run twice or more for the same experiment
+        def experiments = states.collect{it.experiment_id}
+        assert experiments.unique().size() == experiments.size(), \
+          "It is not possible to use a sequencing run (${run_id}) for the same experiment multiple times. Found: ${experiments}"
+
+        def new_state = [
+          "run_id": run_id,
+          "input": input_dirs[0],
+          "barcodesFasta": barcode_fastas[0], // This is needed for the well demultiplexing
+          "event_ids": states.collect{it.event_id},
+          "experiment_ids": experiments
+        ]
+        [run_id, new_state]
+      } 
+      /* ListInputDir puts the sample_id as the event ID (slot 0 from the tuple).
+         If the FASTQ files are split per lane; the ListInputDir subworkflow will output the fastq files
+         as a list in 'r1_output' and 'r2_output'. There are three things to take into account:
+          (1) an input folder can contain input files from multiple samples (pools) - this is highly probable.
+          (2) there might be multiple FASTQs for a single sample that correspond to the lanes - they originate from the same input directory.
+          (3) there might be FASTQ files for the same sample across directories.
+              This is a concatenation scenario: the sample was split across sequencing runs in order to increase sequencing depth.
+                
+         Item (2) -the lanes- are handled by providing a list of FASTQ files to the `well_demultiplexing` workflow.
+         However, (3) is handled by the `htrnaseq` workflow. This means that each sequencing run is demultiplexed separately, 
+         and the well FASTQs concatenated across sequencing runs instead of concatenating on plate level.
+      */
       | listInputDir.run(
         fromState: [
-          "input": "input",
-          "pools": "pools",
+          "input": "input"
         ],
-        toState: { id, state, result ->
-          def clean_state = state.findAll{ it.key != "input" }
-          clean_state + result
+        toState: [
+            "output_r1": "r1_output",
+            "output_r2": "r2_output",
+            "sample_id": "sample_id"
+          ]
+      )
+      /* Samples might be split across sequencing runs — this is item (3) from the comment above. 
+         The listInputDir subworkflow uses just the sample ID for the 
+         event. Even though the concatenation of samples is not handled by with well_demultiplexing workflow,
+         there might be more than 1 event with the same ID after using the listInputDir subworkflow. 
+         In order to make them unique again we just add the run ID, otherwise events with duplicate IDs
+         are dropped.
+      */
+      | map {id, state -> ["${state.run_id}/${id}".toString(), state]}
+      // Each plate (sample) is demultiplexed separately
+      | well_demultiplex.run(
+        fromState: [
+            "input_r1": "output_r1",
+            "input_r2": "output_r2",
+            "barcodesFasta": "barcodesFasta"
+        ],
+        toState: {id, result, state ->
+          def all_fastq = result.output_r1 + result.output_r2
+          def output_dir = all_fastq.collect{it.parent}.unique()
+          assert output_dir.size() == 1, "Expected output from well demultiplexing (id $id) to reside into one directory. Found: $output_dir"
+          def new_state = state + [
+            "output_r1": result.output_r1,
+            "output_r2": result.output_r2,
+            "fastq_output_directory": output_dir[0],
+          ]
+          return new_state
         }
       )
-      // ListInputDir puts the sample_id as the event ID (slot 0 from the tuple).
-      // The sample_id was inferred from the start of the file name,
-      // and it can be used to group the FASTQ files, because an input folder 
-      // can contain input files from multiple samples (pools). Additionally,
-      // there might be multiple FASTQs for a single sample that correspond to the
-      // lanes. So the fastq files must be gathered across lanes and input folders
-      // in order to create an input lists for R1 and R2.
-      // The ID of the event here is important! It determines the name of the output
-      // folders for the FASTQ files and these folders are published as-is later.
-      // The folder where the FASTQ files are stored in should be named after the run ID.
-      | map {id, state -> ["${state.sample_id}/${state.run_id}".toString(), state]}
-      | groupTuple(by: 0, sort: "hash")
-      | map {id, states ->
-        def new_r1 = states.collect{it.r1_output}
-        def new_r2 = states.collect{it.r2_output}
-        // This assumes that, except for r1 and r2, 
-        // the keys across the grouped states are the same.
-        // TODO: this can be asserted.
-        def new_state = states[0] + [
-          "r1": new_r1,
-          "r2": new_r2,
+    
+    /*
+    Publish the results from the demultiplexing. The publishing is done for each sequencing run.
+    Because the well demultiplexing is only done once per sequencing run anyway there is not
+    much need for state manipulation here.
+    */
+    fastq_publish_ch = demultiplex_ch
+      | map {id, state ->
+        def new_state = state + [
+          "fastq_prefix": "${state.run_id}/${date}_htrnaseq_${version}/${state.sample_id}".toString()
         ]
-        return [id, new_state]
+        [id, new_state]
       }
-      | view {"Pool inputs after listing directory: $it"}
-      | htrnaseq.run(
-        args: [
-          f_data: 'fData/$id.txt',
-          p_data: 'pData/$id.txt',
-          star_output: 'star_output/$id/*',
-          fastq_output: 'fastq/*',
-          eset: 'esets/$id.rds',
-          nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
-          star_qc_metrics: 'starLogs/$id.txt',
-          html_report: "report.html",
-          run_params: null
+      | publish_fastqs.run(
+        fromState: {id, state -> [
+            "input": state.output_r1 + state.output_r2,
+            "output": state.fastq_prefix,
+          ]
+        },
+        toState: { id, result, state -> state },
+        directives: [
+          publishDir: [
+            path: fastq_publish_dir, 
+            overwrite: false,
+            mode: "copy"
+          ]
+        ]
+      )
+
+    /*
+    CREATE COUNT MATRICES
+
+    The results from the well demultiplexing are the plates for each unique sequencing run.
+    The information for the mapping (creating the count matrices) needs to be added from the input state.
+    However, the input state provides events on sequencing runs per experiment, which means
+    that the event for a single sequencing run is duplicated for how many experiments it will contribute to.
+    In order to facilitate this join, the input event IDs were stored in the output state from
+    the well demultiplexing. After the join the events are on the level of the input events, meaning
+    that they are provided per experiment.
+
+
+    After the join, there might be multiple events with the same sample ID: a single well plate 
+    might have been put on different sequencing runs in order to increase sequencing depth.
+    This means that they have the same 'sample_id' state key. If the sample ID would be used as event ID, 
+    these duplicate events would be dropped. The event ID from the input channel is added as a prefix to
+    the sample ID in order to make sure they are unique. In order to indicate to the subworkflow that 
+    these samples need to be concatenated, value for the `sample_id` argument can be provided.
+    This will cause the the `well_fastqs_to_esets` workflow to do the grouping and concatenation of the 
+    events with the same sample ID.
+    */
+    htrnaseq_ch = demultiplex_ch
+      // The IDs in the demultiplex_ch are of format '<run_id>/<sample_id>' (not split per experiment.)
+      | flatMap {id, state ->
+        state.event_ids.collect{ event_id -> 
+          def new_state = state.findAll{k, v -> !["event_ids", "experiment_ids"].contains(k)} + ["event_id": event_id]
+          [event_id, new_state]
+        }
+      }
+      // The event IDs at this point are the same IDs in the `input_ch` in order to do the join
+      | join(input_ch)
+      | map {event_id, demux_state, input_state ->
+        def keys_to_transfer = [
+          "umi_length",
+          "annotation",
+          "genomeDir",
+          "pools",
+          "experiment_id",
+          "project_id",
+          "star_output_dir",
+          "nrReadsNrGenesPerChrom_dir",
+          "star_qc_metrics_dir",
+          "eset_dir",
+          "f_data_dir",
+          "p_data_dir",
+          "run_params"
+        ]
+        def new_state = demux_state + input_state.subMap(keys_to_transfer)
+
+        def keys_to_rename = [
+          "star_output_dir",
+          "nrReadsNrGenesPerChrom_dir",
+          "star_qc_metrics_dir",
+          "eset_dir",
+          "f_data_dir",
+          "p_data_dir",
+          "run_params"
+        ]
+        new_state = new_state.collectEntries{k, v ->
+          def newKey = keys_to_rename.contains(k) ? "${k}_workflow" : k
+          [newKey, v]
+        }
+        // Using 'event_id' ensures that the event IDs are unique.
+        // The concatenation of samples is handled by providing the 'sample_id'
+        // argument to the `well_fastqs_to_esets` workflow. 
+        def new_id = "${event_id}/${demux_state.sample_id}"
+        [new_id, new_state]
+      }
+      | filter {id, state ->
+        state.pools == null || state.pools.contains(state.sample_id)
+      }
+      | well_fastqs_to_esets.run(
+          args: [
+            f_data: 'fData/$id.txt',
+            p_data: 'pData/$id.txt',
+            star_output: 'star_output/$id/*',
+            eset: 'esets/$id.rds',
+            nrReadsNrGenesPerChrom: 'nrReadsNrGenesPerChrom/$id.txt',
+            star_qc_metrics: 'starLogs/$id.txt',
+            html_report: "report.html"
         ],
-        fromState: {id, state ->
-          [
-            input_r1: state.r1,
-            input_r2: state.r2,
-            barcodesFasta: state.barcodesFasta,
-            genomeDir: state.genomeDir,
-            annotation: state.annotation,
-            umi_length: state.umi_length,
-            sample_id: "${state.project_id}/${state.experiment_id}/${state.sample_id}",
+        fromState: {id, state -> [
+            "input_r1": state.output_r1,
+            "input_r2": state.output_r2,
+            "annotation": state.annotation,
+            "umi_length": state.umi_length,
+            "barcodesFasta": state.barcodesFasta,
+            "genomeDir": state.genomeDir,
+            // Concatenate the samples with the same sample ID, but not across experiments.
+            "sample_id": "${state.experiment_id}/${state.sample_id}",
           ]
         },
         toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
       )
 
-    // The HT-RNAseq workflow outputs multiple events, one per 'pool' (usually a plate)
-    // but for publishing the results, this is not handy because we want to use the $id
-    // variable as a pointer to the target data.
-    // So, we should combine everything together
-    results_publish_ch = htrnaseq_ch
+
+    /* The well demultiplexing provides a list of FASTQ files as output 
+       while this runner workflow needs a directory.
+       Furthermore, the demultiplexing output is provided per unique sequencing run 
+       (even when used by multiple experiments) but this runner workflow outputs
+       the events per experiment. Because multiple sequencing runs can contribute to more
+       than one experiment, a list of directories is output by the runner. Here the output
+       from the demultiplexing is transformed in order to add it to the eset (results_publish_ch) output.
+
+       Normally, one would expect to use fromState/toState logic for this with the
+       `well_fastqs_to_esets` workflow. However, concatenation of samples is done within this workflow
+       and it does not output the FASTQs that contributed to a certain sample.
+    */
+    fastq_output_directory_ch = demultiplex_ch
+      | flatMap {id, state ->
+        def base_state = state.findAll{k, v -> k != "experiment_ids"}
+        state.experiment_ids.collect { experiment_id ->
+          ["${experiment_id}/${state.sample_id}".toString(), base_state + ["experiment_id": experiment_id]]
+        }
+      }
+      | groupTuple(by: 0, sort: "hash")
+      | map {id, states ->
+        def fastq_output_dirs = states.collect{it.fastq_output_directory}
+        def new_state = ["fastq_output_directory": fastq_output_dirs]
+        def new_event = [id, new_state]
+        return [id, new_state]
+      }
+
+    results_publish_ch = htrnaseq_ch.join(fastq_output_directory_ch, failOnDuplicate: true, failOnMismatch: true)
+      // Add the FASTQ directories from the demultiplexing output
+      | map {id, htrnaseq_state, fastq_output_directory_state ->
+        def new_state = htrnaseq_state + fastq_output_directory_state
+        return [id, new_state]
+      } 
       | combine(save_params_ch)
+      // Add the run parameter YAML to the output
       | map {id, grouped_ch_state, _, save_params_state ->
         assert save_params_state.run_params.isFile()
-        def new_id = "${grouped_ch_state.project_id}/${grouped_ch_state.experiment_id}".toString()
         def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
-        return [new_id, new_state]
+        return [id, new_state]
+      }
+      // Group the events in order to publish the results per experiment
+      | map {id, state -> 
+        def new_id = "${state.project_id}/${state.experiment_id}".toString()
+        [new_id, state]
       }
       | groupTuple(by: 0, sort: 'hash')
+      // Join the results from the different plates in this experiment
       | map{ id, states ->
           // The STAR output is a directory for each well in a plate (or pool of plates).
           // The wells are grouped into a directory per sample. The name of this directory should
@@ -215,13 +411,14 @@ workflow run_wf {
             "star_qc_metrics",
             "eset",
             "p_data",
+            "event_id"
           ]
           def state_collect = state_keys_collect.collectEntries{ key_ ->
             [key_, states.collect{it.get(key_)}]
           }
 
           new_state["results_prefix"] = "${state_unique_keys.project_id}/${state_unique_keys.experiment_id}/data_processed/${date}_htrnaseq_${version}"
-          new_state = new_state + state_unique_keys + state_collect + ["_meta": states[0]._meta]
+          new_state = new_state + state_unique_keys + state_collect
           [id, new_state]  
       }
       | publish_results.run(
@@ -250,7 +447,13 @@ workflow run_wf {
             p_data_dir: "${state.results_prefix}/${state.p_data_dir_workflow}"
           ]
         },
-        toState: { id, result, state -> result + ["run_params": state.run_params, "_meta": state._meta, "results_prefix": state.results_prefix] },
+        toState: { id, result, state -> 
+          result + [
+            "run_params": state.run_params,
+            "_meta": ["join_id": state.event_id[0]],
+            "results_prefix": state.results_prefix
+          ] 
+        },
         directives: [
           publishDir: [
             path: results_publish_dir, 
@@ -260,42 +463,6 @@ workflow run_wf {
         ]
       )
 
-    fastq_publish_ch = htrnaseq_ch
-      // The output from the htrnaseq workflow is on sample (i.e. pool) level
-      // Multiple sequencing runs may have contributes to the FASTQ files from this pool.
-      // So the fastq_output is a list of directories, one for each run.
-      // We assume that the names of the folders containing the FASTQ files are equal to the pool names.
-      | flatMap {id, state ->
-          state.fastq_output.collect{fastq_dir ->
-            def run_id = fastq_dir.name
-            def new_id = "${run_id}/${state.sample_id}"
-            def new_state = [
-              "fastq_output": fastq_dir.listFiles(),
-              "sample_id": state.sample_id,
-              "run_id": run_id,
-              "fastq_prefix": "${run_id}/${date}_htrnaseq_${version}/${state.sample_id}".toString()
-            ]
-            [new_id, new_state]
-          }
-      }
-      // A folder containing the FASTQ files from a certain pool may be present in the state from
-      // multiple samples; if that pool contributed to the data from those samples.
-      // Those FASTQ files will only be published once by filtering out the duplicate events here.
-      | unique{it[0]}
-      | publish_fastqs.run(
-        fromState: [
-          "input": "fastq_output",
-          "output": "fastq_prefix",
-        ],
-        toState: { id, result, state -> state },
-        directives: [
-          publishDir: [
-            path: fastq_publish_dir, 
-            overwrite: false,
-            mode: "copy"
-          ]
-        ]
-      )
 
 
   has_published = new AtomicBoolean(false)
@@ -307,6 +474,9 @@ workflow run_wf {
     }
     i
   }
+  
+  // Make sure that there is at least one event in the interval channel
+  interval_at_least_one_event_ch = Channel.fromList([0]).concat(interval_ch)
 
   awaited_events_ch = results_publish_ch.mix(fastq_publish_ch)
     | toSortedList()
@@ -314,7 +484,7 @@ workflow run_wf {
   await_ch = awaited_events_ch
     // Wait for processing events to be done
     // Create periodic events in order to check for the publishing to be done
-    | combine(interval_ch)
+    | combine(interval_at_least_one_event_ch)
     | until { event ->
       println("Checking if publishing has finished in service ${service}")
       def running_tasks = null

@@ -118,7 +118,9 @@ test_resources:
 dependencies:
   - name: utils/listInputDir
     repository: local
-  - name: workflows/htrnaseq
+  - name: workflows/well_demultiplex
+    repository: local
+  - name: workflows/well_fastqs_to_esets
     repository: local
   - name: io/publish_fastqs
     repository: local
