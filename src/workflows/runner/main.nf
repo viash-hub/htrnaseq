@@ -130,16 +130,17 @@ workflow run_wf {
           "Demultiplexing the same run (${run_id}) with two different barcode layouts it not supported."
 
         // Its not allowed to use the same sequencing run twice or more for the same experiment
-        def experiments = states.collect{it.experiment_id}
-        assert experiments.unique().size() == experiments.size(), \
-          "It is not possible to use a sequencing run (${run_id}) for the same experiment multiple times. Found: ${experiments}"
+        def projects_experiments = states.collect{[it.project_id, it.experiment_id]}
+        def project_experiments_str = projects_experiments.collect{project, experiment -> "${project}/${experiment}"}
+        assert project_experiments_str.unique().size() == project_experiments_str.size(), \
+          "It is not possible to use a sequencing run (${run_id}) for the same experiment multiple times. Found: ${project_experiments_str}"
 
         def new_state = [
           "run_id": run_id,
           "input": input_dirs[0],
           "barcodesFasta": barcode_fastas[0], // This is needed for the well demultiplexing
           "event_ids": states.collect{it.event_id},
-          "experiment_ids": experiments
+          "project_experiment_ids": projects_experiments
         ]
         [run_id, new_state]
       } 
@@ -310,7 +311,7 @@ workflow run_wf {
             "barcodesFasta": state.barcodesFasta,
             "genomeDir": state.genomeDir,
             // Concatenate the samples with the same sample ID, but not across experiments.
-            "sample_id": "${state.experiment_id}/${state.sample_id}",
+            "sample_id": "${state.project_id}/${state.experiment_id}/${state.sample_id}",
           ]
         },
         toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
@@ -331,9 +332,11 @@ workflow run_wf {
     */
     fastq_output_directory_ch = demultiplex_ch
       | flatMap {id, state ->
-        def base_state = state.findAll{k, v -> k != "experiment_ids"}
-        state.experiment_ids.collect { experiment_id ->
-          ["${experiment_id}/${state.sample_id}".toString(), base_state + ["experiment_id": experiment_id]]
+        def base_state = state.findAll{k, v -> k != "project_experiment_ids"}
+        state.project_experiment_ids.collect { project_id, experiment_id ->
+          // Note: the format of the ID here must match with the format chosen for the 'sample_id' argument
+          // in the well_fastqs_to_esets workflow in order to do the join with its output.
+          ["${project_id}/${experiment_id}/${state.sample_id}".toString(), base_state + ["project_id": project_id, "experiment_id": experiment_id]]
         }
       }
       | groupTuple(by: 0, sort: "hash")
