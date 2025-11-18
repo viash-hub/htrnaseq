@@ -2,7 +2,7 @@
 
 # Bug fixes
 
-* Fix an issue where samples with the same experiment ID but from different projects were concatenated. 
+* Fix an issue where samples with the same experiment ID but from different projects were concatenated (PR #87). 
 
 # htrnaseq v0.14.0
 
