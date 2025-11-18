@@ -59,7 +59,7 @@ workflow run_wf {
             no_indels: true,
             action: "none",
             front_fasta: state.barcodesFasta,
-            output: "*_001.fastq",
+            output: "*_001.fastq.gz",
             error_rate: 0.10,
             demultiplex_mode: "single",
             output_r1: state.output_r1,
@@ -77,18 +77,18 @@ workflow run_wf {
         }
       )
       | flatMap{ id, state ->
-        // The output from cutadapt should be in the format {name}_R(1|2)_001.fastq
+        // The output from cutadapt should be in the format {name}_R(1|2)_001.fastq.gz
         // See https://github.com/viash-hub/biobox/blob/952ff0843093b538cbfd6fefdecf2e7a0bc9e70b/src/cutadapt/script.sh#L226
         // Here, {name} is the name of the sequence in the barcode fasta: https://cutadapt.readthedocs.io/en/v5.0/guide.html#named-adapters
         state.output.collect{ p ->
           def path_as_string = p.name
           // Check for correct output file name format
-          assert (path_as_string.endsWith("_R1_001.fastq") || path_as_string.endsWith("_R2_001.fastq")), \
-            "Expected cutadapt output to contain files ending in '_R1_001.fastq' or _R1_001.fastq' only. Found: ${p}."
+          assert (path_as_string.endsWith("_R1_001.fastq.gz") || path_as_string.endsWith("_R2_001.fastq.gz")), \
+            "Expected cutadapt output to contain files ending in '_R1_001.fastq.gz' or _R2_001.fastq.gz' only. Found: ${p}."
           // Detect read orientation from file name
-          def pair_end = path_as_string.endsWith("_R1_001.fastq") ? "R1" : "R2"
+          def pair_end = path_as_string.endsWith("_R1_001.fastq.gz") ? "R1" : "R2"
           // Use the start of the file
-          def barcode_id = p.name - ~/_R(1|2)_001\.fastq$/
+          def barcode_id = p.name - ~/_R(1|2)_001\.fastq\.gz$/
           def new_id = state.pool_and_run_id + "__" + barcode_id
           [
             new_id,
@@ -158,14 +158,14 @@ workflow run_wf {
         // by 'R1' and 'R2', and sorted lexographically.
         def r1_output = output_pairs.collect{
           def forward_output = it[0].output
-          assert forward_output.name.endsWith("R1_001.fastq"), \
+          assert forward_output.name.endsWith("R1_001.fastq.gz"), \
              "State error: expected first item from FASTQ pair to have " +
              "orientation 'R1', found ${forward_output.name}."
           return it[0].output
         }
         def r2_output = output_pairs.collect{
           def forward_output = it[1].output
-          assert forward_output.name.endsWith("R2_001.fastq"), \
+          assert forward_output.name.endsWith("R2_001.fastq.gz"), \
              "State error: expected first item from FASTQ pair to have " +
              "orientation 'R2', found ${forward_output.name}."
           return it[1].output
