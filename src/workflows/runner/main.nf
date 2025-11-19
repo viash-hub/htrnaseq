@@ -501,7 +501,9 @@ workflow run_wf {
       if(service instanceof ThreadPoolExecutor) {
         def completed_tasks = service.getCompletedTaskCount()
         def task_count = service.getTaskCount()
-        running_tasks = completed_tasks - task_count
+        if (completed_tasks > 0) {
+          running_tasks = completed_tasks - task_count
+        }
       }
       else if( System.getenv('NXF_ENABLE_VIRTUAL_THREADS') ) {
         running_tasks = service.threadCount()
