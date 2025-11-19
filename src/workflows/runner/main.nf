@@ -246,8 +246,8 @@ workflow run_wf {
     htrnaseq_ch = demultiplex_ch
       // The IDs in the demultiplex_ch are of format '<run_id>/<sample_id>' (not split per experiment.)
       | flatMap {id, state ->
-        state.event_ids.collect{ event_id -> 
-          def new_state = state.findAll{k, v -> !["event_ids", "experiment_ids"].contains(k)} + ["event_id": event_id]
+        state.event_ids.collect{ event_id ->
+          def new_state = state.findAll{k, v -> !["event_ids", "project_experiment_ids"].contains(k)} + ["event_id": event_id]
           [event_id, new_state]
         }
       }
@@ -291,7 +291,11 @@ workflow run_wf {
         [new_id, new_state]
       }
       | filter {id, state ->
-        state.pools == null || state.pools.contains(state.sample_id)
+        def test_val = (state.pools == null || state.pools.isEmpty() || state.pools.contains(state.sample_id))
+        if (!test_val) {
+          log.info("Filtering out ${id} because it is not in the selected pools for this experiment (${state.pools}).")
+        }
+        test_val
       }
       | well_fastqs_to_esets.run(
           args: [
@@ -347,7 +351,10 @@ workflow run_wf {
         return [id, new_state]
       }
 
-    results_publish_ch = htrnaseq_ch.join(fastq_output_directory_ch, failOnDuplicate: true, failOnMismatch: true)
+    // While fastq_output_directory_ch contains all of the events,
+    // the htrnaseq_ch may have been filtered to remove samples based on the 'pools' argument
+    // This is why mismatches are allowed.
+    results_publish_ch = htrnaseq_ch.join(fastq_output_directory_ch, failOnDuplicate: true, failOnMismatch: false)
       // Add the FASTQ directories from the demultiplexing output
       | map {id, htrnaseq_state, fastq_output_directory_state ->
         def new_state = htrnaseq_state + fastq_output_directory_state
