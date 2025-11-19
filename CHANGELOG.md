@@ -8,6 +8,8 @@
 
 * `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
 
+* Reduce memory and cpu footprint of concatenation processes (PR #89).
+
 # htrnaseq v0.13.0
 
 ## Breaking changes
