@@ -1,5 +1,10 @@
-name: htrnaseq
+name: well_fastqs_to_esets
 namespace: workflows
+description: |
+    Map a list of FASTQ files (one for each well) to a reference genome and generate count matrices.
+    Sometimes counts from different FASTQ files need to be concatenated. This is done bases on the sample_id:
+    if the sample ID of the two plates are identical, the FASTQ files will we joined _before_ mapping.
+scope: "private"
 authors:
   - __merge__: /src/base/authors/dries_schaumont.yaml
     roles: [ maintainer ]
@@ -8,15 +13,13 @@ argument_groups:
     arguments:
       - name: --input_r1
         description: |
-          Forward reads in FASTQ format. Multiple files corresponding to different lanes can be provided which will
-          be demultiplexed separately before joining the results for each individual well.
+          Forward reads in FASTQ format.
         type: file
         required: true
         multiple: true
       - name: --input_r2
         description: |
-          Reverse reads in FASTQ format. Multiple files corresponding to different lanes can be provided which will
-          be demultiplexed separately before joining the results for each individual well.
+          Reverse reads in FASTQ format.
         type: file
         required: true
         multiple: true
@@ -44,13 +47,6 @@ argument_groups:
           but the FASTQs for wells with matching sample IDs will be concatenated before mapping.
   - name: Output arguments
     arguments:
-      - name: "--fastq_output"
-        description: "Directory containing output fastq files"
-        type: file
-        multiple: true
-        required: true
-        default: "fastq/*"
-        direction: output
       - name: --star_output
         description: Output from mapping with STAR
         type: file
@@ -88,32 +84,32 @@ argument_groups:
         direction: output
         required: true
         default: report.$id.html
-      - name: "--run_params"
-        type: file
-        direction: output
-        required: false
-        default: params.$id.yaml
 resources:
   - type: nextflow_script
     path: main.nf
     entrypoint: run_wf
-test_resources:
-  - type: nextflow_script
-    path: test.nf
-    entrypoint: test_wf
-  - type: nextflow_script
-    path: test.nf
-    entrypoint: test_wf2
-  - type: nextflow_script
-    path: test.nf
-    entrypoint: test_no_events
-  - type: nextflow_script
-    path: test.nf
-    entrypoint: test_concatenation
 dependencies:
+  - name: stats/combine_star_logs
+    repository: local
+  - name: stats/generate_pool_statistics
+    repository: local
+  - name: stats/generate_well_statistics
+    repository: local
   - name: workflows/well_demultiplex
     repository: local
-  - name: workflows/well_fastqs_to_esets
+  - name: workflows/well_metadata
+    repository: local
+  - name: parallel_map
+    repository: local
+  - name: eset/create_eset
+    repository: local
+  - name: eset/create_fdata
+    repository: local
+  - name: eset/create_pdata
+    repository: local
+  - name: report/create_report
+    repository: local
+  - name: utils/concatRuns
     repository: local
   - name: utils/save_params
     repository: local

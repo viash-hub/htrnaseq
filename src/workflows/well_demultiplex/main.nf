@@ -203,7 +203,7 @@ workflow run_wf {
       // This is contatenation of the FASTQ files from different lanes
       // Concatenation of FASTQ files from the different runs is done later.
       | concat_text.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         key: "concat_txt_r1",
         runIf: {id, state -> state.output_r1.size() > 1},
         fromState: { id, state ->
@@ -219,7 +219,7 @@ workflow run_wf {
         }
       )
       | concat_text.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         key: "concat_text_r2",
         runIf: {id, state -> state.output_r2.size() > 1},
         fromState: { id, state ->

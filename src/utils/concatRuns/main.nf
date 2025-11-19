@@ -68,7 +68,7 @@ workflow run_wf {
         return [group_settings.target, new_state]
       } 
       | concat_text.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         key: "concat_samples_r1",
         runIf: {id, state -> state.input_r1.size() > 1},
         fromState: { id, state ->
@@ -85,7 +85,7 @@ workflow run_wf {
         }
       )
       | concat_text.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         key: "concat_samples_r2",
         runIf: {id, state -> state.input_r2.size() > 1},
         fromState: { id, state ->

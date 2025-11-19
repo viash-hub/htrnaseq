@@ -1,4 +1,22 @@
-# htrnqseq v0.13.0
+# htrnaseq v0.14.1
+
+# Bug fixes
+
+* Fix an issue where samples with the same experiment ID but from different projects were concatenated (PR #87). 
+
+# htrnaseq v0.14.0
+
+# Major changes
+
+* `runner`: major refactor that allows sequencing runs to be only demultiplexed once (PR #85).
+
+# Minor changes
+
+* `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
+
+* Reduce memory and cpu footprint of concatenation processes (PR #89).
+
+# htrnaseq v0.13.0
 
 ## Breaking changes
 
