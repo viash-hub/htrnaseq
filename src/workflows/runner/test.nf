@@ -618,7 +618,7 @@ workflow test_same_experiment_id_different_projects_wf {
                 assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
                 def expected_fastq_files = [
                     "A1_R1_001.fastq.gz", "A1_R2_001.fastq.gz", 
-                    "B1_R1_001.fastq.gz", "B1_R2_001.fast.gz",
+                    "B1_R1_001.fastq.gz", "B1_R2_001.fastq.gz",
                     "unknown_R1_001.fastq.gz", "unknown_R2_001.fastq.gz"]
                 def found_files = files("${expected_sample_dir}/*.fastq.gz", type: 'any')
                 assert found_files.every{it.isFile()}
