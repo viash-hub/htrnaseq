@@ -34,14 +34,14 @@ argument_groups:
         direction: output
         multiple: true
         required: true
-        default: "fastq/*_R1_001.fastq"
+        default: "fastq/*_R1_001.fastq.gz"
       - name: "--output_r2"
         description: List of demultiplexed fastq files
         type: file
         direction: output
         multiple: true
         required: true
-        default: "fastq/*_R2_001.fastq" 
+        default: "fastq/*_R2_001.fastq.gz" 
 resources:
   - type: nextflow_script
     path: main.nf
