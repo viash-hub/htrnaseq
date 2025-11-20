@@ -172,10 +172,10 @@ workflow test_wf {
                 def expected_sample_dir = _value.resolve(expected_sample)
                 assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
                 def expected_fastq_files = [
-                    "A1_R1_001.fastq", "A1_R2_001.fastq", 
-                    "B1_R1_001.fastq", "B1_R2_001.fastq",
-                    "unknown_R1_001.fastq", "unknown_R2_001.fastq"]
-                def found_files = files("${expected_sample_dir}/*.fastq", type: 'any')
+                    "A1_R1_001.fastq.gz", "A1_R2_001.fastq.gz", 
+                    "B1_R1_001.fastq.gz", "B1_R2_001.fastq.gz",
+                    "unknown_R1_001.fastq.gz", "unknown_R2_001.fastq.gz"]
+                def found_files = files("${expected_sample_dir}/*.fastq.gz", type: 'any')
                 assert found_files.every{it.isFile()}
                 assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
             }
@@ -341,10 +341,10 @@ workflow test_wf_with_lanes {
                 def expected_sample_dir = _value.resolve(expected_sample)
                 assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
                 def expected_fastq_files = [
-                    "A1_R1_001.fastq", "A1_R2_001.fastq", 
-                    "B1_R1_001.fastq", "B1_R2_001.fastq",
-                    "unknown_R1_001.fastq", "unknown_R2_001.fastq"]
-                def found_files = files("${expected_sample_dir}/*.fastq", type: 'any')
+                    "A1_R1_001.fastq.gz", "A1_R2_001.fastq.gz", 
+                    "B1_R1_001.fastq.gz", "B1_R2_001.fastq.gz",
+                    "unknown_R1_001.fastq.gz", "unknown_R2_001.fastq.gz"]
+                def found_files = files("${expected_sample_dir}/*.fastq.gz", type: 'any')
                 assert found_files.every{it.isFile()}
                 assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
             }
@@ -452,10 +452,10 @@ workflow test_wf_only_one_eset {
             def expected_sample_dir = _value.resolve(expected_sample)
             assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
             def expected_fastq_files = [
-                "A1_R1_001.fastq", "A1_R2_001.fastq", 
-                "B1_R1_001.fastq", "B1_R2_001.fastq",
-                "unknown_R1_001.fastq", "unknown_R2_001.fastq"]
-            def found_files = files("${expected_sample_dir}/*.fastq", type: 'any')
+                "A1_R1_001.fastq.gz", "A1_R2_001.fastq.gz", 
+                "B1_R1_001.fastq.gz", "B1_R2_001.fastq.gz",
+                "unknown_R1_001.fastq.gz", "unknown_R2_001.fastq.gz"]
+            def found_files = files("${expected_sample_dir}/*.fastq.gz", type: 'any')
             assert found_files.every{it.isFile()}
             assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
         }
@@ -617,10 +617,10 @@ workflow test_same_experiment_id_different_projects_wf {
                 def expected_sample_dir = _value.resolve(expected_sample)
                 assert expected_sample_dir.isDirectory(), "Expected ${expected_sample} to be present in ${_value}"
                 def expected_fastq_files = [
-                    "A1_R1_001.fastq", "A1_R2_001.fastq", 
-                    "B1_R1_001.fastq", "B1_R2_001.fastq",
-                    "unknown_R1_001.fastq", "unknown_R2_001.fastq"]
-                def found_files = files("${expected_sample_dir}/*.fastq", type: 'any')
+                    "A1_R1_001.fastq.gz", "A1_R2_001.fastq.gz", 
+                    "B1_R1_001.fastq.gz", "B1_R2_001.fast.gz",
+                    "unknown_R1_001.fastq.gz", "unknown_R2_001.fastq.gz"]
+                def found_files = files("${expected_sample_dir}/*.fastq.gz", type: 'any')
                 assert found_files.every{it.isFile()}
                 assert found_files.collect{it.name}.toSet() == expected_fastq_files.toSet()
             }
