@@ -1,3 +1,15 @@
+# htrnaseq v0.14.1
+
+# Minor changes
+
+* FASTQ files are now gzip compressed (PR #88).
+
+* Bump biobox to `v0.4.2` and craftbox to `v0.3.1` (PR #88).
+
+# Bug fixes
+
+* Fix an issue where samples with the same experiment ID but from different projects were concatenated (PR #87). 
+
 # htrnaseq v0.14.0
 
 # Major changes
@@ -7,6 +19,8 @@
 # Minor changes
 
 * `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
+
+* Reduce memory and cpu footprint of concatenation processes (PR #89).
 
 # htrnaseq v0.13.0
 

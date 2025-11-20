@@ -68,14 +68,14 @@ workflow run_wf {
         return [group_settings.target, new_state]
       } 
       | concat_text.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         key: "concat_samples_r1",
         runIf: {id, state -> state.input_r1.size() > 1},
         fromState: { id, state ->
           def output_file_name = state.input_r1[0].name
           [
             input: state.input_r1,
-            gzip_output: false,
+            gzip_output: true,
             output: output_file_name
           ]
         },
@@ -85,14 +85,14 @@ workflow run_wf {
         }
       )
       | concat_text.run(
-        directives: [label: ["lowmem", "lowcpu"]],
+        directives: [label: ["verylowmem", "verylowcpu"]],
         key: "concat_samples_r2",
         runIf: {id, state -> state.input_r2.size() > 1},
         fromState: { id, state ->
           def output_file_name = state.input_r2[0].name
           [
             input: state.input_r2,
-            gzip_output: false,
+            gzip_output: true,
             output: output_file_name
           ]
         },

@@ -130,16 +130,17 @@ workflow run_wf {
           "Demultiplexing the same run (${run_id}) with two different barcode layouts it not supported."
 
         // Its not allowed to use the same sequencing run twice or more for the same experiment
-        def experiments = states.collect{it.experiment_id}
-        assert experiments.unique().size() == experiments.size(), \
-          "It is not possible to use a sequencing run (${run_id}) for the same experiment multiple times. Found: ${experiments}"
+        def projects_experiments = states.collect{[it.project_id, it.experiment_id]}
+        def project_experiments_str = projects_experiments.collect{project, experiment -> "${project}/${experiment}"}
+        assert project_experiments_str.unique().size() == project_experiments_str.size(), \
+          "It is not possible to use a sequencing run (${run_id}) for the same experiment multiple times. Found: ${project_experiments_str}"
 
         def new_state = [
           "run_id": run_id,
           "input": input_dirs[0],
           "barcodesFasta": barcode_fastas[0], // This is needed for the well demultiplexing
           "event_ids": states.collect{it.event_id},
-          "experiment_ids": experiments
+          "project_experiment_ids": projects_experiments
         ]
         [run_id, new_state]
       } 
@@ -245,8 +246,8 @@ workflow run_wf {
     htrnaseq_ch = demultiplex_ch
       // The IDs in the demultiplex_ch are of format '<run_id>/<sample_id>' (not split per experiment.)
       | flatMap {id, state ->
-        state.event_ids.collect{ event_id -> 
-          def new_state = state.findAll{k, v -> !["event_ids", "experiment_ids"].contains(k)} + ["event_id": event_id]
+        state.event_ids.collect{ event_id ->
+          def new_state = state.findAll{k, v -> !["event_ids", "project_experiment_ids"].contains(k)} + ["event_id": event_id]
           [event_id, new_state]
         }
       }
@@ -290,7 +291,11 @@ workflow run_wf {
         [new_id, new_state]
       }
       | filter {id, state ->
-        state.pools == null || state.pools.contains(state.sample_id)
+        def test_val = (state.pools == null || state.pools.isEmpty() || state.pools.contains(state.sample_id))
+        if (!test_val) {
+          log.info("Filtering out ${id} because it is not in the selected pools for this experiment (${state.pools}).")
+        }
+        test_val
       }
       | well_fastqs_to_esets.run(
           args: [
@@ -310,7 +315,7 @@ workflow run_wf {
             "barcodesFasta": state.barcodesFasta,
             "genomeDir": state.genomeDir,
             // Concatenate the samples with the same sample ID, but not across experiments.
-            "sample_id": "${state.experiment_id}/${state.sample_id}",
+            "sample_id": "${state.project_id}/${state.experiment_id}/${state.sample_id}",
           ]
         },
         toState: { id, result, state -> state + result.findAll{it.key != "run_params"} }
@@ -331,9 +336,11 @@ workflow run_wf {
     */
     fastq_output_directory_ch = demultiplex_ch
       | flatMap {id, state ->
-        def base_state = state.findAll{k, v -> k != "experiment_ids"}
-        state.experiment_ids.collect { experiment_id ->
-          ["${experiment_id}/${state.sample_id}".toString(), base_state + ["experiment_id": experiment_id]]
+        def base_state = state.findAll{k, v -> k != "project_experiment_ids"}
+        state.project_experiment_ids.collect { project_id, experiment_id ->
+          // Note: the format of the ID here must match with the format chosen for the 'sample_id' argument
+          // in the well_fastqs_to_esets workflow in order to do the join with its output.
+          ["${project_id}/${experiment_id}/${state.sample_id}".toString(), base_state + ["project_id": project_id, "experiment_id": experiment_id]]
         }
       }
       | groupTuple(by: 0, sort: "hash")
@@ -344,7 +351,10 @@ workflow run_wf {
         return [id, new_state]
       }
 
-    results_publish_ch = htrnaseq_ch.join(fastq_output_directory_ch, failOnDuplicate: true, failOnMismatch: true)
+    // While fastq_output_directory_ch contains all of the events,
+    // the htrnaseq_ch may have been filtered to remove samples based on the 'pools' argument
+    // This is why mismatches are allowed.
+    results_publish_ch = htrnaseq_ch.join(fastq_output_directory_ch, failOnDuplicate: true, failOnMismatch: false)
       // Add the FASTQ directories from the demultiplexing output
       | map {id, htrnaseq_state, fastq_output_directory_state ->
         def new_state = htrnaseq_state + fastq_output_directory_state
@@ -480,6 +490,13 @@ workflow run_wf {
 
   awaited_events_ch = results_publish_ch.mix(fastq_publish_ch)
     | toSortedList()
+    | map {states ->
+      if (states.size == 0) {
+        has_published.compareAndSet(false, true)
+        error("There seems to be nothing to publish!")
+      }
+      states
+    }
 
   await_ch = awaited_events_ch
     // Wait for processing events to be done
@@ -491,7 +508,9 @@ workflow run_wf {
       if(service instanceof ThreadPoolExecutor) {
         def completed_tasks = service.getCompletedTaskCount()
         def task_count = service.getTaskCount()
-        running_tasks = completed_tasks - task_count
+        if (completed_tasks > 0) {
+          running_tasks = completed_tasks - task_count
+        }
       }
       else if( System.getenv('NXF_ENABLE_VIRTUAL_THREADS') ) {
         running_tasks = service.threadCount()
