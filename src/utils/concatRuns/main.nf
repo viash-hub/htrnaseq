@@ -75,7 +75,7 @@ workflow run_wf {
           def output_file_name = state.input_r1[0].name
           [
             input: state.input_r1,
-            gzip_output: false,
+            gzip_output: true,
             output: output_file_name
           ]
         },
@@ -92,7 +92,7 @@ workflow run_wf {
           def output_file_name = state.input_r2[0].name
           [
             input: state.input_r2,
-            gzip_output: false,
+            gzip_output: true,
             output: output_file_name
           ]
         },
