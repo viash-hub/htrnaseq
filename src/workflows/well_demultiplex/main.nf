@@ -77,6 +77,9 @@ workflow run_wf {
         }
       )
       | flatMap{ id, state ->
+        if (!state.output) {
+          log.error("Well demultiplexing seems to have yielded no FASTQ files! (ID $id, found ${state.output})")
+        }
         // The output from cutadapt should be in the format {name}_R(1|2)_001.fastq.gz
         // See https://github.com/viash-hub/biobox/blob/952ff0843093b538cbfd6fefdecf2e7a0bc9e70b/src/cutadapt/script.sh#L226
         // Here, {name} is the name of the sequence in the barcode fasta: https://cutadapt.readthedocs.io/en/v5.0/guide.html#named-adapters
