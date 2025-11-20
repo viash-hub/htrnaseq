@@ -1,5 +1,11 @@
 # htrnaseq v0.14.1
 
+# Minor changes
+
+* FASTQ files are now gzip compressed (PR #88).
+
+* Bump biobox to `v0.4.2` and craftbox to `v0.3.1` (PR #88).
+
 # Bug fixes
 
 * Fix an issue where samples with the same experiment ID but from different projects were concatenated (PR #87). 
