@@ -67,11 +67,11 @@ repositories:
   - name: bb
     type: vsh
     repo: biobox
-    tag: v0.3.1
+    tag: v0.4.2
   - name: cb
     type: vsh
     repo: craftbox
-    tag: v0.3.0
+    tag: v0.3.1
 
 runners:
   - type: nextflow
