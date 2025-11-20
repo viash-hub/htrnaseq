@@ -490,6 +490,13 @@ workflow run_wf {
 
   awaited_events_ch = results_publish_ch.mix(fastq_publish_ch)
     | toSortedList()
+    | map {states ->
+      if (states.size == 0) {
+        has_published.compareAndSet(false, true)
+        error("There seems to be nothing to publish!")
+      }
+      states
+    }
 
   await_ch = awaited_events_ch
     // Wait for processing events to be done
