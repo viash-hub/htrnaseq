@@ -243,7 +243,7 @@ workflow run_wf {
     This will cause the the `well_fastqs_to_esets` workflow to do the grouping and concatenation of the 
     events with the same sample ID.
     */
-    htrnaseq_ch = demultiplex_ch
+    demultiplex_with_input_ids_ch = demultiplex_ch
       // The IDs in the demultiplex_ch are of format '<run_id>/<sample_id>' (not split per experiment.)
       | flatMap {id, state ->
         state.event_ids.collect{ event_id ->
@@ -252,8 +252,12 @@ workflow run_wf {
         }
       }
       // The event IDs at this point are the same IDs in the `input_ch` in order to do the join
-      | join(input_ch)
-      | map {event_id, demux_state, input_state ->
+
+    htrnaseq_ch = input_ch
+      | cross(demultiplex_with_input_ids_ch)
+      | map {input_event, demux_event  ->
+        def (event_id, demux_state) = demux_event
+        def input_state = input_event[1] 
         def keys_to_transfer = [
           "umi_length",
           "annotation",
@@ -491,7 +495,7 @@ workflow run_wf {
   awaited_events_ch = results_publish_ch.mix(fastq_publish_ch)
     | toSortedList()
     | map {states ->
-      if (states.size == 0) {
+      if (states.size() == 0) {
         has_published.compareAndSet(false, true)
         error("There seems to be nothing to publish!")
       }
@@ -503,6 +507,12 @@ workflow run_wf {
     // Create periodic events in order to check for the publishing to be done
     | combine(interval_at_least_one_event_ch)
     | until { event ->
+      // Prevent until to output nothing by stopping on the first item of the channel.
+      // It will output 'null' when its the first iteration.
+      // This happens when there is not a lot of data to publish and/or the transfer is fast.
+      if (event[-1] == 0) {
+        return false
+      }
       println("Checking if publishing has finished in service ${service}")
       def running_tasks = null
       if(service instanceof ThreadPoolExecutor) {
