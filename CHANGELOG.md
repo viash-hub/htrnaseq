@@ -1,3 +1,11 @@
+# htrnaseq v0.14.2
+
+# Bug fixes
+
+* Fix esets not being created when processing multiple samples from a single run (PR #92).
+
+* Publishing a very small amount of data no longer throws an error (calling `dropRight` on a `null` object) (PR #92). 
+
 # htrnaseq v0.14.1
 
 # Minor changes

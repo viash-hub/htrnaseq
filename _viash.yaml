@@ -45,7 +45,7 @@ viash_version: 0.9.4
 
 info:
   test_resources:
-    - path: gs://viash-hub-resources/htrnaseq/v2
+    - path: gs://viash-hub-resources/htrnaseq/v4
       dest: resources_test
 
 config_mods: |
