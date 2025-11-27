@@ -38,3 +38,11 @@ nextflow \
   -entry test_same_experiment_id_different_projects_wf \
   -resume \
   -profile docker,local
+
+nextflow \
+  run . \
+  -main-script src/workflows/runner/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_multiple_samples \
+  -resume \
+  -profile docker,local
