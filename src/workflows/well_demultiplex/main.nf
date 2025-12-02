@@ -51,7 +51,7 @@ workflow run_wf {
         }
       }
       | cutadapt.run(
-        directives: [label: ["highmem", "midcpu"]],
+        directives: [label: ["midmem", "midcpu"]],
         fromState: { id, state ->
           [
             input: state.input_r1,
