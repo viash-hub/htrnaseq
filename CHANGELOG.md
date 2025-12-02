@@ -1,3 +1,9 @@
+# htrnaseq v0.14.3
+
+# Minor changes
+
+* Change `cutadapt`'s memory label from `highmem` to `midmem` (PR #93).
+
 # htrnaseq v0.14.2
 
 # Bug fixes
