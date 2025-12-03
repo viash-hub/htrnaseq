@@ -1,12 +1,16 @@
 # htrnaseq v0.14.3
 
+## Bug fixes
+
+* `parallel_map`: detection of gzip compressed files now works if the file inadvertently also matches another file type (PR #94).
+
 # Minor changes
 
 * Change `cutadapt`'s memory label from `highmem` to `midmem` (PR #93).
 
 # htrnaseq v0.14.2
 
-# Bug fixes
+## Bug fixes
 
 * Fix esets not being created when processing multiple samples from a single run (PR #92).
 
@@ -14,23 +18,23 @@
 
 # htrnaseq v0.14.1
 
-# Minor changes
+## Minor changes
 
 * FASTQ files are now gzip compressed (PR #88).
 
 * Bump biobox to `v0.4.2` and craftbox to `v0.3.1` (PR #88).
 
-# Bug fixes
+## Bug fixes
 
 * Fix an issue where samples with the same experiment ID but from different projects were concatenated (PR #87). 
 
 # htrnaseq v0.14.0
 
-# Major changes
+## Major changes
 
 * `runner`: major refactor that allows sequencing runs to be only demultiplexed once (PR #85).
 
-# Minor changes
+## Minor changes
 
 * `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
 
