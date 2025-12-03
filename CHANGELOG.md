@@ -4,6 +4,10 @@
 
 * `parallel_map`: detection of gzip compressed files now works if the file inadvertently also matches another file type (PR #94).
 
+# Minor changes
+
+* Change `cutadapt`'s memory label from `highmem` to `midmem` (PR #93).
+
 # htrnaseq v0.14.2
 
 ## Bug fixes
