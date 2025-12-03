@@ -2,7 +2,7 @@
 
 ## Bug fixes
 
-* `parallel_map`: detection of gzip compressed files now works if the file inadvertently also matches another file type (PR #)
+* `parallel_map`: detection of gzip compressed files now works if the file inadvertently also matches another file type (PR #94).
 
 # htrnaseq v0.14.2
 
