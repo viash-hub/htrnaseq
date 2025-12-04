@@ -6,8 +6,6 @@ def date = new Date().format('yyyyMMdd_hhmmss')
 session = nextflow.Nextflow.getSession()
 final service = session.publishDirExecutorService()
 
-
-
 def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
 
@@ -21,6 +19,33 @@ def regex_trailing_slashes = ~/\/+$/
 def results_publish_dir = params.results_publish_dir - regex_trailing_slashes
 def fastq_publish_dir = params.fastq_publish_dir - regex_trailing_slashes
 
+def get_workflow_analysis() {
+  def dependencies = []
+  
+  if (meta.config.dependencies) {
+    meta.config.dependencies.each { dep_spec ->
+      def dependency_name = dep_spec.alias ? dep_spec.alias : dep_spec.name
+      def dependency_var = file(dependency_name).name
+      def dependency = binding.getVariable(dependency_var)
+        
+      def dep_entry = new LinkedHashMap()
+      dep_entry.name = dependency.config.name ?: "unknown_name"
+      dep_entry.version = dependency.config.version ?: "unknown_version"
+      dependencies << dep_entry
+    }
+  }
+  
+  // Build main analysis entry with dependencies using LinkedHashMap for order
+  def main_entry = new LinkedHashMap()
+  main_entry.name = meta.config.name ?: "unknown_name"
+  main_entry.version = meta.config.version ?: "unknown_version"
+  main_entry.dependencies = dependencies
+  
+  def analysis = [main_entry]
+  
+  println("Analysis workflows: ${analysis}")
+  return analysis
+}
 
 /* 
 This is a utility workflow that gathers the input events and saves their state to a YAML file.
@@ -44,7 +69,6 @@ workflow save_params_wf {
       | save_params.run(
         key: "save_params_runner",
         fromState: {id, state ->
-
           def convertPaths
           convertPaths = { value ->
             if (value instanceof java.nio.file.Path)
@@ -64,13 +88,19 @@ workflow save_params_wf {
           def yamlString = yaml.dump(convertedState)
           def encodedYaml = yamlString.bytes.encodeBase64().toString()
           
+          def yaml_builder = new org.yaml.snakeyaml.Yaml()
+          def analysis_yaml = yaml_builder.dump(get_workflow_analysis())
+          def encoded_analysis = analysis_yaml.bytes.encodeBase64().toString()
+          
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "output": state.run_params
+            "workflow_analysis": encoded_analysis
           ]
         },
-        toState: ["run_params": "output"]
+        toState: { id, output, state ->
+          state + [ run_params: output.output ]
+        }
       )
 
   emit:
@@ -243,7 +273,7 @@ workflow run_wf {
     This will cause the the `well_fastqs_to_esets` workflow to do the grouping and concatenation of the 
     events with the same sample ID.
     */
-    demultiplex_with_input_ids_ch = demultiplex_ch
+    htrnaseq_ch = demultiplex_ch
       // The IDs in the demultiplex_ch are of format '<run_id>/<sample_id>' (not split per experiment.)
       | flatMap {id, state ->
         state.event_ids.collect{ event_id ->
@@ -252,12 +282,8 @@ workflow run_wf {
         }
       }
       // The event IDs at this point are the same IDs in the `input_ch` in order to do the join
-
-    htrnaseq_ch = input_ch
-      | cross(demultiplex_with_input_ids_ch)
-      | map {input_event, demux_event  ->
-        def (event_id, demux_state) = demux_event
-        def input_state = input_event[1] 
+      | join(input_ch)
+      | map {event_id, demux_state, input_state ->
         def keys_to_transfer = [
           "umi_length",
           "annotation",
@@ -494,25 +520,12 @@ workflow run_wf {
 
   awaited_events_ch = results_publish_ch.mix(fastq_publish_ch)
     | toSortedList()
-    | map {states ->
-      if (states.size() == 0) {
-        has_published.compareAndSet(false, true)
-        error("There seems to be nothing to publish!")
-      }
-      states
-    }
 
   await_ch = awaited_events_ch
     // Wait for processing events to be done
     // Create periodic events in order to check for the publishing to be done
     | combine(interval_at_least_one_event_ch)
     | until { event ->
-      // Prevent until to output nothing by stopping on the first item of the channel.
-      // It will output 'null' when its the first iteration.
-      // This happens when there is not a lot of data to publish and/or the transfer is fast.
-      if (event[-1] == 0) {
-        return false
-      }
       println("Checking if publishing has finished in service ${service}")
       def running_tasks = null
       if(service instanceof ThreadPoolExecutor) {
