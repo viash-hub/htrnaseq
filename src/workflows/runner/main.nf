@@ -6,8 +6,6 @@ def date = new Date().format('yyyyMMdd_hhmmss')
 session = nextflow.Nextflow.getSession()
 final service = session.publishDirExecutorService()
 
-
-
 def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
 
@@ -21,6 +19,33 @@ def regex_trailing_slashes = ~/\/+$/
 def results_publish_dir = params.results_publish_dir - regex_trailing_slashes
 def fastq_publish_dir = params.fastq_publish_dir - regex_trailing_slashes
 
+def get_workflow_analysis() {
+  def dependencies = []
+  
+  if (meta.config.dependencies) {
+    meta.config.dependencies.each { dep_spec ->
+      def dependency_name = dep_spec.alias ? dep_spec.alias : dep_spec.name
+      def dependency_var = file(dependency_name).name
+      def dependency = binding.getVariable(dependency_var)
+        
+      def dep_entry = new LinkedHashMap()
+      dep_entry.name = dependency.config.name ?: "unknown_name"
+      dep_entry.version = dependency.config.version ?: "unknown_version"
+      dependencies << dep_entry
+    }
+  }
+  
+  // Build main analysis entry with dependencies using LinkedHashMap for order
+  def main_entry = new LinkedHashMap()
+  main_entry.name = meta.config.name ?: "unknown_name"
+  main_entry.version = meta.config.version ?: "unknown_version"
+  main_entry.dependencies = dependencies
+  
+  def analysis = [main_entry]
+  
+  println("Analysis workflows: ${analysis}")
+  return analysis
+}
 
 /* 
 This is a utility workflow that gathers the input events and saves their state to a YAML file.
@@ -44,7 +69,6 @@ workflow save_params_wf {
       | save_params.run(
         key: "save_params_runner",
         fromState: {id, state ->
-
           def convertPaths
           convertPaths = { value ->
             if (value instanceof java.nio.file.Path)
@@ -64,13 +88,19 @@ workflow save_params_wf {
           def yamlString = yaml.dump(convertedState)
           def encodedYaml = yamlString.bytes.encodeBase64().toString()
           
+          def yaml_builder = new org.yaml.snakeyaml.Yaml()
+          def analysis_yaml = yaml_builder.dump(get_workflow_analysis())
+          def encoded_analysis = analysis_yaml.bytes.encodeBase64().toString()
+          
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "output": state.run_params
+            "workflow_analysis": encoded_analysis
           ]
         },
-        toState: ["run_params": "output"]
+        toState: { id, output, state ->
+          state + [ run_params: output.output ]
+        }
       )
 
   emit:
