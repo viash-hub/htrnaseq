@@ -1,4 +1,4 @@
-# htrnaseq v0.14.4
+# htrnaseq v0.14.x
 
 ## Feature request
 
