@@ -15,6 +15,8 @@ argument_groups:
       required: true
       multiple: true
     - type: file
+      name: "--preproc_params"
+    - type: file
       name: "--output_report"
       required: true
       direction: output
@@ -63,6 +65,7 @@ engines:
           - DT
           - logger
           - bit64
+          - yaml
         script:
           - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))
     test_setup:
