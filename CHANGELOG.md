@@ -1,3 +1,9 @@
+# htrnaseq v0.14.4
+
+## Feature request
+
+* `report`: show preprocessing parameters and the number of mapped reads per UMI in a visual (PR #96).
+
 # htrnaseq v0.14.3
 
 ## Bug fixes
