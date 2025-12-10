@@ -187,23 +187,22 @@ if (length(Design_levels) == 1) {
 
 
 ```{r versions_and_params, results="asis", eval = !is.null(preproc_params_file)}
-cat("\n\n")
-cat("# Parameters")
-cat("\n\n")
-cat("<blockquote>")
+
 preproc_params <- gsub(" ", "", unlist(read_yaml(preproc_params_file)))
-cat("\n\n")
-cat("**The preprocessing parameters were: ** \n")
-cat("\n")
-cat(paste0("`project id: ", preproc_params["project_id"],"`  \n"))
-cat(paste0("`experiment id: ", preproc_params["experiment_id"],"`  \n"))
-cat(paste0("`run id: ", preproc_params["run_id"],"` \n"))
-cat(paste0("`raw data location: ", preproc_params["input"], "`  \n"))
-cat(paste0("`well barcodes: ", preproc_params["barcodesFasta"],"`  \n"))
-cat(paste0("`genome reference: ", preproc_params["genomeDir"],"`  \n"))
-cat(paste0("`gtf annotation: ", preproc_params["annotation"],"`  \n"))
-cat(paste0("`UMI length: ", preproc_params["umi_length"], "`"))
-cat("</blockquote>")
+
+cat("# Parameters", "\n\n",
+    "<blockquote>", "\n\n",
+    "**The preprocessing parameters were: ** <br>",
+    "`project id: ", preproc_params["project_id"],"`  \n",
+    "`experiment id: ", preproc_params["experiment_id"],"`  \n",
+    "`run id: ", preproc_params["run_id"],"` \n",
+    "`raw data location: ", preproc_params["input"], "`  \n",
+    "`well barcodes: ", preproc_params["barcodesFasta"],"`  \n",
+    "`genome reference: ", preproc_params["genomeDir"],"`  \n",
+    "`gtf annotation: ", preproc_params["annotation"],"`  \n",
+    "`UMI length: ", preproc_params["umi_length"], "`",
+    "</blockquote>",sep="")
+
 
 ```
 

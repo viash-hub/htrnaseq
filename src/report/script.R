@@ -12,10 +12,9 @@ esets_normalized <- lapply(par$eset, function(eset_path) {
   return(file.path(normalizePath(dirname(eset_path)), basename(eset_path)))
 })
 
+preproc_params_normalized <- NULL
 if(!is.null(par$preproc_params)){
   preproc_params_normalized <- file.path(normalizePath(dirname(par$preproc_params)), basename(par$preproc_params))
-}else{
-  preproc_params_normalized <- NULL
 }
 
 log_info(paste0(
