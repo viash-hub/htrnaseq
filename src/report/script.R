@@ -12,6 +12,11 @@ esets_normalized <- lapply(par$eset, function(eset_path) {
   return(file.path(normalizePath(dirname(eset_path)), basename(eset_path)))
 })
 
+preproc_params_normalized <- NULL
+if(!is.null(par$preproc_params)){
+  preproc_params_normalized <- file.path(normalizePath(dirname(par$preproc_params)), basename(par$preproc_params))
+}
+
 log_info(paste0(
   "Rendering markdown {template} to HTML ",
   "{par$output_report} with esets {paste(esets_normalized, collapse = ', ')}"
@@ -26,6 +31,7 @@ rmarkdown::render(
   clean = TRUE,
   params = list(
     esets = esets_normalized,
+    preproc_params = preproc_params_normalized,
     outputDir = par$report_dir
   )
 )

@@ -140,7 +140,8 @@ workflow run_wf {
           "eset": "eset",
           "f_data": "f_data",
           "p_data": "p_data",
-          "html_report": "html_report"
+          "html_report": "html_report",
+          "run_params": "run_params"
         ],
         toState: {id, result, state -> state + result}
       )
