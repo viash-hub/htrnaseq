@@ -282,7 +282,6 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
-        "run_params": "run_params",
         "_meta": "_meta",
       ])
 
