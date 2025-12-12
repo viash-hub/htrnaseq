@@ -2,7 +2,7 @@
 
 ## Bug fixes
 
-`create_eset`: raise an error when the output eset is empty (PR #)
+`create_eset`: raise an error when the output eset is empty (PR #98).
 
 # htrnaseq v0.14.4
 
