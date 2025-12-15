@@ -1,7 +1,6 @@
 import re
 import yaml
 import base64
-from collections import OrderedDict
 
 ## VIASH START
 par = {
@@ -12,18 +11,17 @@ par = {
 }
 ## VIASH END
 
-# Custom representer to preserve order in YAML output
-def represent_ordereddict(dumper, data):
+# Custom representer to preserve dict order in YAML output
+# Note: Python 3.7+ dicts maintain insertion order by default
+def represent_dict(dumper, data):
     return dumper.represent_dict(data.items())
 
 class Dumper(yaml.Dumper):
     def increase_indent(self, flow=False, indentless=False):
         return super(Dumper, self).increase_indent(flow, False)
 
-# Register the representer for OrderedDict
-Dumper.add_representer(OrderedDict, represent_ordereddict)
-# Also handle regular dicts to preserve order (Python 3.7+)
-Dumper.add_representer(dict, represent_ordereddict)
+# Register the representer for dicts to preserve order
+Dumper.add_representer(dict, represent_dict)
 
 def decode_params_yaml(encoded_yaml):
     yaml_bytes = base64.b64decode(encoded_yaml)
