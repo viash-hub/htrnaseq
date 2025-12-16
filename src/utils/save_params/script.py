@@ -1,6 +1,7 @@
 import re
 import yaml
 import base64
+import binascii
 
 ## VIASH START
 par = {
@@ -46,8 +47,8 @@ if par.get('workflow_analysis'):
             'params': params,
             'analysis': analysis
         }
-    except Exception as e:
-        print(f"Warning: Could not parse workflow_analysis YAML: {e}")
+    except (binascii.Error, yaml.YAMLError, UnicodeDecodeError) as e:
+        raise ValueError(f"Could not parse workflow_analysis YAML: {e}") from e
 
 with open(par["output"], 'w') as f:
     yaml.dump(output_data, f, default_flow_style=False, Dumper=Dumper)
