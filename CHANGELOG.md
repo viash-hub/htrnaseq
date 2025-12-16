@@ -4,6 +4,18 @@
 
 * Update `utils/save_params` to capture sub-workflow names and versions alongside input parameters (PR #95).
 
+# htrnaseq v0.14.5
+
+## Bug fixes
+
+`create_eset`: raise an error when the output eset is empty (PR #98).
+
+# htrnaseq v0.14.4
+
+## New functionality
+
+* `report`: show preprocessing parameters and the number of mapped reads per UMI in a visual (PR #97).
+
 # htrnaseq v0.14.3
 
 ## Bug fixes

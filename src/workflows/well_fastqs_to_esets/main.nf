@@ -253,6 +253,7 @@ workflow run_wf {
       | create_report.run(
         fromState: [
           "eset": "esets",
+          "preproc_params" : "run_params",
           "output_report": "html_report",
         ],
         toState: [
@@ -281,7 +282,6 @@ workflow run_wf {
         "f_data": "f_data",
         "p_data": "p_data",
         "html_report": "html_report",
-        "run_params": "run_params",
         "_meta": "_meta",
       ])
 
