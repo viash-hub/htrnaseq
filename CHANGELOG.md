@@ -1,3 +1,9 @@
+# htrnaseq vx.x.x
+
+## Minor changes
+
+* Update `utils/save_params` to capture sub-workflow names and versions alongside input parameters (PR #95).
+
 # htrnaseq v0.14.5
 
 ## Bug fixes
