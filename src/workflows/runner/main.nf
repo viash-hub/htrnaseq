@@ -240,6 +240,7 @@ workflow run_wf {
         fromState: {id, state -> [
             "input": state.output_r1 + state.output_r2,
             "output": state.fastq_prefix,
+            "skip": params.skip_publishing
           ]
         },
         toState: { id, result, state -> state },
@@ -247,7 +248,8 @@ workflow run_wf {
           publishDir: [
             path: fastq_publish_dir, 
             overwrite: false,
-            mode: "copy"
+            mode: "copy",
+            enabled: !params.skip_publishing
           ]
         ]
       )
@@ -480,6 +482,7 @@ workflow run_wf {
             p_data: state.p_data,
             html_report: state.html_report,
             run_params: state.run_params,
+            skip: params.skip_publishing,
             // Output locations
             html_report_output: "${state.results_prefix}/${state.html_report.name}", 
             run_params_output: "${state.results_prefix}/${state.run_params_workflow}",
@@ -574,15 +577,21 @@ workflow run_wf {
         return events.dropRight(1)
     }
     | flatMap { events ->
-        println("Creating transfer_complete.txt files.")
+        if (!params.skip_publishing) {
+          println("Creating transfer_complete.txt files.")
+        }
         result_events = []
         events.each {id, state -> 
           if (state.containsKey("fastq_prefix")) {
-            def complete_file_fastqs = file("${fastq_publish_dir}/${state.fastq_prefix}/transfer_completed.txt")
-            complete_file_fastqs.text = "" // This will create a file when it does not exist.
+            if (!params.skip_publishing) {
+              def complete_file_fastqs = file("${fastq_publish_dir}/${state.fastq_prefix}/transfer_completed.txt")
+              complete_file_fastqs.text = "" // This will create a file when it does not exist.
+            }
           } else if (state.containsKey("results_prefix")) {
-            def complete_file_results = file("${results_publish_dir}/${state.results_prefix}/transfer_completed.txt") 
-            complete_file_results.text = ""
+            if (!params.skip_publishing) {
+              def complete_file_results = file("${results_publish_dir}/${state.results_prefix}/transfer_completed.txt") 
+              complete_file_results.text = ""
+            }
             result_events.add([id, state])
           } else {
             error "State should contain either 'fastq_prefix' or 'results_prefix'"

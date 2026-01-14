@@ -44,6 +44,12 @@ done
 
 echo "Copying output for inputs that are directories"
 for par in ${!path_pars_dirs[@]}; do
+
+  if [ "$par_skip" == "true" ] && [[ "$par" == "par_star_output_dir" || "$par" == "par_eset_dir" || "$par" == "par_f_data_dir" || "$par" == "par_p_data_dir" ]]; then
+    printf "\t%s\n" "Skipping output for '$par' as --skip is enabled."
+    continue
+  fi
+
   printf "\t%s\n" "Copying output for '$par'"
   output_val="${!par}"
   input_par_name="${path_pars_dirs[${par}]}"
