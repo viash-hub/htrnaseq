@@ -479,21 +479,22 @@ mkdir -p "$run_9_dir"
 
 pushd "$run_9_dir" > /dev/null
 "$meta_executable" \
-    --input_r1 "$meta_resources_dir/test_output_v2_7_6/GAGACAAGGC_R1_001.fastq" \
-    --input_r2 "$meta_resources_dir/test_output_v2_7_6/GAGACAAGGC_R2_001.fastq" \
+    --input_r1 "$meta_resources_dir/test_output_v2_7_6/GAGACAAGGC_R1_001.fastq.gz" \
+    --input_r2 "$meta_resources_dir/test_output_v2_7_6/GAGACAAGGC_R2_001.fastq.gz" \
     --genomeDir "$meta_resources_dir/gencode.v41.star.sparse" \
     --barcodesFasta "$meta_resources_dir/test_output_v2_7_6/barcodes.fasta" \
     --umiLength 10 \
     --runThreadN 2 \
-    --output "$run_9_dir/output_*" \
-    --seed 0
+    --output "$run_9_dir/output_*"
 popd
 
 echo ">> Check if output directories exists"
 sample1_out="$run_9_dir/output_GAGACAAGGC"
 assert_directory_exists "$sample1_out"
 
-expected_output="$meta_resources_dir/test_output_v2_7_6/expected_output/"
+expected_output_compressed="$meta_resources_dir/test_output_v2_7_6/expected_output.tar.gz"
+expected_output="$TMPDIR/expected_output"
+tar -xvf "$expected_output_compressed" -C "$TMPDIR"
 
 echo ">> Checking output barcodes"
 barcodes_file="$sample1_out/Solo.out/Gene/filtered/barcodes.tsv"
