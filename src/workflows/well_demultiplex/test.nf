@@ -46,8 +46,8 @@ workflow test_wf {
       def states = output.collect{it[1]}
       def output_r1 = states.collect{it.output_r1}.flatten()
       def output_r2 = states.collect{it.output_r2}.flatten()
-      def ids_pool_1 = states[0].output_r1.collect{ids[0] + "__" + (it.name - ~/_R(1|2)_001.fastq$/) } 
-      def ids_pool_2 = states[1].output_r2.collect{ids[1] + "__" + (it.name - ~/_R(1|2)_001.fastq$/) } 
+      def ids_pool_1 = states[0].output_r1.collect{ids[0] + "__" + (it.name - ~/_R(1|2)_001.fastq.gz$/) } 
+      def ids_pool_2 = states[1].output_r2.collect{ids[1] + "__" + (it.name - ~/_R(1|2)_001.fastq.gz$/) } 
 
       def new_state = [
         "ids": ids_pool_1 + ids_pool_2,

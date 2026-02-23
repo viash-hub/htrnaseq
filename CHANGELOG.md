@@ -1,4 +1,4 @@
-# htrnaseq v0.13.0
+# htrnaseq v0.15.0
 
 ## Breaking changes
 
@@ -17,6 +17,86 @@
   - `stats/combine_star_logs`: Now requires the files provided to `gene_summary_logs` to adhere to the formatting of STAR version `2.7.11b`
   - `stats/generate_well_statistics`: Updated to filter out '-' values for the BAM tags, STAR introduced these as a placeholder for empty tags.
 
+# htrnaseq v0.14.6
+
+## Minor changes
+
+* Update `utils/save_params` to capture sub-workflow names and versions alongside input parameters (PR #95).
+
+# htrnaseq v0.14.5
+
+## Bug fixes
+
+`create_eset`: raise an error when the output eset is empty (PR #98).
+
+# htrnaseq v0.14.4
+
+## New functionality
+
+* `report`: show preprocessing parameters and the number of mapped reads per UMI in a visual (PR #97).
+
+# htrnaseq v0.14.3
+
+## Bug fixes
+
+* `parallel_map`: detection of gzip compressed files now works if the file inadvertently also matches another file type (PR #94).
+
+# Minor changes
+
+* Change `cutadapt`'s memory label from `highmem` to `midmem` (PR #93).
+
+# htrnaseq v0.14.2
+
+## Bug fixes
+
+* Fix esets not being created when processing multiple samples from a single run (PR #92).
+
+* Publishing a very small amount of data no longer throws an error (calling `dropRight` on a `null` object) (PR #92). 
+
+# htrnaseq v0.14.1
+
+## Minor changes
+
+* FASTQ files are now gzip compressed (PR #88).
+
+* Bump biobox to `v0.4.2` and craftbox to `v0.3.1` (PR #88).
+
+## Bug fixes
+
+* Fix an issue where samples with the same experiment ID but from different projects were concatenated (PR #87). 
+
+# htrnaseq v0.14.0
+
+## Major changes
+
+* `runner`: major refactor that allows sequencing runs to be only demultiplexed once (PR #85).
+
+## Minor changes
+
+* `generate_well_statistics`: increase memory requirements from `verylowmem` to `lowmem` (PR #86).
+
+* Reduce memory and cpu footprint of concatenation processes (PR #89).
+
+# htrnaseq v0.13.0
+
+## Breaking changes
+
+* `runner`: allow multiple experiments to be processed in parallel (PR #81). 
+  As a consequence; the sample ID that is stored in the ExpressionSet files (esets) is now prefixed by the project and experiment IDs.
+
+## New features
+
+* `runner`: add `transfer_completed.txt` files to published output when the transfer is completed (PR #82).
+
+# Minor changes
+
+* `create_report`: bump bioconductor to `3.22` (PR #83).
+
+# htrnaseq v0.12.3
+
+## Bug fixes
+
+* Allow for annotation of more than 20 pools (PR #78).
 
 # htrnaseq v0.12.2
 

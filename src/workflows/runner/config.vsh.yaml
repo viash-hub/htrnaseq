@@ -16,6 +16,11 @@ argument_groups:
             * _001 fixed suffix.
         type: file
         required: true
+      - name: "--run_id"
+        description: |
+          Unique ID for the sequencing run
+        type: string
+        required: false
       - name: --barcodesFasta
         type: file
         required: true
@@ -109,11 +114,16 @@ test_resources:
   - type: nextflow_script
     path: test.nf
     entrypoint: test_wf_only_one_eset
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_same_experiment_id_different_projects_wf
 
 dependencies:
   - name: utils/listInputDir
     repository: local
-  - name: workflows/htrnaseq
+  - name: workflows/well_demultiplex
+    repository: local
+  - name: workflows/well_fastqs_to_esets
     repository: local
   - name: io/publish_fastqs
     repository: local

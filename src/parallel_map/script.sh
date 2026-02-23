@@ -198,7 +198,9 @@ function _run() {
 
   function is_gzipped {
     printf "Checking if input '$1' (barcode '$barcode') is gzipped... "
-    if file "$1" | grep -q 'gzip'; then
+    # The file might match more than one mime-type, but if the `-k` flag is not
+    # set, file will only output one. 
+    if file --mime-type -k "$1" | grep -q 'gzip'; then
       echo "Done, detected compressed file."
       return
     fi

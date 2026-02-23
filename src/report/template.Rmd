@@ -11,6 +11,8 @@ params:
   esets:
     - sample1.rds
     - sample2.rds
+  preproc_params:
+    - params.yaml  
 ---
 
 <!---
@@ -32,9 +34,11 @@ div.main-container {
 
 
 
-```{r params, eval = TRUE, include = FALSE}
+```{r get_params, eval = TRUE, include = FALSE}
 outputDir <- params$outputDir
 esets <- params$esets
+preproc_params_file <- params$preproc_params
+
 ```
 
 
@@ -91,6 +95,7 @@ library(knitr)
 library(Biobase)
 library(gridExtra)
 library(RColorBrewer)
+library(yaml)
 ```
 
 
@@ -115,6 +120,7 @@ names(esetList) <- unlist(pools)
 # Create qcData
 pDataList <- lapply(esetList, function(eset) data.table(pData(eset)))
 qcData <- rbindlist(pDataList, fill = TRUE)
+qcData[, nMappedReads_per_UMI :=  NumberOfMappedReads/NumberOfUMIs]
 
 textVars <- "SampleName"
 annotationVar <- "PoolName"
@@ -170,13 +176,37 @@ if (length(Design_levels) == 1) {
 } else {
   colours <- c("#d6e0ff")
   names(colours) <- c("nonEmpty")
-  colourList[[annotVar]] <- list(
+  colourList[[annotationVar]] <- list(
     "colours" = colours,
-    "annotVar" = annotVar,
-    "text" = annotVar
+    "annotVar" = annotationVar,
+    "text" = annotationVar
   )
 }
 ```
+
+
+
+```{r versions_and_params, results="asis", eval = !is.null(preproc_params_file)}
+
+preproc_params <- gsub(" ", "", unlist(read_yaml(preproc_params_file)))
+
+cat("# Parameters", "\n\n",
+    "<blockquote>", "\n\n",
+    "**The preprocessing parameters were: ** <br>",
+    "`project id: ", preproc_params["project_id"],"`  \n",
+    "`experiment id: ", preproc_params["experiment_id"],"`  \n",
+    "`run id: ", preproc_params["run_id"],"` \n",
+    "`raw data location: ", preproc_params["input"], "`  \n",
+    "`well barcodes: ", preproc_params["barcodesFasta"],"`  \n",
+    "`genome reference: ", preproc_params["genomeDir"],"`  \n",
+    "`gtf annotation: ", preproc_params["annotation"],"`  \n",
+    "`UMI length: ", preproc_params["umi_length"], "`",
+    "</blockquote>",sep="")
+
+
+```
+
+
 
 # Pool Description
 
@@ -420,7 +450,7 @@ ggplot(
 
 #### Density distribution {.unnumbered}
 
-```{r density_numberOfUMIs}
+```{r density_numberOfUMIs, fig.width=min(c(14, length(unique(qcData$PoolName))*7)), fig.width=min(c(32, length(unique(qcData$PoolName))*7)),}
 
 ## Pre-filtering data exploration
 dt_plot <- melt(
@@ -432,7 +462,7 @@ dt_plot <- melt(
 readsDensity_plot <- ggplot(dt_plot, aes(value))
 readsDensity_plot <- readsDensity_plot +
   geom_density(aes(fill = variable), alpha=0.8) +
-  facet_grid(~ PoolName, scales = "free_x", space = "fixed", drop = TRUE) +
+  facet_wrap(~ PoolName, scales = "free_x", space = "fixed", drop = TRUE, ncol = 4) +
   geom_vline(
     xintercept = 5e5,
     linetype = "dashed",
@@ -481,6 +511,9 @@ readsDensity_plot <- readsDensity_plot +
 readsDensity_plot
 
 ```
+
+
+
 
 ### Number of Genes {.tabset .unnumbered}
 
@@ -601,6 +634,26 @@ ggplot(
 
 ```
 
+#### Number of Mapped Reads Per UMI {.unnumbered}
+
+```{r mapping_efficiency_5_plate, fig.height = 7}
+ 
+ ggplot(qcData, aes(x = nMappedReads_per_UMI, y = NumberOfMappedReads, colour = PoolName)) + 
+  geom_point() + 
+  xlab('Number of Mapped Reads per UMI') + ylab("Number of Mapped Reads") +
+  ggtitle('Number of Mapped Reads per UMI vs Number of Mapped Reads') + 
+  theme(strip.text.x = element_text(size = 20),
+        panel.spacing = unit(2, "lines"), 
+        text = element_text(size=10), 
+        axis.text = element_text(angle = 90,size = 15), 
+        plot.title = element_text(size=18), 
+        legend.text = element_text(size=15), 
+        legend.title = element_text(size = 17), 
+        axis.title = element_text(size = 15))
+
+
+```
+
 ### Counting Efficiency {.tabset .unnumbered}
 
 #### Number of Mapped Reads {.unnumbered}
@@ -647,6 +700,23 @@ ggplot(
 
 
 
+#### Number of Mapped Reads per UMI {.unnumbered}
+
+```{r gene_efficiency_3_plate, fig.height = 7} 
+
+ggplot(qcData, aes(x = nMappedReads_per_UMI, y = NumberOfGenes, colour = PoolName)) + geom_point() + 
+     ylab('Number of Genes') + xlab("Number of Mapped Reads per UMI") + ggtitle('Number of Genes vs Number of Mapped Reads per UMI') + 
+  theme(strip.text.x = element_text(size = 20),
+        panel.spacing = unit(2, "lines"), 
+        text = element_text(size=10), 
+        axis.text = element_text(angle = 90,size = 15), 
+        plot.title = element_text(size=18), 
+        legend.text = element_text(size=15), 
+        legend.title = element_text(size = 17), 
+        axis.title = element_text(size = 15))
+
+
+```
 ## Sequencing Saturation {.tabset}
 
 The barplots below represent the sequencing saturation per sample as determined by STAR, split per pool. 
