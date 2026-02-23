@@ -16,6 +16,11 @@ argument_groups:
           base64 encoded yaml containing the state
         type: string
         required: true
+      - name: "--workflow_analysis"
+        description: |
+          Base64 encoded YAML containing workflow analysis information (name and version for all workflows)
+        type: string
+        required: false
     
   - name: Outputs
     arguments:
@@ -23,9 +28,9 @@ argument_groups:
         description: |
           The output YAML file
         type: file
+        default: "params.yaml"
         direction: output
         required: true
-        example: "output.yaml"
 
 resources:
   - type: python_script
