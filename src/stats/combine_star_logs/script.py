@@ -127,7 +127,6 @@ def summary_remove_unwanted_entries_and_adjust_format(barcode, df: pd.DataFrame)
         "Q30 Bases in RNA read",
         "Reads Mapped to Genome: Unique",
         "Reads Mapped to Gene: Unique Gene",
-        #"Unique Reads in Cells Mapped to Gene",
         "Median UMI per Cell",
         "Median Gene per Cell",
         "Reads Mapped to Genome: Unique+Multiple",

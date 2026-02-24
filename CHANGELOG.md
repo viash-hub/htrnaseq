@@ -8,7 +8,7 @@
   - `paralel_map`: when a file or directory already exists at the locations provided for `joblog` and `output`, 
     a check is performed to see if that location contains output from a previous run before overwriting.
   - `workflows/htrnaseq` and `workflows/runner`: the output for `star_output` and `star_output_dir` (respectively)
-    has been changed because it contains the raw output from STAR (and some of it's formatting for the output files 
+    has been changed because it contains the raw output from STAR (and some of its formatting for the output files 
     has been updated).
   - `stats/combine_star_logs`: a new argument `features_stats` has been added. STAR no longer outputs a value for
     the total percentage of reads mapped that are mapped to a gene or to multiple genes. In order to maintain backwards
