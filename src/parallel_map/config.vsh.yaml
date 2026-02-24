@@ -107,12 +107,12 @@ engines:
       - type: docker
         env: 
           - STAR_VERSION=2.7.11b
-          - PACKAGES="gcc g++ make wget zlib1g-dev unzip xxd"
+          - PACKAGES="gcc g++ make wget zlib1g-dev unzip xxd ca-certificates"
         run: |
           apt-get update && \
             apt-get install -y --no-install-recommends ${PACKAGES} && \
             cd /tmp && \
-            wget --no-check-certificate https://github.com/alexdobin/STAR/archive/refs/tags/${STAR_VERSION}.zip && \
+            wget https://github.com/alexdobin/STAR/archive/refs/tags/${STAR_VERSION}.zip && \
             unzip ${STAR_VERSION}.zip && \
             cd STAR-${STAR_VERSION}/source && \
             make -j 4 STARstatic CXXFLAGS_SIMD=-std=c++11 && \

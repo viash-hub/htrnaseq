@@ -8,10 +8,10 @@ meta = {
     "name": "combine_star_logs",
 }
 par = {
-    "star_logs": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/Log.final.out"],
-    "gene_summary_logs": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/summary.csv"], 
-    "reads_per_gene_logs": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/ReadsPerGene.out.tab"],
-    "features_stats": ["/home/di/code/htrnaseq/src/stats/combine_star_logs/test_data/empty/Features.stats"],
+    "star_logs": ["src/stats/combine_star_logs/test_data/empty/Log.final.out"],
+    "gene_summary_logs": ["src/stats/combine_star_logs/test_data/empty/summary.csv"], 
+    "reads_per_gene_logs": ["src/stats/combine_star_logs/test_data/empty/ReadsPerGene.out.tab"],
+    "features_stats": ["src/stats/combine_star_logs/test_data/empty/Features.stats"],
     "output": "output.txt",
     "barcodes": ["ACGG"],
 }
@@ -235,7 +235,7 @@ def main(par):
     all_stats = all_stats.astype(dtypes)
     fraction_mapped = ((all_stats["ReadsInCellsMappedToUniqueGenes"] + all_stats["MultiFeature"]) 
                        / all_stats["NumberOfInputReads"])
-    # Devision by 0 produces np.float64(np.nan); which does not respond to pandas' fillna
+    # Division by 0 produces np.float64(np.nan); which does not respond to pandas' fillna
     # Use .values combined with nan_to_num instead; this works for pd.NA and np.nan.
     # See also this: https://github.com/pandas-dev/pandas/issues/32265
     fraction_mapped = pd.Series(np.nan_to_num(fraction_mapped.values, nan=0.0),

@@ -104,7 +104,6 @@ workflow run_wf {
       | map {id, states ->
         def fastq_output_dirs = states.collect{it.fastq_output_directory}
         def new_state = ["fastq_output_directory": fastq_output_dirs]
-        def new_event = [id, new_state]
         return [id, new_state]
       }
 
