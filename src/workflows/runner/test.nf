@@ -735,7 +735,7 @@ workflow test_multiple_samples {
   tosortedlistch = output_ch
     | toSortedList()
     | map {events ->
-        assert events.size() == 1, "Expected 2 events to be output, found ${events.size()}"
+        assert events.size() == 1, "Expected 1 events to be output, found ${events.size()}"
         events
     }
     | map {states -> 

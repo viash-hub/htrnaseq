@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ## VIASH START
 par_input_r1="work/2c/5b8b3a2dd4a988b8838e3f72d38a37/_viash_par/input_r1_1/two__ACACCGAATT.concat_text_r1.output.txt"
@@ -12,16 +12,34 @@ meta_cpus=2
 par_runThreadN=1
 ## VIASH END
 
-set -eo pipefail
+set -euo pipefail
 
 # Check if wildcard character is present in output folder template
 printf "Checking if output folder template ($par_output) contains a single wildcard character '*'. "
 output_glob_character="${par_output//[^\*]}"
 if [[ "${#output_glob_character}" -ne "1" ]]; then
-  echo "The value for --output must contain exactly one '*' character. Exiting..."
+  echo "The value for --output must contain exactly one '*' character."\
+  "Value for --output was '$par_output'. Exiting..."
   exit 1
 else
-  echo "Done, wildcard character found!"
+  echo "Done, wildcard character found! Value for --output is '$par_output'"
+fi
+
+if [[ -d "$par_joblog" ]]; then
+  echo "Requested to store the job logs at '$par_joblog', but a directory already exists at this location."
+fi
+
+if [[ -f "$par_joblog" ]] || [[ -L "$par_joblog" ]]; then
+  first_line=$(head -n 1 "$par_joblog")
+  expected_header="Seq	Host	Starttime	JobRuntime	Send	Receive	Exitval	Signal	Command"
+  if [[ "$first_line" == "$expected_header" ]]; then
+    echo "A job log file already exists at location '$par_joblog'. Deleting it."
+    rm "$par_joblog"
+  else
+    echo "A file already exists at '$par_joblog' but it does not seem to be a previous log file."\
+    "Not deleting; please change the --joblog path or remove the file manually."
+    exit 1
+  fi
 fi
 
 # Split the delimited strings into arrays
@@ -69,7 +87,7 @@ if [ ! "$num_r1_inputs" -eq "$num_r2_inputs" ]; then
         "should be the same."
   exit 1
 else
-  echo "Checked if the same as the number of R1 FASTQ ($num_r1_inputs) and R2 FASTQ files "\
+  echo "Checked if the same as the number of R1 FASTQ ($num_r1_inputs) and R2 FASTQ files"\
        "($num_r2_inputs) were provided. Seems OK!"
 fi
 
@@ -134,12 +152,12 @@ function _run() {
   local barcode_length="${#barcode}"
   local umi_start="$(($barcode_length + 1))"
 
-  set -eo pipefail
+  set -euo pipefail
 
   echo <<-EOF
     Processing $barcode
     For the following inputs (lanes):
-    "$star_readFilesIn
+    "$input_R1";"$input_R2"
 	EOF
 
   echo "Writing barcode '$barcode' to $barcode.txt and using it as input".
@@ -150,12 +168,23 @@ function _run() {
 
   local dir="${par_output//\*/$barcode}/"
   echo "Setting output for barcode '$barcode' to '$dir'."
+  if [[ -e "$dir" ]]; then
+    echo "A file or directory already exists at $dir".
+    if [[ -f "$dir/Log.out" ]] && grep -q "STAR" "$dir/Log.out"; then
+      echo "Deleting '$dir'"
+      rm -r "$dir"
+    else 
+      echo "A file or directory already exists at $dir, but it does not seem to contain STAR Solo output. Not cleaning and exiting..."
+      exit 1
+    fi
+  fi
   mkdir -p "$dir"
 
   # check if files are compressed
-  local TMPDIR=$(mktemp -d "$meta_temp_dir/parallel_map-$barcode-XXXXXX")
+  # Keep in mind that TMPDIR is set by GNU parallel
+  local STAR_TMPDIR=$(mktemp -d "$TMPDIR/parallel_map-$barcode-XXXXXX")
   function clean_up {
-    [[ -d "$TMPDIR" ]] && rm -r "$TMPDIR"
+    [[ -d "$STAR_TMPDIR" ]] && rm -r "$STAR_TMPDIR"
   }
   trap clean_up RETURN
 
@@ -180,12 +209,12 @@ function _run() {
   }
   
   # Resolve symbolic links to actual file paths
-  input_R1=$(realpath $input_R1)
-  input_R2=$(realpath $input_R2)
+  input_R1=$(realpath "$input_R1")
+  input_R2=$(realpath "$input_R2")
 
   if is_gzipped $input_R1; then
-    local compressed_file_name_r1="$(basename -- $input_R1)"
-    local uncompressed_file_r1="$TMPDIR/${compressed_file_name_r1%.gz}"
+    local compressed_file_name_r1=$(basename -- "$input_R1")
+    local uncompressed_file_r1="$STAR_TMPDIR/${compressed_file_name_r1%.gz}"
     printf "Unpacking input to $uncompressed_file_r1... "
     zcat "$input_R1" > "$uncompressed_file_r1"
     echo "Decompression done."
@@ -195,7 +224,7 @@ function _run() {
 
   if is_gzipped $input_R2; then
     local compressed_file_name_r2="$(basename -- $input_R2)"
-    local uncompressed_file_r2="$TMPDIR/${compressed_file_name_r2%.gz}"
+    local uncompressed_file_r2="$STAR_TMPDIR/${compressed_file_name_r2%.gz}"
     printf "Unpacking input to $uncompressed_file_r2... "
     zcat "$input_R2" > "$uncompressed_file_r2"
     echo "Decompression done."
@@ -242,7 +271,8 @@ function _run() {
     --outSAMattributes NH HI nM AS CR UR CB UB GX GN \
     --soloCBwhitelist "$barcode.txt" \
     --outFileNamePrefix "$dir" \
-    --outTmpDir "$TMPDIR/STARtemp/"
+    --outTmpDir "$STAR_TMPDIR/run"
+
 
   printf "Done running STAR. "
   # Check if the number of processed reads is equal to the number of input reads
@@ -266,7 +296,8 @@ export -f _run
 
 # Load reference genome
 echo "Loading reference genome"
-STAR --genomeLoad LoadAndExit --genomeDir "$par_genomeDir"
+
+STAR --outFileNamePrefix ./genomeLoad --genomeLoad LoadAndExit --genomeDir "$par_genomeDir"
 
 # Run the concurrent jobs using GNU parallel
 
@@ -302,7 +333,7 @@ echo "GNU parallel finished!"
 
 # Unload reference
 printf "Unloading reference genome. "
-STAR --genomeLoad Remove --genomeDir "$par_genomeDir"
+STAR --outFileNamePrefix genomeUnLoad --genomeLoad Remove --genomeDir "$par_genomeDir"
 echo "Done!"
 
 # Exit code from GNU parallel:

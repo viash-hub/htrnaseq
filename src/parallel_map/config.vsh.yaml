@@ -87,11 +87,12 @@ argument_groups:
 resources:
 - type: bash_script
   path: script.sh
-- path: STAR
 
 test_resources:
   - type: bash_script
     path: test.sh
+  - path: test_output_v2_7_6
+  - path: /resources_test/genomeDir/gencode.v41.star.sparse
 
 engines:
   - type: docker
@@ -100,25 +101,32 @@ engines:
       - type: apt
         packages:
           - procps
-          - wget
-          - automake
-          - make
-          - gcc
-          - g++
-          - zlib1g-dev
           - parallel
           - file
           - seqkit
       - type: docker
-        build_args:
-          - STAR_V=2.7.6a
-        env:
-          - STAR_SOURCE="https://github.com/alexdobin/STAR/archive/refs/tags/$STAR_V.tar.gz"
-          - STAR_TARGET="/app/star-$STAR_V.tar.gz"
-          - STAR_INSTALL_DIR="/app/STAR-$STAR_V"
-          - STAR_BINARY=STAR
-        copy:
-          - STAR /usr/local/bin/$STAR_BINARY
+        env: 
+          - STAR_VERSION=2.7.11b
+          - PACKAGES="gcc g++ make wget zlib1g-dev unzip xxd ca-certificates"
+        run: |
+          apt-get update && \
+            apt-get install -y --no-install-recommends ${PACKAGES} && \
+            cd /tmp && \
+            wget https://github.com/alexdobin/STAR/archive/refs/tags/${STAR_VERSION}.zip && \
+            unzip ${STAR_VERSION}.zip && \
+            cd STAR-${STAR_VERSION}/source && \
+            make -j 4 STARstatic CXXFLAGS_SIMD=-std=c++11 && \
+            cp STAR /usr/local/bin && \
+            make clean && \
+            cd / && \
+            rm -rf /tmp/STAR-${STAR_VERSION} /tmp/${STAR_VERSION}.zip && \
+            apt-get --purge autoremove -y ${PACKAGES} && \
+            apt-get clean
+    test_setup:
+      - type: apt
+        packages:
+          - samtools
+          - ed
 runners:
   - type: executable
   - type: nextflow
