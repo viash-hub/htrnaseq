@@ -46,3 +46,12 @@ nextflow \
   -entry test_multiple_samples \
   -resume \
   -profile docker,local
+
+nextflow \
+  run . \
+  -main-script src/workflows/runner/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_skip_publishing \
+  -resume \
+  -profile docker,local \
+  --skip_publishing \

@@ -23,6 +23,10 @@
 
 * Update `utils/save_params` to capture sub-workflow names and versions alongside input parameters (PR #95).
 
+## New functionality
+
+* Allow skipping publishing of large output files in the `runner` workflow (PR #99). 
+
 # htrnaseq v0.14.5
 
 ## Bug fixes

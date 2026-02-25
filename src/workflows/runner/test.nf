@@ -827,3 +827,72 @@ workflow test_multiple_samples {
         }
     }
 }
+
+workflow test_skip_publishing {
+
+  pipeline_version = get_version(viash_config)
+  resources_test = file(params.resources_test)
+
+  output_ch = Channel.fromList([
+    [
+        id: "run_1_exp_bar",
+        run_id: "run_1",
+        input: resources_test.resolve("10k/SRR14730301"),
+        genomeDir: resources_test.resolve("genomeDir/subset/Homo_sapiens/v0.0.3"),
+        barcodesFasta: resources_test.resolve("2-wells-with-ids.fasta"),
+        annotation: resources_test.resolve("genomeDir/gencode.v41.annotation.gtf.gz"),
+        project_id: "foo",
+        experiment_id: "bar",
+        fastq_publish_dir: params.fastq_publish_dir,
+        results_publish_dir: params.results_publish_dir,
+    ],
+  ])
+  | map { state -> [state.id, state]}
+  | runner.run(
+    toState: { id, output, state -> output + [orig_input: state.input] }
+  )
+
+  workflow.onComplete = {
+    try {
+        def fastq_subdir = file("${params.fastq_publish_dir}")
+        // Assert fastq dir is empty or non-existent
+        if (fastq_subdir.exists()) {
+             assert fastq_subdir.list().size() == 0 : "FASTQ publish dir should be empty"
+        }
+
+        def results_subdir = file("${params.results_publish_dir}")
+        def expected_subdir = file("${results_subdir}/foo/bar/data_processed", type: 'any')
+        assert expected_subdir.isDirectory()
+
+        def expected_result_dirs = files("${expected_subdir}/*_htrnaseq_${pipeline_version}", type: 'any')
+        assert expected_result_dirs.size() > 0
+        def expected_result_dir = expected_result_dirs[0]
+
+        // Check Skipped directories are empty
+        assert file("${expected_result_dir}/star_output").isDirectory()
+        assert file("${expected_result_dir}/star_output").list().size() == 0, "star_output should be empty"
+
+        assert file("${expected_result_dir}/esets").isDirectory()
+        assert file("${expected_result_dir}/esets").list().size() == 0, "esets should be empty"
+
+        assert file("${expected_result_dir}/fData").isDirectory()
+        assert file("${expected_result_dir}/fData").list().size() == 0, "fData should be empty"
+        
+        assert file("${expected_result_dir}/pData").isDirectory()
+        assert file("${expected_result_dir}/pData").list().size() == 0, "pData should be empty"
+
+        // Check Kept files/directories are present and populated
+        assert file("${expected_result_dir}/report.html").isFile()
+        assert file("${expected_result_dir}/params.yaml").isFile()
+
+        assert file("${expected_result_dir}/starLogs").isDirectory()
+        assert file("${expected_result_dir}/starLogs").list().size() > 0
+
+        assert file("${expected_result_dir}/nrReadsNrGenesPerChrom").isDirectory()
+        assert file("${expected_result_dir}/nrReadsNrGenesPerChrom").list().size() > 0
+
+    } catch (Exception e) {
+        throw new WorkflowScriptErrorException("Integration test failed!", e)
+    }
+  }
+}
