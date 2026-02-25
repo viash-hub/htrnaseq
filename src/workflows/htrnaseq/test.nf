@@ -58,6 +58,9 @@ workflow test_wf {
   check_eset_ch = htrnaseq_ch
     | check_eset.run(
         runIf: {id, state -> id == "sample_one"},
+        args: [
+          "expected_matrix": resources_test_file.resolve("expected_expressions.matrix")
+        ],
         toState: [
             "eset": "eset",
             "star_output": "star_output"
