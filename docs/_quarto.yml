@@ -1,0 +1,23 @@
+project:
+  type: website
+  preview:
+    port: 4100
+
+website:
+  title: "HTRNASeq"
+  repo-url: https://github.com/viash-hub/htrnaseq
+  repo-actions: [edit, issue] 
+
+
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - index.qmd
+      - architecture/overview.qmd
+      - architecture
+      - data_origin.qmd
+format: 
+   html:
+     mermaid: 
+       theme: neutral

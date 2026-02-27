@@ -1,0 +1,38 @@
+# Architecture
+
+```{mermaid}
+flowchart TB
+ 
+ WellBAM --> parse_star_bam 
+
+ subgraph f_data["Generate Feature Data"]
+    annotation((GTF)) --> create_f_data --> f_data_item(("Feature\nData"))
+ end
+ subgraph demux_mapping["Demultiplexing & mapping"]
+    
+    demux_pools((Fastqs)) & demux_input_genome(("Genome")) & demux_barcodes(("Barcodes")) ---->  cutadapt_parallel_map["Cutadapt & STAR"]
+--> WellBAM(("Well\nBAM files")) & WellSTARLogs((Well\nSTAR logs)) & CountMatrices((Count\nMatrices))
+ end
+ subgraph parse_star_output["Parse BAM Output Pt. 1"]
+    parse_star_bam["generate_well_statistics"]  --> parsedBAMLogs(("BAM\nStatistics")) 
+ end
+ subgraph test[" "]
+   parsedBAMLogs & WellSTARLogs & CountMatrices --> join_well{{"Group Wells\nInto Pools "}} --> bam_list(("BAM statistics \nfiles list")) & star_log_list(("Pool STAR\nlogs list"))
+    join_well --> count_matrix_list(("Count\nMatrix List"))
+ end
+ 
+ subgraph parse_star_output_2["Parse BAM output Pt. 2"]
+    bam_list --> combine_bam_statistics["generate_pool_statistics"] --> bam_statistics_pool(("Pool BAM\nStatistics"))
+ end
+ subgraph parse_star_output_3["Parse STAR Logs"]
+    star_log_list --> combine_star_logs --> parsed_sta_logs(("Parsed\nSTAR Logs"))
+ end
+ subgraph p_data["Generate Phenotype Data"]
+    parsed_sta_logs & bam_statistics_pool -->create_p_data--> p_data_item(("Phenotype\nData"))
+
+ end
+  subgraph create_eset_sub["Create ExpressionSet"]
+    f_data_item ------------> create_eset 
+    count_matrix_list & p_data_item -->create_eset--> eset_item(("eSet"))
+  end
+```
