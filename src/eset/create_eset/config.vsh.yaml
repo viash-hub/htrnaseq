@@ -5,6 +5,8 @@ authors:
     roles: [ maintainer ]
   - __merge__: /src/base/authors/marijke_van_moerbeke.yaml
     roles: [ author ]
+  - __merge__: /src/base/authors/katarzyna_gorczak.yaml
+    roles: [ author ]
 argument_groups:
   - name: "Arguments"
     arguments:
