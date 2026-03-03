@@ -197,7 +197,7 @@ stopifnot(length(setdiff(rownames(expected_matrix),
 expected_matrix_sorted <- expected_matrix[, colnames(exprs(sample_1_result))]
 stopifnot(identical(exprs(sample_1_result), expected_matrix_sorted))
 
-previous_expressions <- read.table(file.path(meta$resources_dir, "expected_expressions.matrix"), header=TRUE, row.names=1, sep="\t")
+previous_expressions <- read.table(file.path(par$expected_matrix), header=TRUE, row.names=1, sep="\t")
 previous_expressions_matrix <- as.matrix(previous_expressions)
 storage.mode(previous_expressions_matrix) <- "double"
 stopifnot(identical(previous_expressions_matrix, assayData(sample_1_result)$exprs))
