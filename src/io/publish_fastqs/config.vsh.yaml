@@ -9,6 +9,10 @@ argument_groups:
         type: file
         multiple: true
         required: true
+      - name: --skip
+        type: boolean
+        default: false
+        description: Skip publishing of the fastq files
   - name: Output arguments
     arguments:
       - name: --output

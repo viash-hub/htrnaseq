@@ -35,6 +35,10 @@ argument_groups:
       - name: "--run_params"
         type: file
         required: true
+      - name: "--skip"
+        type: boolean
+        default: false
+        description: Skip publishing of large files
   - name: Output directory
     description: |
       Determines the name of output directories
