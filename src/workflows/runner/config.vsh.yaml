@@ -73,6 +73,12 @@ argument_groups:
         type: file
         direction: output
         default: params.yaml
+      - name: "--run_metadata"
+        type: file
+        description: |
+          YAML file containing meta information about the file — .e.g. versions of (sub)-workflows.
+        direction: output
+        default: metadata.yaml
       - name: "--star_output_dir"
         type: file
         direction: output

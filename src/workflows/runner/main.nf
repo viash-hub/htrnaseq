@@ -36,16 +36,19 @@ def get_workflow_analysis() {
   }
   
   // Build main analysis entry with dependencies using LinkedHashMap for order
-  def main_entry = new LinkedHashMap()
-  main_entry.name = meta.config.name ?: "unknown_name"
-  main_entry.version = meta.config.version ?: "unknown_version"
-  main_entry.dependencies = dependencies
+  def main_entry = [
+    "name": meta.config.name ?: "unknown_name",
+    "version": meta.config.version ?: "unknown_version",
+    "dependencies": dependencies
+  ]
   
-  def analysis = [main_entry]
+  def analysis = ["versions": [main_entry]]
   
   println("Analysis workflows: ${analysis}")
   return analysis
 }
+
+
 
 /* 
 This is a utility workflow that gathers the input events and saves their state to a YAML file.
@@ -63,12 +66,21 @@ workflow save_params_wf {
         def all_states = states.collect{it[1]}
         def run_params_output_templates = all_states.collect{it.run_params}
         assert run_params_output_templates.unique().size() == 1: "The value for the 'run_params' parameter is not the same across runs."
-        def new_state = ["run_params": run_params_output_templates[0], "all_states": all_states]
+
+        def run_metadata_output_templates = all_states.collect{it.run_metadata}
+        assert run_metadata_output_templates.unique().size() == 1: "The value for the 'run_metadata' parameter is not the same across runs."
+
+        def new_state = [
+          "run_params": run_params_output_templates[0],
+          "run_metadata": run_metadata_output_templates[0],
+          "all_states": all_states
+        ]
         return [new_id, new_state]
       }
       | save_params.run(
         key: "save_params_runner",
         fromState: {id, state ->
+
           def convertPaths
           convertPaths = { value ->
             if (value instanceof java.nio.file.Path)
@@ -88,20 +100,31 @@ workflow save_params_wf {
           def yamlString = yaml.dump(convertedState)
           def encodedYaml = yamlString.bytes.encodeBase64().toString()
           
-          def yaml_builder = new org.yaml.snakeyaml.Yaml()
-          def analysis_yaml = yaml_builder.dump(get_workflow_analysis())
-          def encoded_analysis = analysis_yaml.bytes.encodeBase64().toString()
-          
           return [
             "id": id,
             "params_yaml": encodedYaml,
-            "workflow_analysis": encoded_analysis
+            "output": state.run_params
+          ]
+        },
+        toState: ["run_params": "output"]
+      )
+      | save_params.run(
+        key: "save_meta_runner",
+        fromState: {id, state ->
+          def yaml_builder = new org.yaml.snakeyaml.Yaml()
+          def analysis_yaml = yaml_builder.dump(get_workflow_analysis())
+          def encoded_analysis = analysis_yaml.bytes.encodeBase64().toString()
+          return [
+            "id": id,
+            "params_yaml": encoded_analysis,
+            "output": state.run_metadata,
           ]
         },
         toState: { id, output, state ->
-          state + [ run_params: output.output ]
+          state + [ run_metadata: output.output ]
         }
       )
+
 
   emit:
   output_ch
@@ -301,7 +324,8 @@ workflow run_wf {
           "eset_dir",
           "f_data_dir",
           "p_data_dir",
-          "run_params"
+          "run_params",
+          "run_metadata"
         ]
         def new_state = demux_state + input_state.subMap(keys_to_transfer)
 
@@ -312,7 +336,8 @@ workflow run_wf {
           "eset_dir",
           "f_data_dir",
           "p_data_dir",
-          "run_params"
+          "run_params",
+          "run_metadata"
         ]
         new_state = new_state.collectEntries{k, v ->
           def newKey = keys_to_rename.contains(k) ? "${k}_workflow" : k
@@ -398,7 +423,10 @@ workflow run_wf {
       // Add the run parameter YAML to the output
       | map {id, grouped_ch_state, _, save_params_state ->
         assert save_params_state.run_params.isFile()
-        def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
+        def new_state = grouped_ch_state + [
+          "run_params": save_params_state.run_params,
+          "run_metadata": save_params_state.run_metadata
+        ]
         return [id, new_state]
       }
       // Group the events in order to publish the results per experiment
@@ -436,8 +464,10 @@ workflow run_wf {
             "f_data_dir_workflow",
             "p_data_dir_workflow",
             "run_params_workflow",
+            "run_metadata_workflow",
             "f_data",
-            "run_params"
+            "run_params",
+            "run_metadata"
           ]
           def state_unique_keys = state_keys_unique.inject([:]) { state_to_update, argument_name ->
             argument_values = states.collect{it.get(argument_name)}.unique()
@@ -480,9 +510,11 @@ workflow run_wf {
             p_data: state.p_data,
             html_report: state.html_report,
             run_params: state.run_params,
+            run_metadata: state.run_metadata,
             // Output locations
             html_report_output: "${state.results_prefix}/${state.html_report.name}", 
             run_params_output: "${state.results_prefix}/${state.run_params_workflow}",
+            run_metadata_output: "${state.results_prefix}/${state.run_metadata_workflow}",
             star_output_dir: "${state.results_prefix}/${state.star_output_dir_workflow}",
             nrReadsNrGenesPerChrom_dir: "${state.results_prefix}/${state.nrReadsNrGenesPerChrom_dir_workflow}",
             star_qc_metrics_dir: "${state.results_prefix}/${state.star_qc_metrics_dir_workflow}",
@@ -494,6 +526,7 @@ workflow run_wf {
         toState: { id, result, state -> 
           result + [
             "run_params": state.run_params,
+            "run_metadata": state.run_metadata,
             "_meta": ["join_id": state.event_id[0]],
             "results_prefix": state.results_prefix
           ] 
@@ -598,6 +631,7 @@ workflow run_wf {
         "f_data_dir",
         "p_data_dir",
         "run_params",
+        "run_metadata",
         "_meta"
       ]
     )
