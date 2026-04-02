@@ -35,6 +35,9 @@ argument_groups:
       - name: "--run_params"
         type: file
         required: true
+      - name: "--run_metadata"
+        type: file
+        required: true
   - name: Output directory
     description: |
       Determines the name of output directories
@@ -67,6 +70,9 @@ argument_groups:
     description: Determines the name of output files
     arguments:
       - name: "--run_params_output"
+        type: file
+        direction: output
+      - name: "--run_metadata_output"
         type: file
         direction: output
       - name: "--html_report_output"

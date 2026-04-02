@@ -17,6 +17,12 @@
   - `stats/combine_star_logs`: Now requires the files provided to `gene_summary_logs` to adhere to the formatting of STAR version `2.7.11b`
   - `stats/generate_well_statistics`: Updated to filter out '-' values for the BAM tags, STAR introduced these as a placeholder for empty tags.
 
+# htrnaseq v0.14.7
+
+## Bug fixes
+
+* Revert breaking changes from PR #95 and re-implement writing (sub-)workflow version to a separate file (PR #103).
+
 # htrnaseq v0.14.6
 
 ## Minor changes
