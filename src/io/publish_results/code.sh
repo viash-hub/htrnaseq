@@ -19,6 +19,7 @@ declare -A path_pars_dirs=(
 declare -A path_pars_files=(
   ["par_html_report_output"]="par_html_report"
   ["par_run_params_output"]="par_run_params"
+  ["par_run_metadata_output"]="par_run_metadata"
 )
 
 echo "Canonicalizing output paths."
