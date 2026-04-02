@@ -1,3 +1,9 @@
+# htrnaseq v0.14.7
+
+## Bug fixes
+
+* Revert breaking changes from PR #95 and re-implement writing (sub-)workflow version to a separate file (PR #).
+
 # htrnaseq v0.14.6
 
 ## Minor changes
