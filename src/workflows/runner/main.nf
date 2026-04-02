@@ -6,8 +6,6 @@ def date = new Date().format('yyyyMMdd_hhmmss')
 session = nextflow.Nextflow.getSession()
 final service = session.publishDirExecutorService()
 
-
-
 def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
 
@@ -20,7 +18,6 @@ if (!params.containsKey("results_publish_dir") || !params.containsKey("fastq_pub
 def regex_trailing_slashes = ~/\/+$/
 def results_publish_dir = params.results_publish_dir - regex_trailing_slashes
 def fastq_publish_dir = params.fastq_publish_dir - regex_trailing_slashes
-
 
 def get_workflow_analysis() {
   def dependencies = []
