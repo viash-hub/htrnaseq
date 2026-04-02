@@ -2,7 +2,7 @@
 
 ## Bug fixes
 
-* Revert breaking changes from PR #95 and re-implement writing (sub-)workflow version to a separate file (PR #).
+* Revert breaking changes from PR #95 and re-implement writing (sub-)workflow version to a separate file (PR #103).
 
 # htrnaseq v0.14.6
 
