@@ -25,7 +25,7 @@ resources:
     path: script.R
 engines:
   - type: docker
-    image: bioconductor/bioconductor_docker:3.19
+    image: bioconductor/bioconductor_docker:3.23
     setup:
       - type: r
         cran:

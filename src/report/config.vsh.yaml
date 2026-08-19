@@ -36,16 +36,12 @@ test_resources:
   - path: ./test_data
 engines:
   - type: docker
-    image: rocker/r2u:24.04
+    image: rocker/r2u:26.04
     setup:
       - type: apt
         packages:
           - procps
           - pandoc
-      - type: r
-        script:
-          - install.packages("BiocManager")
-          - BiocManager::install(version = "3.22", type = "source", checkBuilt = TRUE)
       - type: r
         bioc:
           - Biobase
