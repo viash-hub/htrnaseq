@@ -4,7 +4,7 @@
 
 * Bump version of several base images (PR #104).
 
-* Bump craftbox to `v0.3.4` (PR #)
+* Bump craftbox to `v0.3.4` (PR #108)
 
 # htrnaseq v0.15.0
 
