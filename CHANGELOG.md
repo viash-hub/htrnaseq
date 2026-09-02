@@ -4,6 +4,8 @@
 
 * Bump version of several base images (PR #104).
 
+* Bump craftbox to `v0.3.4` (PR #)
+
 # htrnaseq v0.15.0
 
 ## Breaking changes

@@ -71,7 +71,7 @@ repositories:
   - name: cb
     type: vsh
     repo: craftbox
-    tag: v0.3.1
+    tag: v0.3.4
 
 runners:
   - type: nextflow
