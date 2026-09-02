@@ -2,7 +2,7 @@
 
 ## Minor changes
 
-* Bump version of several base images (PR #104).
+* Bump version of several base images (PR #104, PR #107).
 
 # htrnaseq v0.15.0
 
