@@ -6,6 +6,8 @@
 
 * Bump `_viash.yaml` to 0.9.7 (PR #106).
 
+* `generate_well_statistics`: remove workaround when creating empty dataframes (see pandas bug #58594) (PR #105).
+
 # htrnaseq v0.15.0
 
 ## Breaking changes
