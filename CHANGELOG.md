@@ -4,7 +4,7 @@
 
 * Bump version of several base images (PR #104).
 
-* `generate_well_statistics`: remove workaround when creating empty dataframes (see pandas bug #58594) (PR #).
+* `generate_well_statistics`: remove workaround when creating empty dataframes (see pandas bug #58594) (PR #105).
 
 # htrnaseq v0.15.0
 
