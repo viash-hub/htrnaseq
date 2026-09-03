@@ -4,6 +4,8 @@
 
 * Bump version of several base images (PR #104, PR #107).
 
+* Bump `_viash.yaml` to 0.9.7 (PR #106).
+
 # htrnaseq v0.15.0
 
 ## Breaking changes
