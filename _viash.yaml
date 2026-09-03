@@ -41,14 +41,16 @@ links:
   issue_tracker: https://github.com/viash-hub/htrnaseq/issues
   repository: https://github.com/viash-hub/htrnaseq
 
-viash_version: 0.9.4
+viash_version: 0.9.7
 
 info:
   test_resources:
-    - path: gs://viash-hub-resources/htrnaseq/v1
+    - path: gs://viash-hub-resources/htrnaseq/v4
       dest: resources_test
 
 config_mods: |
   .requirements.commands := ['ps']
-  .runners[.type == 'nextflow'].config.script := 'includeConfig("nextflow_labels.config")'
+  .runners[.type == 'nextflow'].config.script += 'includeConfig("nextflow_labels.config")'
   .resources += {path: '/src/config/labels.config', dest: 'nextflow_labels.config'}
+  .resources += {path: '/_viash.yaml', dest: '_viash.yaml'}
+

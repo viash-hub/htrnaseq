@@ -1,0 +1,1 @@
+These files were obtained from this issue: https://github.com/alexdobin/STAR/issues/1071

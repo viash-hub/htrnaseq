@@ -1,0 +1,17 @@
+- annotation: Homo_sapiens.gtf
+  barcodesFasta: barcodes.fasta
+  eset_dir: esets
+  experiment_id: expID
+  f_data_dir: fData
+  fastq_publish_dir: fastqDir
+  genomeDir: /Homo_sapiens/
+  input: /My/fastq/Files
+  nrReadsNrGenesPerChrom_dir: nrReadsNrGenesPerChrom
+  p_data_dir: pData
+  project_id: projID
+  results_publish_dir: projects
+  run_id: runID
+  run_params: params.yaml
+  star_output_dir: star_output
+  star_qc_metrics_dir: starLogs
+  umi_length: 7

@@ -15,6 +15,8 @@ argument_groups:
       required: true
       multiple: true
     - type: file
+      name: "--preproc_params"
+    - type: file
       name: "--output_report"
       required: true
       direction: output
@@ -34,16 +36,23 @@ test_resources:
   - path: ./test_data
 engines:
   - type: docker
-    image: rocker/r2u:24.04
+    image: rocker/r2u:26.04
     setup:
+      # This avoids an issue with nextflow https://github.com/nextflow-io/nextflow/issues/7114
+      # that is caused by a bug in the rust implementation of coreutils. This will be fixed
+      # in a future release of Ubuntu: see https://bugs.launchpad.net/ubuntu/+source/rust-coreutils/+bug/2150342
+      # To check if the fix has been released, compare the output from `date +%s%3N` and
+      # `gnudate +%s%3N` in a fresh `rocker/r2u:26.04` container.
+      # The output should have the same number of digits in case the fix has been applied.
+      - type: docker
+        run: |
+          apt update && \
+            DEBIAN_FRONTEND=noninteractive apt install -y coreutils-from-gnu coreutils-from-uutils- --allow-remove-essential && \
+            rm -rf /var/lib/apt/lists/*
       - type: apt
         packages:
           - procps
           - pandoc
-      - type: r
-        script:
-          - install.packages("BiocManager")
-          - BiocManager::install(version = "3.21", type = "source", checkBuilt = TRUE)
       - type: r
         bioc:
           - Biobase
@@ -63,6 +72,7 @@ engines:
           - DT
           - logger
           - bit64
+          - yaml
         script:
           - install.packages("oaStyle", repos = c(rdepot = "https://repos.openanalytics.eu/repo/public", getOption("repos")))
     test_setup:
@@ -73,5 +83,3 @@ engines:
 runners:
   - type: executable
   - type: nextflow
-
-     

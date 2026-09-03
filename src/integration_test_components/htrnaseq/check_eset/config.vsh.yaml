@@ -16,12 +16,16 @@ argument_groups:
         type: file
         required: true
         multiple: true
+      - name: "--expected_matrix"
+        type: file
+        multiple: false
+        description: "Expected count matrix"
 resources:
   - type: r_script
     path: script.R
 engines:
   - type: docker
-    image: bioconductor/bioconductor_docker:3.19
+    image: bioconductor/bioconductor_docker:3.23
     setup:
       - type: r
         cran:

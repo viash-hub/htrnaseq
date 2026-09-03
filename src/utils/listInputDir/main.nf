@@ -18,7 +18,7 @@ workflow run_wf {
 
         println("Extracting information from fastq/fasta filenames")
         def processed_fastqs = allFastqs.collect { f ->
-          def regex = ~/^(\w+)_S(\d+)_(L(\d+)_)?R(\d)_(\d+)\.fast[qa](\.gz)?$/
+          def regex = ~/^(\S+)_S(\d+)_(L(\d+)_)?R(\d)_(\d+)\.fast[qa](\.gz)?$/
           def validFastq = f.name ==~ regex
 
           assert validFastq: "${f} does not match the regex ${regex}"
@@ -28,7 +28,7 @@ workflow run_wf {
           // Remove the trailing '_'
           def lane_remove_trailing = lane == null ? "" : lane.replaceAll('_$', "")
           def sample_id = parsedFastq[0][1]
-          if (sample_id in state.ignore) {
+          if (sample_id in ["Undetermined"] || (state.pools && !state.pools.isEmpty() && !state.pools.contains(sample_id))) {
             return null
           }
           return [
@@ -44,27 +44,29 @@ workflow run_wf {
         def grouped = processed_fastqs
           .findAll{it != null}
           .groupBy({it.sample_id}, {it.lane})
-          .collectMany{ sample_id, states_per_lane ->
-            def result = states_per_lane.collect{lane, lane_states ->
+          .collect{ sample_id, states_per_lane ->
+            // states_per_lane is a hashmap with the lane ID as keys and a tuple of length 2 (forwards and reverse FASTQ)
+            assert states_per_lane.each{lane, lane_states -> lane_states.size() == 2}, "Expected to find two fastq files per lane! Found ${states_per_lane}."
+            // gather the FASTQ files across the lanes
+            def empty_result = ["r1_output": [], "r2_output": [], "lane": []]
+            def fastq_output = states_per_lane.inject(empty_result){ current_state, lane_id, lane_states ->
               assert lane_states.size() == 2, "Expected to find two fastq files per lane! " +
                 "Found ${lane_states.size()}. State: ${states_per_lane}"
-              def r1_state = lane_states.find({it.read == "1"})
-              def r2_state = lane_states.find({it.read == "2"})
-              def fastq_state = [
-                "r1_output": r1_state.fastq,
-                "r2_output": r2_state.fastq
+              def r1_fastq = lane_states.find({it.read == "1"}).fastq
+              def r2_fastq = lane_states.find({it.read == "2"}).fastq
+              def new_state = [
+                "r1_output": current_state["r1_output"] + [r1_fastq],
+                "r2_output": current_state["r2_output"] + [r2_fastq],
+                "lane": current_state["lane"] + lane_id
               ]
-              def new_state = fastq_state +
-                r1_state.findAll{it.key in ["sample_id", "sample", "lane"]} + 
-                ["_meta": ["join_id": id]]
-              def new_id = lane?.trim() ? sample_id : "${sample_id}_${lane}".toString()
-              return [new_id, new_state]
+              return new_state
             }
-            return result
-
+            // Use one of the lanes as template for the output
+            def base_state = states_per_lane.values()[0][0].subMap(["sample_id", "sample"])
+            
+            return [sample_id, base_state + ["_meta": ["join_id": id]] + fastq_output]
           }
           return grouped
-
       }
 
   emit: out_

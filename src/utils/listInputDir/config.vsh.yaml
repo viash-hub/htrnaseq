@@ -1,5 +1,6 @@
 name: listInputDir
 namespace: utils
+scope: "private"
 description: List the contents of a directory and parse contained fastq files
 arguments:
   - name: "--input"
@@ -8,21 +9,26 @@ arguments:
     description: Path to the directory containing fastq files
     required: true
     example: fastq_dir
-  - name: --ignore
-    description: "Pool names to ignore."
+  - name: --pools
+    description: "Pool names to include. By default all pools are selected for analysis."
     type: string
     multiple: true
-    default: ["Undetermined"]
   - name: "--r1_output"
     type: file
+    # Allow multiple lanes
+    multiple: true
     description: Path to read 1 fastq/fasta file
     direction: output
   - name: "--r2_output"
     type: file
+    # Allow multiple lanes
+    multiple: true 
     description: Path to read 2 fastq/fasta file
     direction: output
   - name: "--lane"
     type: string
+    # Allow multiple lanes
+    multiple: true
     description: Lane nr
     direction: output
   - name: "--sample"

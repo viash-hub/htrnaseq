@@ -378,6 +378,16 @@ create_eset <- function(feature_annotation_path,
                                   annotation = additional_info)
 
   eset <- eset[, colSums(exprs(eset)) != 0]
+
+  if (nrow(eset) == 0) {
+    stop("Count matrix does not seem to contain any features.")
+  }
+
+  if (ncol(eset) == 0) {
+    stop("Count matrix does not seem to contain any samples.")
+  }
+
+
   saveRDS(eset, file = output_path)
 
   message(paste0("eset created succesfully for ", ncol(eset),

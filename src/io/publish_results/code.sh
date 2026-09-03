@@ -1,44 +1,67 @@
 #!/bin/bash
 
-echo "Publishing $par_input -> $par_output"
+set -eo pipefail
 
-echo
-echo "Creating directory if it does not exist:"
-mkdir -p "$par_output" && echo "$par_output created"
+echo "Publishing results to multiple output directories"
 
-echo
-echo "Copying files..."
-IFS=";" read -ra star_output <<<$par_star_output
-IFS=";" read -ra nrReadsNrGenesPerChrom <<<$par_nrReadsNrGenesPerChrom
-IFS=";" read -ra star_qc_metrics <<<$par_star_qc_metrics
-IFS=";" read -ra eset <<<$par_eset
-IFS=";" read -ra f_data <<<$par_f_data
-IFS=";" read -ra p_data <<<$par_p_data
+# Create output directories for multiple files
+echo "Creating output directories..."
 
-for i in "${star_output[@]}"; do
-  cp -rL "$i" "$par_output/"
+declare -A path_pars_dirs=(
+  ["par_star_output_dir"]="par_star_output"
+  ["par_nrReadsNrGenesPerChrom_dir"]="par_nrReadsNrGenesPerChrom"
+  ["par_star_qc_metrics_dir"]="par_star_qc_metrics"
+  ["par_eset_dir"]="par_eset"
+  ["par_f_data_dir"]="par_f_data"
+  ["par_p_data_dir"]="par_p_data"
+)
+
+declare -A path_pars_files=(
+  ["par_html_report_output"]="par_html_report"
+  ["par_run_params_output"]="par_run_params"
+  ["par_run_metadata_output"]="par_run_metadata"
+)
+
+echo "Canonicalizing output paths."
+all_path_args=( "${!path_pars_files[@]}" "${!path_pars_dirs[@]}" )
+for par in ${all_path_args[@]}; do
+    curr_val="${!par}"
+    printf "\t%s\n" "Canonicalizing path '$curr_val'"
+    new_value=$(realpath --canonicalize-missing "$curr_val")
+    printf "\t%s\n" "New output path for '$par': '$new_value'"
+    declare -g "$par=$new_value"
 done
 
-for i in "${nrReadsNrGenesPerChrom[@]}"; do
-  cp -rL "$i" "$par_output/"
+echo "Creating output directories"
+for par in ${!path_pars_dirs[@]}; do
+    curr_val="${!par}"
+    mkdir -p "$curr_val" && printf "\t%s\n" "$curr_val created."
+done
+for par in ${!path_pars_files[@]}; do
+    curr_val="${!par}"
+    file_dir=$(dirname "$curr_val")
+    mkdir -p "$file_dir" && printf "\t%s\n" "$file_dir created."
 done
 
-for i in "${star_qc_metrics[@]}"; do
-  cp -rL "$i" "$par_output/"
+echo "Copying output for inputs that are directories"
+for par in ${!path_pars_dirs[@]}; do
+  printf "\t%s\n" "Copying output for '$par'"
+  output_val="${!par}"
+  input_par_name="${path_pars_dirs[${par}]}"
+  input_val="${!input_par_name}"
+  IFS=";" read -ra output_files_list <<<$input_val
+  for i in "${output_files_list[@]}"; do 
+      printf "\t%s\n" "Copying '$i' to '$output_val'" 
+      cp -a --keep-directory-symlink "$i" "$output_val/"
+  done
 done
 
-for i in "${eset[@]}"; do
-  cp -rL "$i" "$par_output/"
+echo "Copying single files directly..."
+for par in ${!path_pars_files[@]}; do
+  output_val="${!par}"
+  input_par_name="${path_pars_files[${par}]}"
+  input_val="${!input_par_name}"
+  cp -a --keep-directory-symlink "$input_val" "$output_val"
 done
 
-for i in "${f_data[@]}"; do
-  cp -rL "$i" "$par_output/"
-done
-
-for i in "${p_data[@]}"; do
-  cp -rL "$i" "$par_output/"
-done
-
-cp -rL "$par_html_report" "$par_output/"
-
-cp -rL "$par_run_params" "$par_output/"
+echo "Publishing completed successfully!"

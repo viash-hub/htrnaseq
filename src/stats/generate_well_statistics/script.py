@@ -29,16 +29,13 @@ if __name__ == "__main__":
     index = []
     tags_selection = ("CB", "UB", "GX", "GN")
     for aligned_segment in samfile:
-        tags = dict(aligned_segment.get_tags())
+        # STAR version introduced '-' as a placeholder for empty tags
+        tags = {tag_name:tag_value for tag_name,tag_value in aligned_segment.get_tags() if tag_value != "-"}
         all_tags.append(tags)
         reference_name = aligned_segment.reference_name
         index.append("*" if not reference_name else reference_name)
-    if not index:
-        # Workaround for https://github.com/pandas-dev/pandas/issues/58594
-        tag_dataframe = pd.DataFrame([], index=[], columns=tags_selection)
-    else:
-        tag_dataframe = pd.DataFrame.from_records(all_tags, index=index,
-                                                columns=tags_selection)
+    tag_dataframe = pd.DataFrame.from_records(all_tags, index=index,
+                                            columns=tags_selection)
     tag_dataframe_to_write = tag_dataframe.copy()
     logger.info("Done reading BAM file. Found %i entries", tag_dataframe.shape[0])
     tag_dataframe.assign(WellBC=par["barcode"], WellID=par["well_id"])\

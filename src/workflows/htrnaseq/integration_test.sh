@@ -7,7 +7,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
 # Make sure the workflow is built
-viash ns build --setup cb --parallel
+# viash ns build --setup cb --parallel
 
 export NXF_VER=24.04.4
 
@@ -30,4 +30,23 @@ nextflow \
   -resume \
   -profile docker,local \
   --publish_dir output2
+
+nextflow \
+  run . \
+  -main-script src/workflows/htrnaseq/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_no_events \
+  -resume \
+  -profile docker,local \
+  --publish_dir output3
+
+
+nextflow \
+  run . \
+  -main-script src/workflows/htrnaseq/test.nf \
+  -config ./src/config/labels.config \
+  -entry test_concatenation \
+  -resume \
+  -profile docker,local \
+  --publish_dir output4
 

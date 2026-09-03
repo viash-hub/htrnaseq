@@ -5,9 +5,22 @@ argument_groups:
   - name: Input arguments
     arguments:
       - name: --input
-        description: Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/<demultiplex_dir>`
+        description: |
+          Base directory of the form `s3:/<bucket>/Sequencing/<Sequencer>/<RunID>/<demultiplex_dir>`.
+          Must contains FASTQ files in the format `PoolName_S*_L*_R1_001.fastq.gz` where
+            * PoolName is a unique ID for the microwell plates or combination thereof.
+            * S followed by a running number: the sample number based on the order
+              that samples are listed in the sample sheet (that was used to demultiplex the pools)
+              starting with 1 (e.g. S1)
+            * (Optional) the lane number (e.g. L001)
+            * _001 fixed suffix.
         type: file
         required: true
+      - name: "--run_id"
+        description: |
+          Unique ID for the sequencing run
+        type: string
+        required: false
       - name: --barcodesFasta
         type: file
         required: true
@@ -17,22 +30,19 @@ argument_groups:
       - name: --annotation
         type: file
         required: true
-      - name: --ignore
-        description: "Pool names to ignore."
+      - name: --pools
+        description: |
+          Filter the FASTQ files in the input directory to only include pools from the provided list.
+          Pool names are inferred from the FASTQ file names (see input argument for more information).
+          By default all pools are included.
         type: string
         multiple: true
-        default: ["Undetermined"]
       - name: "--umi_length"
         description: |
           Length of the UMI sequences
         type: integer
         min: 1
         default: 10
-      - name: "--run_params"
-        type: file
-        required: false
-        direction: output
-        default: params.yaml
   - name: Metadata arguments
     arguments:
       - name: --id
@@ -46,13 +56,6 @@ argument_groups:
         description: Experiment ID
         type: string
         required: true
-  - name: Annotation flags
-    arguments:
-      - name: --plain_output
-        description: |
-          Flag to indicate that the output should be stored directly under $publish_dir rather than
-          under a subdirectory structure runID/<date_time>_demultiplex_<version>/.
-        type: boolean_true
   - name: Publish arguments
     arguments:
       - name: --fastq_publish_dir
@@ -61,16 +64,72 @@ argument_groups:
       - name: --results_publish_dir
         type: string
         required: true
+  - name: Output arguments
+    description: |
+      Parameters that determine the structure of the output. These parameters are provided for internal use only
+      and their defaults should not be overwritten.
+    arguments:
+      - name: "--run_params"
+        type: file
+        direction: output
+        default: params.yaml
+      - name: "--run_metadata"
+        type: file
+        description: |
+          YAML file containing meta information about the file — .e.g. versions of (sub)-workflows.
+        direction: output
+        default: metadata.yaml
+      - name: "--star_output_dir"
+        type: file
+        direction: output
+        default: "star_output"
+      - name: "--nrReadsNrGenesPerChrom_dir"
+        type: file
+        direction: output
+        default: "nrReadsNrGenesPerChrom"
+      - name: "--star_qc_metrics_dir"
+        type: file
+        direction: output
+        default: "starLogs"
+      - name: "--eset_dir"
+        type: file
+        direction: output
+        default: "esets"
+      - name: "--f_data_dir"
+        type: file
+        direction: output
+        default: "fData"
+      - name: "--p_data_dir"
+        type: file
+        direction: output
+        default: "pData"
 
 resources:
   - type: nextflow_script
     path: main.nf
     entrypoint: run_wf
+  - path: disable_publishfiles_process.config
+
+test_resources:
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf_with_lanes
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_wf_only_one_eset
+  - type: nextflow_script
+    path: test.nf
+    entrypoint: test_same_experiment_id_different_projects_wf
 
 dependencies:
   - name: utils/listInputDir
     repository: local
-  - name: workflows/htrnaseq
+  - name: workflows/well_demultiplex
+    repository: local
+  - name: workflows/well_fastqs_to_esets
     repository: local
   - name: io/publish_fastqs
     repository: local
@@ -81,6 +140,9 @@ dependencies:
 
 runners:
   - type: nextflow
+    config: 
+      script: 
+        - includeConfig("disable_publishfiles_process.config")
 
 engines:
   - type: native

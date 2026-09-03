@@ -27,14 +27,18 @@ cat(">> Running component create_report with symbolic links \n")
 
 link_sample_1 <- file.path(temp_folder, "eset.sample_one.rds")
 link_sample_2 <- file.path(temp_folder, "eset.sample_two.rds")
+link_params <- file.path(temp_folder, "params.yaml")
 createLink(link = link_sample_1,
            target = file.path(meta$resources_dir, "test_data", "eset.sample_one.rds"))
 createLink(link = link_sample_2,
            target = file.path(meta$resources_dir, "test_data", "eset.sample_two.rds"))
+createLink(link = link_params,
+           target = file.path(meta$resources_dir, "test_data", "params.yaml"))
 
 out <- processx::run(meta$executable, c(
   "--eset", link_sample_1,
   "--eset", link_sample_2,
+  "--preproc_params", link_params,
   "--output_report", "report2.html"
 ))
 
