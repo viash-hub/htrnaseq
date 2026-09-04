@@ -11,11 +11,13 @@ argument_groups:
       - name: --barcodesFasta
         type: file
         required: true
-      - name: --ignore
-        description: "Pool names to ignore."
+      - name: --pools
+        description: |
+          Filter the FASTQ files in the input directory to only include pools from the provided list.
+          Pool names are inferred from the FASTQ file names (see input argument for more information).
+          By default all pools are included.
         type: string
         multiple: true
-        default: ["Undetermined"]
       - name: "--run_params"
         type: file
         required: false
@@ -34,13 +36,6 @@ argument_groups:
         description: Experiment ID
         type: string
         required: true
-  - name: Annotation flags
-    arguments:
-      - name: --plain_output
-        description: |
-          Flag to indicate that the output should be stored directly under $publish_dir rather than
-          under a subdirectory structure runID/<date_time>_well_demultiplex_<version>/.
-        type: boolean_true
   - name: Publish arguments
     arguments:
       - name: --fastq_publish_dir

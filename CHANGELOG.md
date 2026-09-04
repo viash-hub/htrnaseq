@@ -1,5 +1,10 @@
 # htrnaseq v0.xx.x
 
+## New functionality
+
+* `workflows/well_demultiplex_runner`: added an opinionated runner that only performs the well
+  demultiplexing and publishes the resulting FASTQ files, without mapping and counting (PR #58).
+
 ## Minor changes
 
 * Bump version of several base images (PR #104, PR #107).

@@ -1,6 +1,6 @@
 def date = new Date().format('yyyyMMdd_hhmmss')
 
-def viash_config = java.nio.file.Paths.get("$projectDir/../../../../").toAbsolutePath().normalize().toString() + "/_viash.yaml"
+def viash_config = java.nio.file.Paths.get("${moduleDir}/_viash.yaml")
 def version = get_version(viash_config)
 
 workflow run_wf {
@@ -9,8 +9,7 @@ workflow run_wf {
 
   main:
     input_ch = raw_ch
-      // List the FASTQ files per input directory
-      // Be careful: an event per lane is created!
+      // Use the ID of the event as the run ID
       | map {id, state ->
         def new_state = state + ["run_id": id]
         return [id, new_state]
@@ -58,140 +57,100 @@ workflow run_wf {
         toState: ["run_params": "output"]
       )
     
+    /*
+      The provided input is a single directory per input event. However, the well demultiplexing
+      requires a list of FASTQ files to be demultiplexed. The `listInputDir` subworkflow lists the
+      content of the input directory and deduces the pool (sample) IDs from the file names.
+      When the FASTQ files are split per lane, they are gathered into the `r1_output` and `r2_output`
+      lists of a single event so that the lanes can be demultiplexed in parallel and joined afterwards.
+    */
     demultiplex_ch = input_ch
       | listInputDir.run(
         fromState: [
           "input": "input",
-          "ignore": "ignore",
+          "pools": "pools",
         ],
-        toState: { id, state, result ->
-          def clean_state = state.findAll{ it.key != "input" }
-          clean_state + result
+        toState: [
+          "output_r1": "r1_output",
+          "output_r2": "r2_output",
+          "sample_id": "sample_id",
+        ]
+      )
+      /*
+        `listInputDir` puts the pool ID as the event ID (slot 0 from the tuple). The same pool
+        can be present in multiple sequencing runs, so the run ID is added in order to keep the
+        events unique; otherwise events with duplicate IDs are dropped.
+      */
+      | map {id, state -> ["${state.run_id}/${id}".toString(), state]}
+      // Each pool is demultiplexed into its wells separately
+      | well_demultiplex.run(
+        fromState: [
+          "input_r1": "output_r1",
+          "input_r2": "output_r2",
+          "barcodesFasta": "barcodesFasta",
+        ],
+        toState: { id, result, state ->
+          def all_fastq = result.output_r1 + result.output_r2
+          def output_dir = all_fastq.collect{it.parent}.unique()
+          assert output_dir.size() == 1, "Expected output from well demultiplexing (id $id) to reside into one directory. Found: $output_dir"
+          def new_state = state + [
+            "output_r1": result.output_r1,
+            "output_r2": result.output_r2,
+            "fastq_output_directory": output_dir[0],
+          ]
+          return new_state
         }
       )
-      // ListInputDir puts the sample_id as the event ID (slot 0 from the tuple).
-      // Group FASTQ files by sample_id and run_id
-      | map {id, state -> ["${state.sample_id}/${state.run_id}".toString(), state]}
-      | groupTuple(by: 0, sort: "hash")
-      | map {id, states ->
-        def new_r1 = states.collect{it.r1_output}
-        def new_r2 = states.collect{it.r2_output}
-        // This assumes that, except for r1 and r2, 
-        // the keys across the grouped states are the same.
-        def new_state = states[0] + [
-          "r1": new_r1,
-          "r2": new_r2,
-        ]
+
+    // Publish the demultiplexed FASTQ files, one directory per pool.
+    fastq_publish_ch = demultiplex_ch
+      | map {id, state ->
+        def fastq_prefix = "${state.project_id}/${state.experiment_id}/${state.run_id}/" +
+          "${date}_well_demultiplex_${version}/${state.sample_id}"
+        def new_state = state + ["fastq_prefix": fastq_prefix.toString()]
         return [id, new_state]
       }
-
-      | well_demultiplex.run(
-        args: [
-          output_r1: 'fastq/$id/*_R1_001.fastq',
-          output_r2: 'fastq/$id/*_R2_001.fastq',
-        ],
-        fromState: [
-          input_r1: "r1",
-          input_r2: "r2",
-          barcodesFasta: "barcodesFasta",
-          sample_id: "sample_id",
-        ],
-        toState: { id, result, state -> state + result }
-      )
-
-    // Group all output by run_id for simplified publishing
-    grouped_ch = demultiplex_ch
-      | toSortedList()
-      | map{ vs ->
-          [
-            vs[0][1].run_id, // The original ID
-            [
-              output_r1: vs.collect{ it[1].output_r1 }.flatten(),
-              output_r2: vs.collect{ it[1].output_r2 }.flatten(),
-              run_params: vs.collect{ it[1].run_params }[0],
-              plain_output: vs.collect{ it[1].plain_output }[0],
-              project_id: vs.collect{ it[1].project_id }[0],
-              experiment_id: vs.collect{ it[1].experiment_id }[0]
-            ]
-          ]
-        }
-
-    grouped_with_params_ch = grouped_ch.combine(save_params_ch)
-      | map {new_id, grouped_ch_state, save_params_id, save_params_state ->
-        def new_state = grouped_ch_state + ["run_params": save_params_state.run_params]
-        return [new_id, new_state]
-      }
-
-    // Publish demultiplexed FASTQ files
-    fastq_publish_ch = grouped_ch
-      | flatMap{id, state ->
-      // Extract unique sample IDs from the output files
-      def files = state.output_r1 + state.output_r2
-      if (files.isEmpty()) return []
-      
-      // Get the sample directories (they contain the actual FASTQ files)
-      def sampleDirs = files.collect { file -> 
-        file.getParent() 
-      }.unique()
-      
-      // For each sample directory, create a publishing event
-      return sampleDirs.collect { dir ->
-        def dirPath = dir.toString()
-        def pathParts = dirPath.tokenize('/')
-        def sampleIdx = pathParts.findIndexOf { it.contains("_") || it ==~ /[A-Za-z0-9]+/ }
-        def sampleId = sampleIdx >= 0 ? pathParts[sampleIdx] : "unknown"
-        
-        def new_state = [
-        "fastq_output": dir,
-        "sample_id": sampleId,
-        "run_id": id,
-        "project_id": state.project_id,
-        "experiment_id": state.experiment_id,
-        "plain_output": state.plain_output
-        ]
-        
-        ["${id}/${sampleId}", new_state]
-      }
-      }
       | publish_fastqs.run(
-      fromState: { id, state ->
-        def projectPath = state.project_id ?: "unknown_project"
-        def experimentPath = state.experiment_id ?: "unknown_experiment"
-        def samplePath = state.sample_id
-        def runPath = state.run_id
-        
-        def publishPath = "${projectPath}/${experimentPath}/${runPath}/${date}_well_demultiplex_${version}/${samplePath}"
-        
-        println("Publishing fastqs to ${params.fastq_publish_dir}/${publishPath}")
+        fromState: { id, state ->
+          println("Publishing fastqs to ${params.fastq_publish_dir}/${state.fastq_prefix}")
 
-        [
-        "input": state.fastq_output,
-        "output": publishPath
+          [
+            "input": state.output_r1 + state.output_r2,
+            "output": state.fastq_prefix,
+          ]
+        },
+        toState: { id, result, state -> state },
+        directives: [
+          publishDir: [
+            path: "${params.fastq_publish_dir}",
+            overwrite: false,
+            mode: "copy"
+          ]
         ]
-      },
-      toState: { id, result, state -> state },
-      directives: [
-        publishDir: [
-        path: "${params.fastq_publish_dir}", 
-        overwrite: false,
-        mode: "copy"
-        ]
-      ]
       )
 
   emit:
-    grouped_ch
-      | map{ id, state -> [ id, [ _meta: [ join_id: state.run_id ] ] ] }
+    /*
+      The demultiplexing outputs an event per pool, while this runner outputs events on the
+      level of the input events (i.e. per sequencing run). The events are grouped back together
+      here and the YAML file with the run parameters is added to the output.
+    */
+    fastq_publish_ch
+      | map {id, state -> [state.run_id, state]}
+      | groupTuple(by: 0, sort: "hash")
+      | combine(save_params_ch)
+      | map {run_id, states, _save_params_id, save_params_state ->
+        def new_state = [
+          "run_params": save_params_state.run_params,
+          "_meta": ["join_id": run_id],
+        ]
+        return [run_id, new_state]
+      }
 }
 
-def get_version(input) {
-  def inputFile = file(input)
-  if (!inputFile.exists()) {
-    // When executing tests
-    return "unknown_version"
-  }
+def get_version(inputFile) {
   def yamlSlurper = new groovy.yaml.YamlSlurper()
-  def loaded_viash_config = yamlSlurper.parse(inputFile)
+  def loaded_viash_config = yamlSlurper.parse(file(inputFile))
   def version = (loaded_viash_config.version) ? loaded_viash_config.version : "unknown_version"
   println("Version to be used: ${version}")
   return version
