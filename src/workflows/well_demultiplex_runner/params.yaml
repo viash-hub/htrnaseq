@@ -1,0 +1,7 @@
+param_list:
+- id: "SRR14730301_1"
+  input: "gs://viash-hub-test-data/htrnaseq/v1//100k/SRR14730301"
+  barcodesFasta: "gs://viash-hub-test-data/htrnaseq/v1//2-wells-with-ids.fasta"
+  project_id: "foo"
+  experiment_id: "bar"
+  fastq_publish_dir: dir_fastq
