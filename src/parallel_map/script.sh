@@ -180,7 +180,6 @@ function _run() {
   fi
   mkdir -p "$dir"
 
-  # check if files are compressed
   # Keep in mind that TMPDIR is set by GNU parallel
   local STAR_TMPDIR=$(mktemp -d "$TMPDIR/parallel_map-$barcode-XXXXXX")
   function clean_up {
@@ -188,98 +187,88 @@ function _run() {
   }
   trap clean_up RETURN
 
-  # Decompress the input files when needed
-  # NOTE: for some reason, using STAR's --readFilesCommand does not always work
-  # This might be because STAR creates fifo files (see https://man7.org/linux/man-pages/man7/fifo.7.html)
-  # and this requires a filesystem that supports this. Another cause might be that the input files
-  # are symlinks. When testing this, using '--readFilesCommand "zcat"' 
-  # always produced empty BAM files, but also a succesfull exit code (0) so the problem is not reported.
-  # However, the logs showed the following error: "gzip -: unexpected end of file".
-
-  function is_gzipped {
-    printf "Checking if input '$1' (barcode '$barcode') is gzipped... "
-    # The file might match more than one mime-type, but if the `-k` flag is not
-    # set, file will only output one. 
-    if file --mime-type -k "$1" | grep -q 'gzip'; then
-      echo "Done, detected compressed file."
-      return
-    fi
-    echo "Done, file does not need decompression."
-    false
-  }
-  
   # Resolve symbolic links to actual file paths
   input_R1=$(realpath "$input_R1")
   input_R2=$(realpath "$input_R2")
 
-  if is_gzipped $input_R1; then
-    local compressed_file_name_r1=$(basename -- "$input_R1")
-    local uncompressed_file_r1="$STAR_TMPDIR/${compressed_file_name_r1%.gz}"
-    printf "Unpacking input to $uncompressed_file_r1... "
-    zcat "$input_R1" > "$uncompressed_file_r1"
-    echo "Decompression done."
-  else
-    local uncompressed_file_r1="$input_R1"
-  fi
+  # Rather than decompressing the input up front, the reads are streamed into STAR
+  # from a process substitution, which also records the number of input lines; that
+  # would otherwise require reading (and decompressing) every input a second time
+  # just to count it. 'gzip -f' passes non-compressed input through unchanged, so
+  # compressed and uncompressed input are both handled by this single code path.
+  # awk writes the line count in its END block, which runs before it closes stdout.
+  # STAR can therefore never observe EOF before the count file is complete, which
+  # means the count is always readable once STAR has finished.
+  local count_file_r1="$STAR_TMPDIR/R1.nlines"
+  local count_file_r2="$STAR_TMPDIR/R2.nlines"
 
-  if is_gzipped $input_R2; then
-    local compressed_file_name_r2="$(basename -- $input_R2)"
-    local uncompressed_file_r2="$STAR_TMPDIR/${compressed_file_name_r2%.gz}"
-    printf "Unpacking input to $uncompressed_file_r2... "
-    zcat "$input_R2" > "$uncompressed_file_r2"
-    echo "Decompression done."
-  else
-    local uncompressed_file_r2="$input_R2"
-  fi
+  star_solo_cli_args=(
+    --soloType Droplet
+    --quantMode GeneCounts
+    --genomeLoad LoadAndKeep
+    --limitBAMsortRAM "$par_limitBAMsortRAM"
+    --runThreadN "$par_runThreadN"
+    --outFilterMultimapNmax 1
+    --outSAMtype BAM SortedByCoordinate
+    --soloCBstart 1
+    --readFilesType "Fastx"
+    --soloCBlen "$barcode_length"
+    --soloUMIstart "$umi_start"
+    --soloUMIlen "$par_UMIlength"
+    --soloBarcodeReadLength 0
+    --soloStrand Unstranded
+    --soloFeatures Gene
+    --genomeDir "$par_genomeDir"
+    --outReadsUnmapped Fastx
+    --outSAMunmapped Within
+    --outSAMattributes NH HI nM AS CR UR CB UB GX GN
+    --soloCBwhitelist "$barcode.txt"
+    --outFileNamePrefix "$dir"
+    --outTmpDir "$STAR_TMPDIR/run"
+  )
 
-  local n_input_lines_r1=$(wc -l < "$uncompressed_file_r1")
-  local n_input_lines_r2=$(wc -l < "$uncompressed_file_r2")
-
-  printf "Checking if length of input file mates match. "
-  if (( $n_input_lines_r1 != n_input_lines_r2 )); then
-    echo "The length of file $input_R1 ($n_input_lines_r1) does not match with $input_R2 ($n_input_lines_r2)"
-    return 1
-  else
-    echo "Seems OK, $n_input_lines_r1 input lines."
-  fi
-  echo "Starting STAR for barcode '$barcode'"
+  echo -e "Starting STAR for barcode '$barcode' and arguments: \n ${star_solo_cli_args[*]}"
+  # The input files are not part of 'star_solo_cli_args' (see the note below).
+  echo "Streaming '$input_R1' and '$input_R2' into STAR."
   # soloType 'Droplet' is the same as 'CB_UMI_Simple': one UMI and one cell barcode of fixed length. 
   # By default in this mode, STAR will look for the cell barcode and the UMI int the last files specified with --readFilesIn
   # So we need to specify R2 first and R1 second, because R1 contains the barcode and UMI.
   # Also, you might be tempted to use '--soloBarcodeMate 1' to alter this behavior, but this requires the clipping
   # the barcode from this mate by specifying --clip5pNbases and/or --clip3pNbases, which we do not want to do.
-  STAR \
-    --readFilesIn "$uncompressed_file_r2" "$uncompressed_file_r1" \
-    --soloType Droplet \
-    --quantMode GeneCounts \
-    --genomeLoad LoadAndKeep \
-    --limitBAMsortRAM "$par_limitBAMsortRAM" \
-    --runThreadN "$par_runThreadN" \
-    --outFilterMultimapNmax 1 \
-    --outSAMtype BAM SortedByCoordinate \
-    --soloCBstart 1 \
-    --readFilesType "Fastx" \
-    --soloCBlen "$barcode_length" \
-    --soloUMIstart "$umi_start" \
-    --soloUMIlen "$par_UMIlength" \
-    --soloBarcodeReadLength 0 \
-    --soloStrand Unstranded \
-    --soloFeatures Gene \
-    --genomeDir "$par_genomeDir" \
-    --outReadsUnmapped Fastx \
-    --outSAMunmapped Within \
-    --outSAMattributes NH HI nM AS CR UR CB UB GX GN \
-    --soloCBwhitelist "$barcode.txt" \
-    --outFileNamePrefix "$dir" \
-    --outTmpDir "$STAR_TMPDIR/run"
+  # NOTE: --readFilesIn must be passed here rather than through 'star_solo_cli_args': bash closes the file descriptors of a process
+  # substitution once the command it belongs to (the array assignment) completes.
+  local star_exit_code=0
+  STAR "${star_solo_cli_args[@]}" --readFilesIn \
+    <(gzip -d --stdout -f "$input_R2" | awk -v cf="$count_file_r2" '{ print } END { print NR > cf; close(cf) }') \
+    <(gzip -d --stdout -f "$input_R1" | awk -v cf="$count_file_r1" '{ print } END { print NR > cf; close(cf) }') || star_exit_code=$?
 
+  if (( star_exit_code != 0 )); then
+    echo "STAR failed for barcode '$barcode' with exit code $star_exit_code."
+    return "$star_exit_code"
+  fi
 
   printf "Done running STAR. "
+
+  if [[ ! -f "$count_file_r1" ]] || [[ ! -f "$count_file_r2" ]]; then
+    echo "Could not determine the number of input lines for barcode $barcode."
+    return 1
+  fi
+  local n_input_lines_r1=$(< "$count_file_r1")
+  local n_input_lines_r2=$(< "$count_file_r2")
+
+  printf "Checking if length of input file mates match. "
+  if (( $n_input_lines_r1 != $n_input_lines_r2 )); then
+    echo "The length of file $input_R1 ($n_input_lines_r1) does not match with $input_R2 ($n_input_lines_r2)"
+    return 1
+  else
+    echo "Seems OK, $n_input_lines_r1 input lines."
+  fi
+
   # Check if the number of processed reads is equal to the number of input reads
   local n_input_reads=$(($n_input_lines_r1 / 4))
   local nr_output_reads=$(grep -Po "Number\ of\ input\ reads \\|\W*\K\d+" "$dir/Log.final.out")
   if (( $nr_output_reads != $n_input_reads )); then
-    echo "Not all input reads were processed for barcode $barcode."
+    echo "Not all input reads were processed for barcode $barcode ($nr_output_reads out of $n_input_reads)."
     return 1
   else
     echo "Processed $nr_output_reads reads for barcode $barcode".
